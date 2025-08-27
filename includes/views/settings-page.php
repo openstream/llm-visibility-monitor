@@ -15,7 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
         </a>
     </p>
 
-    <?php if ( isset( $_GET['llmvm_ran'] ) && '1' === (string) $_GET['llmvm_ran'] ) : ?>
+    <?php
+    // Check for run completion message with proper sanitization.
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is just a display flag, not a form submission.
+    $run_completed = isset( $_GET['llmvm_ran'] ) ? sanitize_text_field( wp_unslash( $_GET['llmvm_ran'] ) ) : '';
+    if ( '1' === $run_completed ) :
+    ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ); ?></p></div>
     <?php endif; ?>
 

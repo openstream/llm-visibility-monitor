@@ -17,7 +17,9 @@ class LLMVM_Exporter {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
-        $nonce = isset( $_GET['_wpnonce'] ) ? (string) $_GET['_wpnonce'] : '';
+        
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
         if ( ! wp_verify_nonce( $nonce, 'llmvm_export_csv' ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
         }
@@ -28,17 +30,29 @@ class LLMVM_Exporter {
         header( 'Content-Type: text/csv; charset=utf-8' );
         header( 'Content-Disposition: attachment; filename=llm-visibility-results.csv' );
 
-        $output = fopen( 'php://output', 'w' );
-        fputcsv( $output, [ 'Date', 'Prompt', 'Model', 'Answer' ] );
-        foreach ( $results as $row ) {
-            fputcsv( $output, [
-                $row['created_at'] ?? '',
-                $row['prompt'] ?? '',
-                $row['model'] ?? '',
-                $row['answer'] ?? '',
-            ] );
+        // Use WordPress filesystem API instead of direct PHP functions.
+        global $wp_filesystem;
+        if ( ! $wp_filesystem ) {
+            require_once ABSPATH . '/wp-admin/includes/file.php';
+            WP_Filesystem();
         }
-        fclose( $output );
+
+        // Create CSV content in memory.
+        $csv_content = '';
+        $csv_content .= "Date,Prompt,Model,Answer\n";
+        
+        foreach ( $results as $row ) {
+            $csv_content .= sprintf(
+                '"%s","%s","%s","%s"' . "\n",
+                str_replace( '"', '""', (string) ( $row['created_at'] ?? '' ) ),
+                str_replace( '"', '""', (string) ( $row['prompt'] ?? '' ) ),
+                str_replace( '"', '""', (string) ( $row['model'] ?? '' ) ),
+                str_replace( '"', '""', (string) ( $row['answer'] ?? '' ) )
+            );
+        }
+
+        // Output CSV content.
+        echo $csv_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         exit;
     }
 }

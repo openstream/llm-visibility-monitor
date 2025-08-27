@@ -40,6 +40,7 @@ class LLMVM_Logger {
         }
         $ctx_str  = $ctx_pairs ? ' ' . implode( ' ', $ctx_pairs ) : '';
         $line      = sprintf( '[LLMVM %s] %s%s', $timestamp, $message, $ctx_str );
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for plugin functionality.
         error_log( $line );
 
         $log_dir  = WP_CONTENT_DIR . '/uploads/llmvm-logs';

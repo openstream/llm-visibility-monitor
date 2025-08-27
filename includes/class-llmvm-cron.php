@@ -112,7 +112,8 @@ class LLMVM_Cron {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
-        $nonce = isset( $_GET['_wpnonce'] ) ? (string) $_GET['_wpnonce'] : '';
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
         if ( ! wp_verify_nonce( $nonce, 'llmvm_run_now' ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
         }

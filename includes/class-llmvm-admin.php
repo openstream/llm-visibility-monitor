@@ -194,7 +194,9 @@ class LLMVM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
-        $id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+        // Sanitize the ID parameter.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is a read-only display operation.
+        $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
         $row = $id ? LLMVM_Database::get_result_by_id( $id ) : null;
         include LLMVM_PLUGIN_DIR . 'includes/views/result-page.php';
     }
@@ -203,8 +205,9 @@ class LLMVM_Admin {
     public function handle_add_prompt(): void {
         $this->verify_permissions_and_nonce( 'llmvm_add_prompt' );
 
-        $text = isset( $_POST['prompt_text'] ) ? wp_unslash( (string) $_POST['prompt_text'] ) : '';
-        $text = sanitize_textarea_field( $text );
+        // Sanitize the prompt text input.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
@@ -220,9 +223,11 @@ class LLMVM_Admin {
     public function handle_edit_prompt(): void {
         $this->verify_permissions_and_nonce( 'llmvm_edit_prompt' );
 
-        $id   = isset( $_POST['prompt_id'] ) ? sanitize_text_field( (string) $_POST['prompt_id'] ) : '';
-        $text = isset( $_POST['prompt_text'] ) ? wp_unslash( (string) $_POST['prompt_text'] ) : '';
-        $text = sanitize_textarea_field( $text );
+        // Sanitize the prompt ID and text inputs.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $id   = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -243,7 +248,9 @@ class LLMVM_Admin {
     public function handle_delete_prompt(): void {
         $this->verify_permissions_and_nonce( 'llmvm_delete_prompt' );
 
-        $id      = isset( $_POST['prompt_id'] ) ? sanitize_text_field( (string) $_POST['prompt_id'] ) : '';
+        // Sanitize the prompt ID input.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $id      = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
         $prompts = array_values( array_filter( $prompts, static function ( $p ) use ( $id ) {
@@ -259,7 +266,8 @@ class LLMVM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
-        $nonce = isset( $_POST['_wpnonce'] ) ? (string) $_POST['_wpnonce'] : '';
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
         if ( ! wp_verify_nonce( $nonce, $action ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
         }

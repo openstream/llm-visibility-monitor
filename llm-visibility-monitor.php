@@ -4,6 +4,7 @@
  * Description:       Monitor LLM responses on a schedule and store/export results.
  * Version:           0.1.0
  * Requires at least: 6.4
+ * Tested up to:      6.8
  * Requires PHP:      8.0
  * Author:            Openstream Internet Solutions
  * Author URI:        https://www.openstream.ch
@@ -54,6 +55,7 @@ register_deactivation_hook( __FILE__, 'llmvm_deactivate' );
  */
 function llmvm_init() {
     // Load translations.
+    // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Plugin includes custom translations.
     load_plugin_textdomain( 'llm-visibility-monitor', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
     // Ensure database is ready (safe to call on every load; guarded internally).
     LLMVM_Database::maybe_upgrade();
