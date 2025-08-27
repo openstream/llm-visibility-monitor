@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
     <h1><?php echo esc_html__( 'LLM Visibility Result', 'llm-visibility-monitor' ); ?></h1>
 
-    <?php if ( empty( $row ) ) : ?>
+    <?php if ( empty( $row ) || ! is_array( $row ) ) : ?>
         <p><?php echo esc_html__( 'Result not found.', 'llm-visibility-monitor' ); ?></p>
         <p><a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>"><?php echo esc_html__( 'Back to Dashboard', 'llm-visibility-monitor' ); ?></a></p>
     <?php else : ?>

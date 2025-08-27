@@ -44,10 +44,10 @@ class LLMVM_Exporter {
         foreach ( $results as $row ) {
             $csv_content .= sprintf(
                 '"%s","%s","%s","%s"' . "\n",
-                str_replace( '"', '""', (string) ( $row['created_at'] ?? '' ) ),
-                str_replace( '"', '""', (string) ( $row['prompt'] ?? '' ) ),
-                str_replace( '"', '""', (string) ( $row['model'] ?? '' ) ),
-                str_replace( '"', '""', (string) ( $row['answer'] ?? '' ) )
+                str_replace( '"', '""', (string) ( $row['created_at'] ?? '' ) ?: '' ),
+                str_replace( '"', '""', (string) ( $row['prompt'] ?? '' ) ?: '' ),
+                str_replace( '"', '""', (string) ( $row['model'] ?? '' ) ?: '' ),
+                str_replace( '"', '""', (string) ( $row['answer'] ?? '' ) ?: '' )
             );
         }
 

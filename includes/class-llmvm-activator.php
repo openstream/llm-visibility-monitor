@@ -18,6 +18,10 @@ class LLMVM_Activator {
 
         // Schedule cron based on current setting.
         $options        = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $cron_frequency = isset( $options['cron_frequency'] ) ? sanitize_text_field( (string) $options['cron_frequency'] ) : 'daily';
 
         $cron = new LLMVM_Cron();

@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <?php foreach ( $results as $row ) : ?>
                     <tr>
                         <td><?php echo esc_html( (string) ( $row['created_at'] ?? '' ) ); ?></td>
-                        <td><?php echo esc_html( wp_trim_words( (string) ( $row['prompt'] ?? '' ), 24 ) ); ?></td>
+                        <td><?php echo esc_html( wp_trim_words( (string) ( $row['prompt'] ?? '' ), 24 ) ?: '' ); ?></td>
                         <td><?php echo esc_html( (string) ( $row['model'] ?? '' ) ); ?></td>
                         <td>
                             <?php
@@ -63,7 +63,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     [ 'page' => 'llmvm-result', 'id' => (int) ( $row['id'] ?? 0 ) ],
                                     admin_url( 'tools.php' )
                                 );
-                                echo '<a href="' . esc_url( $detail_url ) . '">' . esc_html( wp_trim_words( $answer, 36 ) ) . '</a>';
+                                echo '<a href="' . esc_url( $detail_url ) . '">' . esc_html( wp_trim_words( $answer, 36 ) ?: '' ) . '</a>';
                             }
                             ?>
                         </td>

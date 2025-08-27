@@ -26,6 +26,10 @@ class LLMVM_Database {
      */
     public static function maybe_upgrade(): void {
         $installed = get_option( 'llmvm_db_version' );
+        // Ensure we have a proper value to prevent PHP 8.1 deprecation warnings.
+        if ( false === $installed ) {
+            $installed = '';
+        }
         if ( $installed === self::DB_VERSION ) {
             return;
         }
@@ -96,7 +100,11 @@ class LLMVM_Database {
             ),
             ARRAY_A
         );
-        return is_array( $rows ) ? $rows : [];
+        // Ensure we always return an array, even if $wpdb->get_results() returns null or false.
+        if ( ! is_array( $rows ) ) {
+            return [];
+        }
+        return $rows;
     }
 
     /**
@@ -118,7 +126,11 @@ class LLMVM_Database {
             ),
             ARRAY_A
         );
-        return is_array( $row ) ? $row : null;
+        // Ensure we return null if $wpdb->get_row() returns null, false, or non-array.
+        if ( ! is_array( $row ) ) {
+            return null;
+        }
+        return $row;
     }
 }
 

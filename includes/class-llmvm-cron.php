@@ -62,11 +62,18 @@ class LLMVM_Cron {
      */
     public function run(): void {
         $options   = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $raw_key   = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
         $api_key   = $raw_key !== '' ? self::decrypt_api_key( $raw_key ) : '';
         $model   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
         $prompts = get_option( 'llmvm_prompts', [] );
-        $prompts = is_array( $prompts ) ? $prompts : [];
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $prompts ) ) {
+            $prompts = [];
+        }
 
         LLMVM_Logger::log( 'Run start', [ 'prompts' => count( $prompts ), 'model' => $model ] );
 
@@ -78,6 +85,10 @@ class LLMVM_Cron {
             $reason = 'empty';
             if ( '' !== $raw_key ) {
                 $reason = 'cannot decrypt; please re-enter in Settings';
+                // Clear the corrupted API key to allow re-entry
+                $options['api_key'] = '';
+                update_option( 'llmvm_options', $options );
+                LLMVM_Logger::log( 'Cleared corrupted API key from options' );
             }
             LLMVM_Logger::log( 'Run abort: missing API key for real model', [ 'reason' => $reason ] );
             return;
@@ -119,7 +130,7 @@ class LLMVM_Cron {
         }
         LLMVM_Logger::log( 'Run Now triggered by admin' );
         $this->run();
-        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ) );
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ) ?: '' );
         exit;
     }
 
@@ -128,18 +139,39 @@ class LLMVM_Cron {
      */
     public static function decrypt_api_key( string $ciphertext ): string {
         $ciphertext = wp_unslash( $ciphertext );
-        $parts      = explode( ':', $ciphertext );
+        
+        // If it's already plaintext (no colon separator), return as-is
+        if ( strpos( $ciphertext, ':' ) === false ) {
+            return $ciphertext;
+        }
+        
+        $parts = explode( ':', $ciphertext );
         if ( count( $parts ) !== 2 ) {
             return $ciphertext; // legacy/plaintext.
         }
+        
         [ $iv_b64, $payload_b64 ] = $parts;
         $iv      = base64_decode( $iv_b64 );
         $payload = base64_decode( $payload_b64 );
         if ( ! $iv || ! $payload ) {
+            LLMVM_Logger::log( 'API key decryption failed: invalid base64 data' );
             return '';
         }
+        
+        // Check if AUTH_KEY is defined
+        if ( ! defined( 'AUTH_KEY' ) ) {
+            LLMVM_Logger::log( 'API key decryption failed: AUTH_KEY not defined' );
+            return '';
+        }
+        
         $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
         $out = openssl_decrypt( $payload, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
+        
+        if ( false === $out ) {
+            LLMVM_Logger::log( 'API key decryption failed: openssl_decrypt returned false' );
+            return '';
+        }
+        
         return is_string( $out ) ? $out : '';
     }
 
@@ -147,10 +179,17 @@ class LLMVM_Cron {
      * Encrypt API key for storage.
      */
     public static function encrypt_api_key( string $plaintext ): string {
+        // Check if AUTH_KEY is defined
+        if ( ! defined( 'AUTH_KEY' ) ) {
+            LLMVM_Logger::log( 'API key encryption failed: AUTH_KEY not defined, storing as plaintext' );
+            return $plaintext; // fallback to plaintext if AUTH_KEY not available
+        }
+        
         $iv  = random_bytes( 16 );
         $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
         $ct  = openssl_encrypt( $plaintext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
         if ( false === $ct ) {
+            LLMVM_Logger::log( 'API key encryption failed: openssl_encrypt returned false, storing as plaintext' );
             return $plaintext; // fallback to plaintext if encryption fails.
         }
         return base64_encode( $iv ) . ':' . base64_encode( $ct );

@@ -27,31 +27,50 @@ class LLMVM_Admin {
      * Add menu pages.
      */
     public function register_menus(): void {
+        // Ensure all parameters are properly typed to prevent PHP 8.1 deprecation warnings
+        $page_title = 'LLM Visibility Monitor';
+        $menu_title = 'LLM Visibility Monitor';
+        $capability = 'manage_options';
+        $menu_slug = 'llmvm-settings';
+        $callback = [ $this, 'render_settings_page' ];
+
         add_options_page(
-            __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
-            __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
-            'manage_options',
-            'llmvm-settings',
-            [ $this, 'render_settings_page' ]
+            $page_title,
+            $menu_title,
+            $capability,
+            $menu_slug,
+            $callback
         );
+
+        $dashboard_title = 'LLM Visibility Dashboard';
+        $dashboard_slug = 'llmvm-dashboard';
+        $dashboard_callback = [ $this, 'render_dashboard_page' ];
 
         add_management_page(
-            __( 'LLM Visibility Dashboard', 'llm-visibility-monitor' ),
-            __( 'LLM Visibility Dashboard', 'llm-visibility-monitor' ),
-            'manage_options',
-            'llmvm-dashboard',
-            [ $this, 'render_dashboard_page' ]
+            $dashboard_title,
+            $dashboard_title,
+            $capability,
+            $dashboard_slug,
+            $dashboard_callback
         );
 
+        $result_title = 'LLM Visibility Result';
+        $result_slug = 'llmvm-result';
+        // Use a proper parent slug instead of null to prevent PHP 8.1 deprecation warnings
+        // This creates a hidden submenu page that can be accessed directly via URL
+        $result_callback = [ $this, 'render_result_page' ];
+
         add_submenu_page(
-            null,
-            __( 'LLM Visibility Result', 'llm-visibility-monitor' ),
-            __( 'LLM Visibility Result', 'llm-visibility-monitor' ),
-            'manage_options',
-            'llmvm-result',
-            [ $this, 'render_result_page' ]
+            'tools.php', // Use tools.php as parent instead of null
+            $result_title,
+            $result_title,
+            $capability,
+            $result_slug,
+            $result_callback
         );
     }
+
+
 
     /**
      * Register settings and fields.
@@ -81,6 +100,10 @@ class LLMVM_Admin {
      */
     public function sanitize_options( array $input ): array {
         $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
 
         $new = [];
         if ( isset( $input['api_key'] ) ) {
@@ -126,7 +149,11 @@ class LLMVM_Admin {
             return;
         }
         $notice = get_transient( 'llmvm_notice' );
-        if ( ! empty( $notice ) && is_array( $notice ) ) {
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $notice ) || false === $notice ) {
+            return;
+        }
+        if ( ! empty( $notice ) ) {
             delete_transient( 'llmvm_notice' );
             $class = ( 'error' === ( $notice['type'] ?? '' ) ) ? 'notice notice-error' : 'notice notice-success';
             echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( (string) ( $notice['msg'] ?? '' ) ) . '</p></div>';
@@ -136,6 +163,10 @@ class LLMVM_Admin {
     /** Render API key field */
     public function field_api_key(): void {
         $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $value   = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
         // Do not display plaintext; show placeholder masked value when set.
         $display = '' !== $value ? '********' : '';
@@ -146,6 +177,10 @@ class LLMVM_Admin {
     /** Render cron frequency field */
     public function field_cron_frequency(): void {
         $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $value   = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
         echo '<select name="llmvm_options[cron_frequency]">';
         echo '<option value="daily"' . selected( $value, 'daily', false ) . '>' . esc_html__( 'Daily', 'llm-visibility-monitor' ) . '</option>';
@@ -156,6 +191,10 @@ class LLMVM_Admin {
     /** Render model field */
     public function field_model(): void {
         $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $value   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
         echo '<input type="text" name="llmvm_options[model]" value="' . esc_attr( $value ) . '" class="regular-text" />';
         echo '<p class="description">' . esc_html__( 'OpenRouter model id, e.g. openai/gpt-4o-mini or openai/gpt-5 when available. Use openrouter/stub-model-v1 for testing.', 'llm-visibility-monitor' ) . '</p>';
@@ -164,6 +203,10 @@ class LLMVM_Admin {
     /** Render debug logging field */
     public function field_debug_logging(): void {
         $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
         $value   = ! empty( $options['debug_logging'] );
         echo '<label><input type="checkbox" name="llmvm_options[debug_logging]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Enable debug logging to error_log and uploads/llmvm-logs/llmvm.log', 'llm-visibility-monitor' ) . '</label>';
     }
@@ -176,7 +219,17 @@ class LLMVM_Admin {
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
-        include LLMVM_PLUGIN_DIR . 'includes/views/settings-page.php';
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( false === $prompts ) {
+            $prompts = [];
+        }
+        if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
+            return;
+        }
+        $settings_file = LLMVM_PLUGIN_DIR . 'includes/views/settings-page.php';
+        if ( is_file( $settings_file ) && is_string( $settings_file ) ) {
+            include $settings_file;
+        }
     }
 
     /** Render dashboard */
@@ -186,7 +239,13 @@ class LLMVM_Admin {
         }
 
         $results = LLMVM_Database::get_latest_results( 50 );
-        include LLMVM_PLUGIN_DIR . 'includes/views/dashboard-page.php';
+        if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
+            return;
+        }
+        $dashboard_file = LLMVM_PLUGIN_DIR . 'includes/views/dashboard-page.php';
+        if ( is_file( $dashboard_file ) && is_string( $dashboard_file ) ) {
+            include $dashboard_file;
+        }
     }
 
     /** Render single result page */
@@ -198,7 +257,17 @@ class LLMVM_Admin {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is a read-only display operation.
         $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
         $row = $id ? LLMVM_Database::get_result_by_id( $id ) : null;
-        include LLMVM_PLUGIN_DIR . 'includes/views/result-page.php';
+        // Ensure $row is always an array or null for the view.
+        if ( ! is_array( $row ) ) {
+            $row = null;
+        }
+        if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
+            return;
+        }
+        $result_file = LLMVM_PLUGIN_DIR . 'includes/views/result-page.php';
+        if ( is_file( $result_file ) && is_string( $result_file ) ) {
+            include $result_file;
+        }
     }
 
     /** Handle Add Prompt */
@@ -211,11 +280,15 @@ class LLMVM_Admin {
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
+            // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+            if ( false === $prompts ) {
+                $prompts = [];
+            }
             $prompts[] = [ 'id' => uniqid( 'p_', true ), 'text' => $text ];
             update_option( 'llmvm_prompts', $prompts, false );
         }
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) );
+        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
         exit;
     }
 
@@ -231,6 +304,10 @@ class LLMVM_Admin {
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( false === $prompts ) {
+            $prompts = [];
+        }
         foreach ( $prompts as &$prompt ) {
             if ( isset( $prompt['id'] ) && $prompt['id'] === $id ) {
                 $prompt['text'] = $text;
@@ -240,7 +317,7 @@ class LLMVM_Admin {
         unset( $prompt );
         update_option( 'llmvm_prompts', $prompts, false );
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) );
+        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
         exit;
     }
 
@@ -253,12 +330,16 @@ class LLMVM_Admin {
         $id      = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( false === $prompts ) {
+            $prompts = [];
+        }
         $prompts = array_values( array_filter( $prompts, static function ( $p ) use ( $id ) {
             return isset( $p['id'] ) && $p['id'] !== $id;
         } ) );
         update_option( 'llmvm_prompts', $prompts, false );
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) );
+        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
         exit;
     }
 

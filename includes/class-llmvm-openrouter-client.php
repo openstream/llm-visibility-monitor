@@ -21,7 +21,7 @@ class LLMVM_OpenRouter_Client {
         $model = $model ?: 'openrouter/stub-model-v1';
 
         if ( 'openrouter/stub-model-v1' === $model ) {
-            $answer = sprintf( 'Stub: %s', wp_strip_all_tags( $prompt ) );
+            $answer = sprintf( 'Stub: %s', wp_strip_all_tags( $prompt ) ?: '' );
             return [ 'model' => $model, 'answer' => $answer, 'status' => 200, 'error' => '' ];
         }
 
@@ -36,10 +36,10 @@ class LLMVM_OpenRouter_Client {
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type'  => 'application/json',
-                'Referer'       => home_url( '/' ),
+                'Referer'       => home_url( '/' ) ?: '',
                 'X-Title'       => 'LLM Visibility Monitor',
             ],
-            'body'    => wp_json_encode( $body ),
+            'body'    => wp_json_encode( $body ) ?: '',
             'timeout' => 60,
         ];
 
@@ -50,10 +50,10 @@ class LLMVM_OpenRouter_Client {
             return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $resp->get_error_message() ];
         }
         $code = wp_remote_retrieve_response_code( $resp );
-        $body = wp_remote_retrieve_body( $resp );
+        $body = wp_remote_retrieve_body( $resp ) ?: '';
         LLMVM_Logger::log( 'OpenRouter response', [ 'status' => $code ] );
 
-        LLMVM_Logger::log( 'OpenRouter raw body preview', [ 'preview' => substr( (string) $body, 0, 300 ) ] );
+        LLMVM_Logger::log( 'OpenRouter raw body preview', [ 'preview' => substr( (string) $body, 0, 300 ) ?: '' ] );
         $json = json_decode( (string) $body, true );
         if ( ! is_array( $json ) ) {
             return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => 'Invalid JSON from API' ];
@@ -63,7 +63,7 @@ class LLMVM_OpenRouter_Client {
             return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg ];
         }
         $answer = $json['choices'][0]['message']['content'] ?? '';
-        LLMVM_Logger::log( 'OpenRouter parsed answer preview', [ 'preview' => substr( (string) $answer, 0, 200 ) ] );
+        LLMVM_Logger::log( 'OpenRouter parsed answer preview', [ 'preview' => substr( (string) $answer, 0, 200 ) ?: '' ] );
         return [ 'model' => $model, 'answer' => (string) $answer, 'status' => (int) $code, 'error' => '' ];
     }
 }
