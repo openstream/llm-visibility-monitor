@@ -89,6 +89,20 @@ class LLMVM_Database {
         $rows  = $wpdb->get_results( $sql, ARRAY_A );
         return is_array( $rows ) ? $rows : [];
     }
+
+    /**
+     * Get a single result by id.
+     *
+     * @param int $id Row id.
+     * @return array<string,mixed>|null
+     */
+    public static function get_result_by_id( int $id ): ?array {
+        global $wpdb;
+        $table = self::table_name();
+        $sql   = $wpdb->prepare( "SELECT id, created_at, prompt, model, answer FROM {$table} WHERE id = %d", $id );
+        $row   = $wpdb->get_row( $sql, ARRAY_A );
+        return is_array( $row ) ? $row : null;
+    }
 }
 
 

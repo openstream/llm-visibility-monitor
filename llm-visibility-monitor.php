@@ -26,6 +26,7 @@ define( 'LLMVM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // Includes.
 require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-activator.php';
 require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-deactivator.php';
+require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-logger.php';
 require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-database.php';
 require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-openrouter-client.php';
 require_once LLMVM_PLUGIN_DIR . 'includes/class-llmvm-cron.php';

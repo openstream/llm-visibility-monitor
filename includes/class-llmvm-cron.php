@@ -20,6 +20,9 @@ class LLMVM_Cron {
 
         // Add weekly schedule if not present.
         add_filter( 'cron_schedules', [ $this, 'register_schedules' ] );
+
+        // Admin-triggered run-now endpoint.
+        add_action( 'admin_post_llmvm_run_now', [ $this, 'handle_run_now' ] );
     }
 
     /**
@@ -59,11 +62,24 @@ class LLMVM_Cron {
      */
     public function run(): void {
         $options   = get_option( 'llmvm_options', [] );
-        $api_key   = isset( $options['api_key'] ) ? self::decrypt_api_key( (string) $options['api_key'] ) : '';
-        $prompts   = get_option( 'llmvm_prompts', [] );
-        $prompts   = is_array( $prompts ) ? $prompts : [];
+        $raw_key   = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+        $api_key   = $raw_key !== '' ? self::decrypt_api_key( $raw_key ) : '';
+        $model   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+        $prompts = get_option( 'llmvm_prompts', [] );
+        $prompts = is_array( $prompts ) ? $prompts : [];
 
-        if ( empty( $api_key ) || empty( $prompts ) ) {
+        LLMVM_Logger::log( 'Run start', [ 'prompts' => count( $prompts ), 'model' => $model ] );
+
+        if ( empty( $prompts ) ) {
+            LLMVM_Logger::log( 'Run abort: no prompts configured' );
+            return;
+        }
+        if ( 'openrouter/stub-model-v1' !== $model && empty( $api_key ) ) {
+            $reason = 'empty';
+            if ( '' !== $raw_key ) {
+                $reason = 'cannot decrypt; please re-enter in Settings';
+            }
+            LLMVM_Logger::log( 'Run abort: missing API key for real model', [ 'reason' => $reason ] );
             return;
         }
 
@@ -74,12 +90,36 @@ class LLMVM_Cron {
                 continue;
             }
 
-            $response = $client->query( $api_key, $prompt_text );
-            $model    = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-            $answer   = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $model ] );
+            $response   = $client->query( $api_key, $prompt_text, $model );
+            $resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+            $answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+            $status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
+            $error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
-            LLMVM_Database::insert_result( $prompt_text, $model, $answer );
+            LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer );
+            if ( $status && $status >= 400 ) {
+                LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+            }
         }
+        LLMVM_Logger::log( 'Run completed' );
+    }
+
+    /**
+     * Handle manual run from admin.
+     */
+    public function handle_run_now(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        $nonce = isset( $_GET['_wpnonce'] ) ? (string) $_GET['_wpnonce'] : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_run_now' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+        LLMVM_Logger::log( 'Run Now triggered by admin' );
+        $this->run();
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ) );
+        exit;
     }
 
     /**

@@ -15,6 +15,7 @@ class LLMVM_Admin {
     public function hooks(): void {
         add_action( 'admin_menu', [ $this, 'register_menus' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
+        add_action( 'admin_notices', [ $this, 'admin_notices' ] );
 
         // Form handlers for prompts CRUD.
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
@@ -41,6 +42,15 @@ class LLMVM_Admin {
             'llmvm-dashboard',
             [ $this, 'render_dashboard_page' ]
         );
+
+        add_submenu_page(
+            null,
+            __( 'LLM Visibility Result', 'llm-visibility-monitor' ),
+            __( 'LLM Visibility Result', 'llm-visibility-monitor' ),
+            'manage_options',
+            'llmvm-result',
+            [ $this, 'render_result_page' ]
+        );
     }
 
     /**
@@ -50,7 +60,7 @@ class LLMVM_Admin {
         register_setting( 'llmvm_settings', 'llmvm_options', [
             'type'              => 'array',
             'sanitize_callback' => [ $this, 'sanitize_options' ],
-            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily' ],
+            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false ],
             'show_in_rest'      => false,
         ] );
 
@@ -59,6 +69,8 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_api_key', __( 'OpenRouter API Key', 'llm-visibility-monitor' ), [ $this, 'field_api_key' ], 'llmvm-settings', 'llmvm_section_main' );
 
         add_settings_field( 'llmvm_cron_frequency', __( 'Cron Frequency', 'llm-visibility-monitor' ), [ $this, 'field_cron_frequency' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
     }
 
     /**
@@ -72,12 +84,22 @@ class LLMVM_Admin {
 
         $new = [];
         if ( isset( $input['api_key'] ) ) {
-            $api_key = (string) $input['api_key'];
-            $api_key = trim( $api_key );
-            if ( '' !== $api_key && ! str_starts_with( $api_key, '::' ) ) {
-                $api_key = LLMVM_Cron::encrypt_api_key( $api_key );
+            $api_key = trim( (string) $input['api_key'] );
+            // If the field shows the masked placeholder or is empty, keep the existing key.
+            if ( '' === $api_key || '********' === $api_key ) {
+                $new['api_key'] = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+            } else {
+                $encrypted = LLMVM_Cron::encrypt_api_key( $api_key );
+                // Verify round-trip decryption to catch env/salt issues immediately.
+                $decrypted = LLMVM_Cron::decrypt_api_key( $encrypted );
+                if ( $decrypted !== $api_key ) {
+                    set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'Could not securely store API key. Please try again.', 'llm-visibility-monitor' ) ], 60 );
+                    LLMVM_Logger::log( 'API key save failed round-trip check' );
+                } else {
+                    set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'API key saved securely.', 'llm-visibility-monitor' ) ], 60 );
+                }
+                $new['api_key'] = $encrypted;
             }
-            $new['api_key'] = $api_key;
         } else {
             $new['api_key'] = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
         }
@@ -90,7 +112,25 @@ class LLMVM_Admin {
             ( new LLMVM_Cron() )->reschedule( $freq );
         }
 
+        $model           = isset( $input['model'] ) ? sanitize_text_field( (string) $input['model'] ) : ( $options['model'] ?? 'openrouter/stub-model-v1' );
+        $new['model']    = $model;
+        $debug_logging   = ! empty( $input['debug_logging'] );
+        $new['debug_logging'] = $debug_logging;
+
         return $new;
+    }
+
+    /** Display one-time admin notices */
+    public function admin_notices(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        $notice = get_transient( 'llmvm_notice' );
+        if ( ! empty( $notice ) && is_array( $notice ) ) {
+            delete_transient( 'llmvm_notice' );
+            $class = ( 'error' === ( $notice['type'] ?? '' ) ) ? 'notice notice-error' : 'notice notice-success';
+            echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( (string) ( $notice['msg'] ?? '' ) ) . '</p></div>';
+        }
     }
 
     /** Render API key field */
@@ -113,6 +153,21 @@ class LLMVM_Admin {
         echo '</select>';
     }
 
+    /** Render model field */
+    public function field_model(): void {
+        $options = get_option( 'llmvm_options', [] );
+        $value   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+        echo '<input type="text" name="llmvm_options[model]" value="' . esc_attr( $value ) . '" class="regular-text" />';
+        echo '<p class="description">' . esc_html__( 'OpenRouter model id, e.g. openai/gpt-4o-mini or openai/gpt-5 when available. Use openrouter/stub-model-v1 for testing.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render debug logging field */
+    public function field_debug_logging(): void {
+        $options = get_option( 'llmvm_options', [] );
+        $value   = ! empty( $options['debug_logging'] );
+        echo '<label><input type="checkbox" name="llmvm_options[debug_logging]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Enable debug logging to error_log and uploads/llmvm-logs/llmvm.log', 'llm-visibility-monitor' ) . '</label>';
+    }
+
     /** Render settings page */
     public function render_settings_page(): void {
         if ( ! current_user_can( 'manage_options' ) ) {
@@ -132,6 +187,16 @@ class LLMVM_Admin {
 
         $results = LLMVM_Database::get_latest_results( 50 );
         include LLMVM_PLUGIN_DIR . 'includes/views/dashboard-page.php';
+    }
+
+    /** Render single result page */
+    public function render_result_page(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        $id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+        $row = $id ? LLMVM_Database::get_result_by_id( $id ) : null;
+        include LLMVM_PLUGIN_DIR . 'includes/views/result-page.php';
     }
 
     /** Handle Add Prompt */

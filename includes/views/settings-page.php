@@ -6,6 +6,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap">
     <h1><?php echo esc_html__( 'LLM Visibility Monitor - Settings', 'llm-visibility-monitor' ); ?></h1>
 
+    <p>
+        <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
+            <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
+        </a>
+        <a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>" style="margin-left:8px;">
+            <?php echo esc_html__( 'Open Dashboard', 'llm-visibility-monitor' ); ?>
+        </a>
+    </p>
+
+    <?php if ( isset( $_GET['llmvm_ran'] ) && '1' === (string) $_GET['llmvm_ran'] ) : ?>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ); ?></p></div>
+    <?php endif; ?>
+
     <form action="options.php" method="post">
         <?php
         settings_fields( 'llmvm_settings' );
