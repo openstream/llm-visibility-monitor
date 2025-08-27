@@ -21,6 +21,9 @@ class LLMVM_Admin {
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
         add_action( 'admin_post_llmvm_edit_prompt', [ $this, 'handle_edit_prompt' ] );
         add_action( 'admin_post_llmvm_delete_prompt', [ $this, 'handle_delete_prompt' ] );
+        
+        // Form handler for result deletion.
+        add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
     }
 
     /**
@@ -352,6 +355,40 @@ class LLMVM_Admin {
         if ( ! wp_verify_nonce( $nonce, $action ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
         }
+    }
+
+    /** Handle Delete Result */
+    public function handle_delete_result(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_delete_result' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+        
+        // Sanitize the result ID input.
+        $id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+        
+        if ( $id > 0 ) {
+            // Delete the result from the database.
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'llm_visibility_results';
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $deleted = $wpdb->delete( $table_name, [ 'id' => $id ], [ '%d' ] );
+            
+            if ( $deleted ) {
+                set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Result deleted successfully.', 'llm-visibility-monitor' ) ], 60 );
+                LLMVM_Logger::log( 'Result deleted by admin', [ 'id' => $id ] );
+            } else {
+                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'Failed to delete result.', 'llm-visibility-monitor' ) ], 60 );
+            }
+        }
+        
+        wp_safe_redirect( wp_get_referer() ?: admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
+        exit;
     }
 }
 

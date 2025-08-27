@@ -27,25 +27,135 @@ if ( ! defined( 'ABSPATH' ) ) {
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are shown below.', 'llm-visibility-monitor' ); ?></p></div>
     <?php endif; ?>
 
-    <table class="widefat fixed striped">
+    <style>
+        .llmvm-dashboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .llmvm-dashboard-table th,
+        .llmvm-dashboard-table td {
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+            border: 1px solid #ddd;
+        }
+        .llmvm-dashboard-table th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+        .llmvm-dashboard-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .llmvm-dashboard-table tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        .llmvm-dashboard-table .col-date {
+            width: 140px;
+            min-width: 140px;
+        }
+        .llmvm-dashboard-table .col-prompt {
+            width: 20%;
+            min-width: 150px;
+        }
+        .llmvm-dashboard-table .col-model {
+            width: 120px;
+            min-width: 120px;
+        }
+        .llmvm-dashboard-table .col-answer {
+            width: auto;
+        }
+        .llmvm-dashboard-table .col-actions {
+            width: 100px;
+            min-width: 100px;
+            text-align: center;
+        }
+        .llmvm-dashboard-table .action-links {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+        }
+        .llmvm-dashboard-table .action-links a {
+            text-decoration: none;
+            font-size: 12px;
+        }
+        .llmvm-dashboard-table .action-links .delete-link {
+            color: #a00;
+        }
+        .llmvm-dashboard-table .action-links .delete-link:hover {
+            color: #dc3232;
+        }
+        
+        /* Mobile responsive */
+        @media screen and (max-width: 768px) {
+            .llmvm-dashboard-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .llmvm-dashboard-table .col-date {
+                width: 120px;
+                min-width: 120px;
+            }
+            .llmvm-dashboard-table .col-prompt {
+                width: 15%;
+                min-width: 120px;
+            }
+            .llmvm-dashboard-table .col-model {
+                width: 100px;
+                min-width: 100px;
+            }
+            .llmvm-dashboard-table .col-actions {
+                width: 80px;
+                min-width: 80px;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .llmvm-dashboard-table .col-date {
+                width: 100px;
+                min-width: 100px;
+            }
+            .llmvm-dashboard-table .col-prompt {
+                width: 12%;
+                min-width: 100px;
+            }
+            .llmvm-dashboard-table .col-model {
+                width: 80px;
+                min-width: 80px;
+            }
+            .llmvm-dashboard-table .col-actions {
+                width: 70px;
+                min-width: 70px;
+            }
+            .llmvm-dashboard-table .action-links {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+    </style>
+    
+    <table class="widefat fixed striped llmvm-dashboard-table">
         <colgroup>
-            <col style="width: 180px;" />
-            <col />
-            <col style="width: 180px;" />
-            <col />
+            <col class="col-date" />
+            <col class="col-prompt" />
+            <col class="col-model" />
+            <col class="col-actions" />
+            <col class="col-answer" />
         </colgroup>
         <thead>
             <tr>
                 <th><?php echo esc_html__( 'Date (UTC)', 'llm-visibility-monitor' ); ?></th>
                 <th><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
                 <th><?php echo esc_html__( 'Model', 'llm-visibility-monitor' ); ?></th>
+                <th><?php echo esc_html__( 'Actions', 'llm-visibility-monitor' ); ?></th>
                 <th><?php echo esc_html__( 'Answer', 'llm-visibility-monitor' ); ?></th>
             </tr>
         </thead>
         <tbody>
             <?php if ( empty( $results ) ) : ?>
                 <tr>
-                    <td colspan="4"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
+                    <td colspan="5"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
                 </tr>
             <?php else : ?>
                 <?php foreach ( $results as $row ) : ?>
@@ -54,16 +164,36 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <td><?php echo esc_html( wp_trim_words( (string) ( $row['prompt'] ?? '' ), 24 ) ?: '' ); ?></td>
                         <td><?php echo esc_html( (string) ( $row['model'] ?? '' ) ); ?></td>
                         <td>
+                            <div class="action-links">
+                                <?php
+                                $detail_url = add_query_arg(
+                                    [ 'page' => 'llmvm-result', 'id' => (int) ( $row['id'] ?? 0 ) ],
+                                    admin_url( 'tools.php' )
+                                );
+                                $delete_url = wp_nonce_url(
+                                    add_query_arg(
+                                        [ 'action' => 'llmvm_delete_result', 'id' => (int) ( $row['id'] ?? 0 ) ],
+                                        admin_url( 'admin-post.php' )
+                                    ),
+                                    'llmvm_delete_result'
+                                );
+                                ?>
+                                <a href="<?php echo esc_url( $detail_url ); ?>">
+                                    <?php echo esc_html__( 'Details', 'llm-visibility-monitor' ); ?>
+                                </a>
+                                <a href="<?php echo esc_url( $delete_url ); ?>" class="delete-link" 
+                                   onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this result?', 'llm-visibility-monitor' ) ); ?>');">
+                                    <?php echo esc_html__( 'Delete', 'llm-visibility-monitor' ); ?>
+                                </a>
+                            </div>
+                        </td>
+                        <td>
                             <?php
                             $answer = (string) ( $row['answer'] ?? '' );
                             if ( '' === trim( $answer ) ) {
                                 echo '<em>' . esc_html__( 'No answer (see logs for details)', 'llm-visibility-monitor' ) . '</em>';
                             } else {
-                                $detail_url = add_query_arg(
-                                    [ 'page' => 'llmvm-result', 'id' => (int) ( $row['id'] ?? 0 ) ],
-                                    admin_url( 'tools.php' )
-                                );
-                                echo '<a href="' . esc_url( $detail_url ) . '">' . esc_html( wp_trim_words( $answer, 36 ) ?: '' ) . '</a>';
+                                echo esc_html( wp_trim_words( $answer, 36 ) ?: '' );
                             }
                             ?>
                         </td>
