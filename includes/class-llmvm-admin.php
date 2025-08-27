@@ -24,6 +24,8 @@ class LLMVM_Admin {
         
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
+        
+
     }
 
     /**
@@ -198,9 +200,55 @@ class LLMVM_Admin {
         if ( ! is_array( $options ) ) {
             $options = [];
         }
-        $value   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-        echo '<input type="text" name="llmvm_options[model]" value="' . esc_attr( $value ) . '" class="regular-text" />';
-        echo '<p class="description">' . esc_html__( 'OpenRouter model id, e.g. openai/gpt-4o-mini or openai/gpt-5 when available. Use openrouter/stub-model-v1 for testing.', 'llm-visibility-monitor' ) . '</p>';
+        $value = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+        
+        // Get available models
+        $models = $this->get_openrouter_models();
+        
+        echo '<select name="llmvm_options[model]" id="llmvm-model-select" style="width: 100%; max-width: 400px;">';
+        echo '<option value="">' . esc_html__( 'Select a model...', 'llm-visibility-monitor' ) . '</option>';
+        
+        foreach ( $models as $model ) {
+            $selected = ( $model['id'] === $value ) ? ' selected="selected"' : '';
+            echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
+            echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
+            echo '</option>';
+        }
+        
+        echo '</select>';
+        
+        echo '<p class="description">' . esc_html__( 'Select an OpenRouter model. Common models are shown above. For more models, enter the model ID manually.', 'llm-visibility-monitor' ) . '</p>';
+        
+        // Add a manual input field for custom models
+        echo '<p><label for="llmvm-model-custom">' . esc_html__( 'Or enter custom model ID:', 'llm-visibility-monitor' ) . '</label></p>';
+        echo '<input type="text" id="llmvm-model-custom" value="' . esc_attr( $value ) . '" class="regular-text" style="max-width: 400px;" placeholder="e.g., openai/gpt-4o-mini" />';
+        
+        // Add JavaScript to sync the fields
+        echo '<script type="text/javascript">
+        jQuery(document).ready(function($) {
+            var $select = $("#llmvm-model-select");
+            var $custom = $("#llmvm-model-custom");
+            
+            $select.on("change", function() {
+                $custom.val($(this).val());
+            });
+            
+            $custom.on("input", function() {
+                var customValue = $(this).val();
+                if (customValue && !$select.find("option[value=\"" + customValue + "\"]").length) {
+                    $select.val("");
+                } else {
+                    $select.val(customValue);
+                }
+            });
+            
+            // Update the hidden field when either field changes
+            $select.add($custom).on("change input", function() {
+                var finalValue = $custom.val() || $select.val();
+                $("input[name=\"llmvm_options[model]\"]").val(finalValue);
+            });
+        });
+        </script>';
     }
 
     /** Render debug logging field */
@@ -389,6 +437,84 @@ class LLMVM_Admin {
         
         wp_safe_redirect( wp_get_referer() ?: admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
         exit;
+    }
+
+
+
+    /**
+     * Fetch available models from OpenRouter API.
+     */
+    private function get_openrouter_models(): array {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        
+        $api_key = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+        if ( empty( $api_key ) ) {
+            return [
+                [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+            ];
+        }
+
+        $api_key = LLMVM_Cron::decrypt_api_key( $api_key );
+        if ( empty( $api_key ) ) {
+            return [
+                [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+            ];
+        }
+
+        $response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'HTTP-Referer'  => home_url(),
+                'X-Title'       => 'LLM Visibility Monitor',
+            ],
+            'timeout' => 30,
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            LLMVM_Logger::log( 'Failed to fetch OpenRouter models', [ 'error' => $response->get_error_message() ] );
+            return [
+                [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+                [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
+                [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
+                [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+            ];
+        }
+
+        $body = wp_remote_retrieve_body( $response );
+        $data = json_decode( $body, true );
+
+        if ( ! is_array( $data ) || ! isset( $data['data'] ) ) {
+            LLMVM_Logger::log( 'Invalid response from OpenRouter models API', [ 'body' => substr( $body ?: '', 0, 200 ) ] );
+            return [
+                [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+                [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
+                [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
+                [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+            ];
+        }
+
+        $models = [];
+        foreach ( $data['data'] as $model ) {
+            if ( isset( $model['id'] ) && isset( $model['name'] ) ) {
+                $models[] = [
+                    'id'   => (string) $model['id'],
+                    'name' => (string) $model['name'],
+                ];
+            }
+        }
+
+        // Sort models by name for better UX.
+        usort( $models, function( $a, $b ) {
+            return strcasecmp( $a['name'], $b['name'] );
+        } );
+
+        // Always include stub model at the top.
+        array_unshift( $models, [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ] );
+
+        return $models;
     }
 }
 

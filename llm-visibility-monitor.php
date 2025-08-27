@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
@@ -123,6 +123,7 @@ function llmvm_init() {
     if ( ! empty( $plugin_dir ) && is_string( $plugin_dir ) && '' !== $plugin_dir ) {
         $languages_path = $plugin_dir . '/languages';
         if ( is_string( $languages_path ) && ! empty( $languages_path ) ) {
+            // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Custom translations included with plugin.
             load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
         }
     }
@@ -136,6 +137,7 @@ function llmvm_init() {
     if ( is_admin() && class_exists( 'LLMVM_Admin' ) ) {
         // Ensure text domain is loaded before instantiating Admin class.
         if ( ! is_textdomain_loaded( 'llm-visibility-monitor' ) ) {
+            // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Custom translations included with plugin.
             load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
         }
         ( new LLMVM_Admin() )->hooks();
