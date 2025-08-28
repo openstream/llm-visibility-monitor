@@ -10,10 +10,10 @@ if ( ! defined( 'ABSPATH' ) ) {
         <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_export_csv' ), 'llmvm_export_csv' ) ); ?>">
             <?php echo esc_html__( 'Export CSV', 'llm-visibility-monitor' ); ?>
         </a>
-        <a class="button" href="<?php echo esc_url( admin_url( 'options-general.php?page=llmvm-settings' ) ); ?>" style="margin-left:8px;">
+        <a class="button llmvm-button-margin" href="<?php echo esc_url( admin_url( 'options-general.php?page=llmvm-settings' ) ); ?>">
             <?php echo esc_html__( 'Manage Prompts', 'llm-visibility-monitor' ); ?>
         </a>
-        <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>" style="margin-left:8px;">
+        <a class="button button-primary llmvm-button-margin" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
             <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
         </a>
     </p>

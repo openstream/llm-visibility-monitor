@@ -6,6 +6,18 @@
     vertical-align: top; 
 }
 
+.llmvm-col-label {
+    width: 180px;
+}
+
+.llmvm-col-content {
+    width: auto;
+}
+
+.llmvm-pre-wrap {
+    white-space: pre-wrap;
+}
+
 /* Dashboard Table Styles */
 .llmvm-dashboard-table {
     width: 100%;
@@ -86,6 +98,14 @@
 
 .llmvm-model-custom {
     max-width: 400px;
+}
+
+.llmvm-button-margin {
+    margin-left: 8px;
+}
+
+.llmvm-prompt-cell {
+    width: 70%;
 }
 
 /* Mobile responsive */

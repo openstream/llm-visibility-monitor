@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
             <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
         </a>
-        <a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>" style="margin-left:8px;">
+        <a class="button llmvm-button-margin" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>">
             <?php echo esc_html__( 'Open Dashboard', 'llm-visibility-monitor' ); ?>
         </a>
     </p>
@@ -56,7 +56,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <tbody>
                 <?php foreach ( $prompts as $prompt ) : ?>
                     <tr>
-                        <td style="width:70%">
+                        <td class="llmvm-prompt-cell">
                             <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
                                 <?php wp_nonce_field( 'llmvm_edit_prompt' ); ?>
                                 <input type="hidden" name="action" value="llmvm_edit_prompt" />

@@ -13,8 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <table class="widefat fixed striped llmvm-top">
             <colgroup>
-                <col style="width: 180px;" />
-                <col />
+                <col class="llmvm-col-label" />
+                <col class="llmvm-col-content" />
             </colgroup>
             <tbody>
                 <tr>
@@ -27,11 +27,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </tr>
                 <tr>
                     <th><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
-                    <td><pre style="white-space:pre-wrap;"><?php echo esc_html( (string) ( $row['prompt'] ?? '' ) ); ?></pre></td>
+                    <td><pre class="llmvm-pre-wrap"><?php echo esc_html( (string) ( $row['prompt'] ?? '' ) ); ?></pre></td>
                 </tr>
                 <tr>
                     <th><?php echo esc_html__( 'Answer', 'llm-visibility-monitor' ); ?></th>
-                    <td><pre style="white-space:pre-wrap;"><?php echo esc_html( (string) ( $row['answer'] ?? '' ) ); ?></pre></td>
+                    <td><pre class="llmvm-pre-wrap"><?php echo esc_html( (string) ( $row['answer'] ?? '' ) ); ?></pre></td>
                 </tr>
             </tbody>
         </table>
