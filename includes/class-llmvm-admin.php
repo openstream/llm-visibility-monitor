@@ -95,6 +95,7 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_cron_frequency', __( 'Cron Frequency', 'llm-visibility-monitor' ), [ $this, 'field_cron_frequency' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
     }
 
     /**
@@ -144,6 +145,9 @@ class LLMVM_Admin {
         $new['model']    = $model;
         $debug_logging   = ! empty( $input['debug_logging'] );
         $new['debug_logging'] = $debug_logging;
+        
+        $email_reports   = ! empty( $input['email_reports'] );
+        $new['email_reports'] = $email_reports;
 
         return $new;
     }
@@ -202,7 +206,7 @@ class LLMVM_Admin {
         }
         $value = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
         
-        // Get available models
+        // Get available models (will fallback to common models if API key decryption fails)
         $models = $this->get_openrouter_models();
         
         echo '<select name="llmvm_options[model]" id="llmvm-model-select" style="width: 100%; max-width: 400px;">';
@@ -260,6 +264,18 @@ class LLMVM_Admin {
         }
         $value   = ! empty( $options['debug_logging'] );
         echo '<label><input type="checkbox" name="llmvm_options[debug_logging]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Enable debug logging to error_log and uploads/llmvm-logs/llmvm.log', 'llm-visibility-monitor' ) . '</label>';
+    }
+
+    /** Render email reports field */
+    public function field_email_reports(): void {
+        $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = ! empty( $options['email_reports'] );
+        echo '<label><input type="checkbox" name="llmvm_options[email_reports]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Send email reports to admin after each cron run', 'llm-visibility-monitor' ) . '</label>';
+        echo '<p class="description">' . esc_html__( 'Reports will be sent to the WordPress admin email address with a summary of the latest results.', 'llm-visibility-monitor' ) . '</p>';
     }
 
     /** Render settings page */
@@ -457,16 +473,31 @@ class LLMVM_Admin {
             ];
         }
 
-        $api_key = LLMVM_Cron::decrypt_api_key( $api_key );
-        if ( empty( $api_key ) ) {
+        // Try to decrypt API key
+        $decrypted_key = LLMVM_Cron::decrypt_api_key( $api_key );
+        if ( empty( $decrypted_key ) ) {
+            // If decryption failed, clear the corrupted API key and return common models
+            $options['api_key'] = '';
+            update_option( 'llmvm_options', $options );
+            LLMVM_Logger::log( 'API key decryption failed, cleared corrupted key' );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+                [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
+                [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
+                [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+                [ 'id' => 'anthropic/claude-3-5-sonnet', 'name' => 'Claude 3.5 Sonnet' ],
+                [ 'id' => 'anthropic/claude-3-opus', 'name' => 'Claude 3 Opus' ],
+                [ 'id' => 'google/gemini-pro', 'name' => 'Gemini Pro' ],
+                [ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'Llama 3.1 8B Instruct' ],
+                [ 'id' => 'meta-llama/llama-3.1-70b-instruct', 'name' => 'Llama 3.1 70B Instruct' ],
             ];
         }
 
+        LLMVM_Logger::log( 'Fetching OpenRouter models with decrypted key length=' . strlen( $decrypted_key ) );
+        
         $response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [
             'headers' => [
-                'Authorization' => 'Bearer ' . $api_key,
+                'Authorization' => 'Bearer ' . $decrypted_key,
                 'HTTP-Referer'  => home_url(),
                 'X-Title'       => 'LLM Visibility Monitor',
             ],
@@ -474,25 +505,51 @@ class LLMVM_Admin {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            LLMVM_Logger::log( 'Failed to fetch OpenRouter models', [ 'error' => $response->get_error_message() ] );
+            LLMVM_Logger::log( 'Failed to fetch OpenRouter models error=' . $response->get_error_message() );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
                 [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
                 [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
                 [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+                [ 'id' => 'anthropic/claude-3-5-sonnet', 'name' => 'Claude 3.5 Sonnet' ],
+                [ 'id' => 'anthropic/claude-3-opus', 'name' => 'Claude 3 Opus' ],
+                [ 'id' => 'google/gemini-pro', 'name' => 'Gemini Pro' ],
+                [ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'Llama 3.1 8B Instruct' ],
+                [ 'id' => 'meta-llama/llama-3.1-70b-instruct', 'name' => 'Llama 3.1 70B Instruct' ],
             ];
         }
 
+        $status_code = wp_remote_retrieve_response_code( $response );
         $body = wp_remote_retrieve_body( $response );
         $data = json_decode( $body, true );
 
-        if ( ! is_array( $data ) || ! isset( $data['data'] ) ) {
-            LLMVM_Logger::log( 'Invalid response from OpenRouter models API', [ 'body' => substr( $body ?: '', 0, 200 ) ] );
+        if ( $status_code !== 200 ) {
+            LLMVM_Logger::log( 'OpenRouter models API returned status=' . $status_code . ' body=' . substr( $body ?: '', 0, 200 ) );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
                 [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
                 [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
                 [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+                [ 'id' => 'anthropic/claude-3-5-sonnet', 'name' => 'Claude 3.5 Sonnet' ],
+                [ 'id' => 'anthropic/claude-3-opus', 'name' => 'Claude 3 Opus' ],
+                [ 'id' => 'google/gemini-pro', 'name' => 'Gemini Pro' ],
+                [ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'Llama 3.1 8B Instruct' ],
+                [ 'id' => 'meta-llama/llama-3.1-70b-instruct', 'name' => 'Llama 3.1 70B Instruct' ],
+            ];
+        }
+
+        if ( ! is_array( $data ) || ! isset( $data['data'] ) ) {
+            LLMVM_Logger::log( 'Invalid response from OpenRouter models API body=' . substr( $body ?: '', 0, 200 ) );
+            return [
+                [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
+                [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
+                [ 'id' => 'openai/gpt-4o', 'name' => 'GPT-4o' ],
+                [ 'id' => 'openai/gpt-5', 'name' => 'GPT-5' ],
+                [ 'id' => 'anthropic/claude-3-5-sonnet', 'name' => 'Claude 3.5 Sonnet' ],
+                [ 'id' => 'anthropic/claude-3-opus', 'name' => 'Claude 3 Opus' ],
+                [ 'id' => 'google/gemini-pro', 'name' => 'Gemini Pro' ],
+                [ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'Llama 3.1 8B Instruct' ],
+                [ 'id' => 'meta-llama/llama-3.1-70b-instruct', 'name' => 'Llama 3.1 70B Instruct' ],
             ];
         }
 

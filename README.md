@@ -53,6 +53,14 @@ Monitor LLM responses on a schedule and store/export results.
   - File: `wp-content/uploads/llmvm-logs/llmvm.log`
 - Requests and responses (status only), prompt dispatch, and errors are logged.
 
+### Email Reports
+
+- Optional email reports (enable in Settings):
+  - Automatically sent to WordPress admin email after each cron run
+  - HTML-formatted reports with summary and latest results
+  - Includes success/error counts and result previews
+  - Links to dashboard for full details
+
 ### Security
 
 - API key is stored encrypted at rest.
@@ -70,6 +78,7 @@ Monitor LLM responses on a schedule and store/export results.
 2. Model: enter an OpenRouter model id. Start with `openrouter/stub-model-v1` for quick testing, then switch to a real model (e.g. `openai/gpt-4o-mini`, `openai/gpt-5` when available).
 3. Cron Frequency: choose how often results should be collected.
 4. Debug Logging: enable when troubleshooting; review `wp-content/uploads/llmvm-logs/llmvm.log`.
+5. Email Reports: enable to receive automatic reports after each cron run.
 
 ## Testing
 

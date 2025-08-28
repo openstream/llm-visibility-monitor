@@ -71,7 +71,8 @@ function llmvm_load_includes() {
             'class-llmvm-openrouter-client.php',
             'class-llmvm-cron.php',
             'class-llmvm-admin.php',
-            'class-llmvm-exporter.php'
+            'class-llmvm-exporter.php',
+            'class-llmvm-email-reporter.php'
         ];
         
         foreach ( $files as $file ) {
@@ -149,6 +150,10 @@ function llmvm_init() {
 
     if ( class_exists( 'LLMVM_Cron' ) ) {
         ( new LLMVM_Cron() )->hooks();
+    }
+    
+    if ( class_exists( 'LLMVM_Email_Reporter' ) ) {
+        ( new LLMVM_Email_Reporter() )->hooks();
     }
 }
 add_action( 'plugins_loaded', 'llmvm_init' );

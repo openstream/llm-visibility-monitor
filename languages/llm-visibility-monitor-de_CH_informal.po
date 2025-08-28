@@ -177,4 +177,16 @@ msgstr "Wähle ein OpenRouter-Modell. Häufige Modelle sind oben aufgeführt. F�
 msgid "Or enter custom model ID:"
 msgstr "Oder gib eine benutzerdefinierte Modell-ID ein:"
 
+#: includes/class-llmvm-admin.php
+msgid "Email Reports"
+msgstr "E-Mail-Berichte"
+
+#: includes/class-llmvm-admin.php
+msgid "Send email reports to admin after each cron run"
+msgstr "E-Mail-Berichte nach jedem Cron-Lauf an den Administrator senden"
+
+#: includes/class-llmvm-admin.php
+msgid "Reports will be sent to the WordPress admin email address with a summary of the latest results."
+msgstr "Berichte werden an die WordPress-Administrator-E-Mail-Adresse mit einer Zusammenfassung der neuesten Ergebnisse gesendet."
+
 

@@ -22,6 +22,7 @@ LLM Visibility Monitor is a WordPress plugin that allows you to monitor and trac
 * **Export Functionality**: Export results as CSV for further analysis
 * **Admin Dashboard**: View latest results and manage prompts
 * **Secure API Key Storage**: Encrypted storage of your OpenRouter API key
+* **Email Reports**: Automatic HTML email reports sent to admin after each run
 * **German Translations**: Full localization support for German locales
 
 = Use Cases =
@@ -73,6 +74,7 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 * Enhanced model selection with dropdown interface
 * Improved dashboard layout with action buttons
 * Better API key handling and error recovery
+* Email reporting functionality with HTML reports
 * Comprehensive German translations
 * WordPress coding standards compliance
 * PHP 8.1 compatibility fixes

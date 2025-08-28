@@ -116,6 +116,9 @@ class LLMVM_Cron {
             }
         }
         LLMVM_Logger::log( 'Run completed' );
+        
+        // Fire action hook for email reporter and other extensions
+        do_action( 'llmvm_run_completed' );
     }
 
     /**
@@ -160,35 +163,34 @@ class LLMVM_Cron {
             return '';
         }
         
-        // Check if AUTH_KEY is defined
-        if ( ! defined( 'AUTH_KEY' ) ) {
-            LLMVM_Logger::log( 'API key decryption failed: AUTH_KEY not defined' );
-            return '';
-        }
-        
-        $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
+        // Try new method first (without AUTH_KEY)
+        $key = hash( 'sha256', wp_salt( 'auth' ), true );
         $out = openssl_decrypt( $payload, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
         
-        if ( false === $out ) {
-            LLMVM_Logger::log( 'API key decryption failed: openssl_decrypt returned false' );
-            return '';
+        if ( false !== $out ) {
+            return is_string( $out ) ? $out : '';
         }
         
-        return is_string( $out ) ? $out : '';
+        // Try old method (with AUTH_KEY) if new method failed
+        if ( defined( 'AUTH_KEY' ) ) {
+            $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
+            $out = openssl_decrypt( $payload, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
+            
+            if ( false !== $out ) {
+                return is_string( $out ) ? $out : '';
+            }
+        }
+        
+        LLMVM_Logger::log( 'API key decryption failed: both methods failed' );
+        return '';
     }
 
     /**
      * Encrypt API key for storage.
      */
     public static function encrypt_api_key( string $plaintext ): string {
-        // Check if AUTH_KEY is defined
-        if ( ! defined( 'AUTH_KEY' ) ) {
-            LLMVM_Logger::log( 'API key encryption failed: AUTH_KEY not defined, storing as plaintext' );
-            return $plaintext; // fallback to plaintext if AUTH_KEY not available
-        }
-        
         $iv  = random_bytes( 16 );
-        $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
+        $key = hash( 'sha256', wp_salt( 'auth' ), true );
         $ct  = openssl_encrypt( $plaintext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
         if ( false === $ct ) {
             LLMVM_Logger::log( 'API key encryption failed: openssl_encrypt returned false, storing as plaintext' );
