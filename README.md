@@ -10,7 +10,7 @@ Monitor LLM responses on a schedule and store/export results.
 ## Installation
 
 1. Copy the plugin folder `llm-visibility-monitor` into `wp-content/plugins/`.
-2. Activate “LLM Visibility Monitor” in wp-admin → Plugins.
+2. Activate "LLM Visibility Monitor" in wp-admin → Plugins.
 3. Go to Settings → LLM Visibility Monitor to configure.
 
 ## Features
@@ -72,6 +72,23 @@ Monitor LLM responses on a schedule and store/export results.
 - Text domain: `llm-visibility-monitor`
 - German translations included: `de_DE`, `de_CH`
 
+## External Services
+
+### OpenRouter API
+
+This plugin connects to the OpenRouter API to send prompts to various AI models and retrieve responses. This service is required for the core functionality of monitoring LLM responses.
+
+**What data is sent and when:**
+- Your configured prompts are sent to OpenRouter each time the cron job runs (daily/weekly) or when you click "Run Now"
+- The selected model identifier (e.g., `openai/gpt-4o-mini`) is sent with each request
+- Your WordPress site URL is sent as the HTTP referer for API tracking
+
+**Service provider:** OpenRouter (https://openrouter.ai)
+- [Terms of Service](https://openrouter.ai/terms)
+- [Privacy Policy](https://openrouter.ai/privacy)
+
+**Note:** The plugin also includes a stub model (`openrouter/stub-model-v1`) for testing that does not make external API calls.
+
 ## Configuration
 
 1. OpenRouter API Key: paste your key in Settings (stored encrypted; re-enter to change).
@@ -97,4 +114,3 @@ Monitor LLM responses on a schedule and store/export results.
 
 - Plugin license: GPL-2.0-or-later (see plugin header)
 - GPT license: see the `LICENSE` file added to the repository for applicable GPT terms
-

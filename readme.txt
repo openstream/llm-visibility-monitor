@@ -33,6 +33,21 @@ LLM Visibility Monitor is a WordPress plugin that allows you to monitor and trac
 * Export data for reporting and analysis
 * Test different AI models and compare results
 
+== External Services ==
+
+This plugin connects to the OpenRouter API to send prompts to various AI models and retrieve responses. This service is required for the core functionality of monitoring LLM responses.
+
+**What data is sent and when:**
+- Your configured prompts are sent to OpenRouter each time the cron job runs (daily/weekly) or when you click "Run Now"
+- The selected model identifier (e.g., openai/gpt-4o-mini) is sent with each request
+- Your WordPress site URL is sent as the HTTP referer for API tracking
+
+**Service provider:** OpenRouter (https://openrouter.ai)
+- Terms of Service: https://openrouter.ai/terms
+- Privacy Policy: https://openrouter.ai/privacy
+
+**Note:** The plugin also includes a stub model (openrouter/stub-model-v1) for testing that does not make external API calls.
+
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/llm-visibility-monitor` directory, or install through WordPress admin
