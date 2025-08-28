@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <p><?php echo esc_html__( 'Result not found.', 'llm-visibility-monitor' ); ?></p>
         <p><a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>"><?php echo esc_html__( 'Back to Dashboard', 'llm-visibility-monitor' ); ?></a></p>
     <?php else : ?>
-        <style>.llmvm-top td, .llmvm-top th { vertical-align: top; }</style>
+
         <table class="widefat fixed striped llmvm-top">
             <colgroup>
                 <col style="width: 180px;" />

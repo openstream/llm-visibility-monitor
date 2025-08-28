@@ -16,6 +16,7 @@ class LLMVM_Admin {
         add_action( 'admin_menu', [ $this, 'register_menus' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_notices', [ $this, 'admin_notices' ] );
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
 
         // Form handlers for prompts CRUD.
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
@@ -209,7 +210,7 @@ class LLMVM_Admin {
         // Get available models (will fallback to common models if API key decryption fails)
         $models = $this->get_openrouter_models();
         
-        echo '<select name="llmvm_options[model]" id="llmvm-model-select" style="width: 100%; max-width: 400px;">';
+        echo '<select name="llmvm_options[model]" id="llmvm-model-select" class="llmvm-model-select">';
         echo '<option value="">' . esc_html__( 'Select a model...', 'llm-visibility-monitor' ) . '</option>';
         
         foreach ( $models as $model ) {
@@ -225,34 +226,9 @@ class LLMVM_Admin {
         
         // Add a manual input field for custom models
         echo '<p><label for="llmvm-model-custom">' . esc_html__( 'Or enter custom model ID:', 'llm-visibility-monitor' ) . '</label></p>';
-        echo '<input type="text" id="llmvm-model-custom" value="' . esc_attr( $value ) . '" class="regular-text" style="max-width: 400px;" placeholder="e.g., openai/gpt-4o-mini" />';
+        echo '<input type="text" id="llmvm-model-custom" value="' . esc_attr( $value ) . '" class="regular-text llmvm-model-custom" placeholder="e.g., openai/gpt-4o-mini" />';
         
-        // Add JavaScript to sync the fields
-        echo '<script type="text/javascript">
-        jQuery(document).ready(function($) {
-            var $select = $("#llmvm-model-select");
-            var $custom = $("#llmvm-model-custom");
-            
-            $select.on("change", function() {
-                $custom.val($(this).val());
-            });
-            
-            $custom.on("input", function() {
-                var customValue = $(this).val();
-                if (customValue && !$select.find("option[value=\"" + customValue + "\"]").length) {
-                    $select.val("");
-                } else {
-                    $select.val(customValue);
-                }
-            });
-            
-            // Update the hidden field when either field changes
-            $select.add($custom).on("change input", function() {
-                var finalValue = $custom.val() || $select.val();
-                $("input[name=\"llmvm_options[model]\"]").val(finalValue);
-            });
-        });
-        </script>';
+
     }
 
     /** Render debug logging field */
@@ -572,6 +548,33 @@ class LLMVM_Admin {
         array_unshift( $models, [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ] );
 
         return $models;
+    }
+
+    /**
+     * Enqueue admin assets (CSS and JS).
+     */
+    public function enqueue_admin_assets( string $hook ): void {
+        // Only load on our plugin pages
+        if ( ! in_array( $hook, [ 'settings_page_llmvm-settings', 'tools_page_llmvm-dashboard', 'tools_page_llmvm-result' ], true ) ) {
+            return;
+        }
+
+        // Enqueue CSS
+        wp_enqueue_style(
+            'llmvm-admin',
+            LLMVM_PLUGIN_URL . 'assets/css/llmvm-admin.css',
+            [],
+            LLMVM_VERSION
+        );
+
+        // Enqueue JavaScript
+        wp_enqueue_script(
+            'llmvm-admin',
+            LLMVM_PLUGIN_URL . 'assets/js/llmvm-admin.js',
+            [ 'jquery' ],
+            LLMVM_VERSION,
+            true
+        );
     }
 }
 
