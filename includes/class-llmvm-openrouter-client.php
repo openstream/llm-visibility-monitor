@@ -43,15 +43,15 @@ class LLMVM_OpenRouter_Client {
             'timeout' => 60,
         ];
 
-        LLMVM_Logger::log( 'OpenRouter request', [ 'model' => $model ] );
+        LLMVM_Logger::log( 'OpenRouter request model=' . $model );
         $resp = wp_remote_post( $url, $args );
         if ( is_wp_error( $resp ) ) {
-            LLMVM_Logger::log( 'OpenRouter error', [ 'error' => $resp->get_error_message() ] );
+            LLMVM_Logger::log( 'OpenRouter error error=' . $resp->get_error_message() );
             return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $resp->get_error_message() ];
         }
         $code = wp_remote_retrieve_response_code( $resp );
         $body = wp_remote_retrieve_body( $resp ) ?: '';
-        LLMVM_Logger::log( 'OpenRouter response', [ 'status' => $code ] );
+        LLMVM_Logger::log( 'OpenRouter response status=' . $code );
 
         LLMVM_Logger::log( 'OpenRouter raw body preview', [ 'preview' => substr( (string) $body, 0, 300 ) ?: '' ] );
         $json = json_decode( (string) $body, true );
@@ -60,10 +60,25 @@ class LLMVM_OpenRouter_Client {
         }
         if ( $code < 200 || $code >= 300 ) {
             $msg = (string) ( $json['error']['message'] ?? '' );
+            // Provide more specific error messages for common issues
+            if ( $code === 401 ) {
+                if ( strpos( $msg, 'No auth credentials found' ) !== false ) {
+                    $msg = 'OpenRouter service issue - try again later (status 401)';
+                } else {
+                    $msg = 'API key authentication failed - check your OpenRouter API key';
+                }
+            } elseif ( $code === 402 ) {
+                $msg = 'OpenRouter credits insufficient - add credits to your account';
+            } elseif ( $code >= 500 ) {
+                $msg = 'OpenRouter server error - try again later (status ' . $code . ')';
+            }
             return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg ];
         }
         $answer = $json['choices'][0]['message']['content'] ?? '';
-        LLMVM_Logger::log( 'OpenRouter parsed answer preview', [ 'preview' => substr( (string) $answer, 0, 200 ) ?: '' ] );
+        $preview = substr( (string) $answer, 0, 100 ) ?: '';
+        // Remove line breaks and extra spaces for cleaner logging
+        $preview = preg_replace( '/\s+/', ' ', trim( $preview ) );
+        LLMVM_Logger::log( 'OpenRouter parsed answer preview preview=' . $preview );
         return [ 'model' => $model, 'answer' => (string) $answer, 'status' => (int) $code, 'error' => '' ];
     }
 }
