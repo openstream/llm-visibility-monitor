@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.1.0' );
+define( 'LLMVM_VERSION', '0.2.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 // Define plugin paths safely.
