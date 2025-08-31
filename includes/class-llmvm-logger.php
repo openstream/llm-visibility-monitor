@@ -56,8 +56,9 @@ class LLMVM_Logger {
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for plugin functionality.
         error_log( $line );
 
-        $log_dir  = WP_CONTENT_DIR . '/uploads/llmvm-logs';
-        $log_file = $log_dir . '/llmvm.log';
+        $upload_dir = wp_upload_dir();
+        $log_dir    = $upload_dir['basedir'] . '/llm-visibility-monitor';
+        $log_file   = $log_dir . '/llmvm.log';
         if ( ! is_dir( $log_dir ) ) {
             wp_mkdir_p( $log_dir );
         }

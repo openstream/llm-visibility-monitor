@@ -66,8 +66,8 @@ msgid "OpenRouter model id, e.g. openai/gpt-4o-mini or openai/gpt-5 when availab
 msgstr "OpenRouter Modell-ID, z. B. openai/gpt-4o-mini oder openai/gpt-5 (falls verfügbar). Für Tests openrouter/stub-model-v1 verwenden."
 
 #: includes/class-llmvm-admin.php
-msgid "Enable debug logging to error_log and uploads/llmvm-logs/llmvm.log"
-msgstr "Debug-Logging in error_log und uploads/llmvm-logs/llmvm.log aktivieren"
+msgid "Enable debug logging to error_log and uploads/llm-visibility-monitor/llmvm.log"
+msgstr "Debug-Logging in error_log und uploads/llm-visibility-monitor/llmvm.log aktivieren"
 
 #: includes/class-llmvm-admin.php
 msgid "Stored encrypted. Re-enter to change."

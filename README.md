@@ -50,7 +50,7 @@ Monitor LLM responses on a schedule and store/export results.
 
 - Optional debug logging (enable in Settings):
   - PHP `error_log`
-  - File: `wp-content/uploads/llmvm-logs/llmvm.log`
+  - File: `wp-content/uploads/llm-visibility-monitor/llmvm.log`
 - Requests and responses (status only), prompt dispatch, and errors are logged.
 
 ### Email Reports
@@ -94,7 +94,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 1. OpenRouter API Key: paste your key in Settings (stored encrypted; re-enter to change).
 2. Model: enter an OpenRouter model id. Start with `openrouter/stub-model-v1` for quick testing, then switch to a real model (e.g. `openai/gpt-4o-mini`, `openai/gpt-5` when available).
 3. Cron Frequency: choose how often results should be collected.
-4. Debug Logging: enable when troubleshooting; review `wp-content/uploads/llmvm-logs/llmvm.log`.
+4. Debug Logging: enable when troubleshooting; review `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 5. Email Reports: enable to receive automatic reports after each cron run.
 
 ## Testing
@@ -102,7 +102,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 1. Add one or more prompts in Settings.
 2. Click Run Now on the Dashboard or the Settings page.
 3. Review results in Tools → LLM Visibility Dashboard and/or export CSV.
-4. If logging is enabled, check `wp-content/uploads/llmvm-logs/llmvm.log`.
+4. If logging is enabled, check `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 
 ## Roadmap
 
