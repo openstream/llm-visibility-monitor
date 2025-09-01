@@ -104,11 +104,30 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 3. Review results in Tools → LLM Visibility Dashboard and/or export CSV.
 4. If logging is enabled, check `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 
-## Roadmap
+## Changelog
 
-- Real-time notifications and webhooks
-- Per-prompt model overrides
-- Pagination and filters for results
+### 0.3.0 (2025-09-01)
+- **Fixed cron scheduling issues**: Cron jobs now run at proper intervals (9:00 AM daily/weekly) instead of every minute
+- **Improved logging**: Eliminated duplicate log entries and excessive logging with deduplication logic
+- **Added OpenRouter models caching**: 1-hour cache to reduce API calls and improve settings page performance
+- **Enhanced bulk operations**: Fixed bulk delete functionality and resolved UI conflicts
+- **Improved dashboard UI**: Better spacing, mobile responsiveness, and user experience
+- **WordPress coding standards compliance**: Updated file operations, nonce handling, and translation loading
+- **Performance optimizations**: Reduced unnecessary API calls and improved overall efficiency
+
+### 0.2.0 (2025-08-27)
+- Added email reports feature with HTML formatting
+- Implemented dashboard with sorting and bulk operations
+- Added German translations (de_DE, de_CH)
+- Enhanced security with proper nonce verification
+- Improved error handling and user feedback
+
+### 0.1.0 (2025-08-27)
+- Initial release with core LLM monitoring functionality
+- OpenRouter API integration
+- WordPress cron scheduling
+- CSV export capabilities
+- Basic admin interface
 
 ## License
 
