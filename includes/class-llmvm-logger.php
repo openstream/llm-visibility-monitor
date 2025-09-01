@@ -60,7 +60,7 @@ class LLMVM_Logger {
         $log_dir    = $upload_dir['basedir'] . '/llm-visibility-monitor';
         $log_file   = $log_dir . '/llmvm.log';
         
-        // Ensure the log directory exists
+        // Ensure the log directory exists with proper permissions
         if ( ! is_dir( $log_dir ) ) {
             wp_mkdir_p( $log_dir );
         }
@@ -72,20 +72,33 @@ class LLMVM_Logger {
             WP_Filesystem();
         }
         
+        // Ensure filesystem is properly initialized
+        if ( ! $wp_filesystem || ! method_exists( $wp_filesystem, 'put_contents' ) ) {
+            return;
+        }
+        
         // Rotate log file if it's too large (over 1MB)
         if ( $wp_filesystem && $wp_filesystem->exists( $log_file ) && $wp_filesystem->size( $log_file ) > 1024 * 1024 ) {
             $backup_file = $log_dir . '/llmvm-' . gmdate( 'Y-m-d-H-i-s' ) . '.log';
             $wp_filesystem->move( $log_file, $backup_file );
         }
         
+        // Write to log file using WordPress filesystem API
         if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
-            // Append new line directly to avoid reading entire file
-            $wp_filesystem->put_contents( $log_file, $line . PHP_EOL, FILE_APPEND | LOCK_EX );
-            
-            // Ensure proper file permissions (readable by owner and group)
+            // Always use read-then-write method for reliability
+            $existing_content = '';
             if ( $wp_filesystem->exists( $log_file ) ) {
-                $wp_filesystem->chmod( $log_file, 0644 );
+                $existing_content = $wp_filesystem->get_contents( $log_file );
+                if ( ! is_string( $existing_content ) ) {
+                    $existing_content = '';
+                }
             }
+            
+            // Append new line to existing content
+            $new_content = $existing_content . $line . PHP_EOL;
+            
+            // Write the complete content back
+            $wp_filesystem->put_contents( $log_file, $new_content, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
         }
     }
 }
