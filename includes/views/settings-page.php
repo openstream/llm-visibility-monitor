@@ -16,12 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
     </p>
 
     <?php
-    // Check for run completion message with proper sanitization.
-    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is just a display flag, not a form submission.
-    $run_completed = isset( $_GET['llmvm_ran'] ) ? sanitize_text_field( wp_unslash( $_GET['llmvm_ran'] ) ) : '';
+    // Check for run completion message with proper sanitization and nonce verification
+    $run_completed = '';
+    if ( isset( $_GET['llmvm_ran'] ) && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'llmvm_run_completed' ) ) {
+        $run_completed = sanitize_text_field( wp_unslash( $_GET['llmvm_ran'] ) );
+    }
     if ( '1' === $run_completed ) :
     ?>
-        <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ); ?></p></div>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ) ?></p></div>
     <?php endif; ?>
 
     <form action="options.php" method="post">

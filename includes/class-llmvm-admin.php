@@ -296,8 +296,13 @@ class LLMVM_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
-        // Sanitize the ID parameter.
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is a read-only display operation.
+        
+        // Verify nonce for security
+        if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'llmvm_view_result' ) ) {
+            wp_die( esc_html__( 'Security check failed', 'llm-visibility-monitor' ) );
+        }
+        
+        // Sanitize the ID parameter
         $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
         $row = $id ? LLMVM_Database::get_result_by_id( $id ) : null;
         // Ensure $row is always an array or null for the view.
@@ -410,7 +415,7 @@ class LLMVM_Admin {
         }
         
         // Sanitize the result ID input.
-        $id = isset( $_GET['id'] ) ? (int) $_GET['id'] : 0;
+        $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
         
         if ( $id > 0 ) {
             // Delete the result from the database.

@@ -135,7 +135,7 @@ class LLMVM_Cron {
         }
         LLMVM_Logger::log( 'Run Now triggered by admin' );
         $this->run();
-        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ) ?: '' );
+        wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );
         exit;
     }
 
