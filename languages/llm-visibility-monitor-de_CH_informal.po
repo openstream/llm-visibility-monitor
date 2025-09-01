@@ -189,4 +189,26 @@ msgstr "E-Mail-Berichte nach jedem Cron-Lauf an den Administrator senden"
 msgid "Reports will be sent to the WordPress admin email address with a summary of the latest results."
 msgstr "Berichte werden an die WordPress-Administrator-E-Mail-Adresse mit einer Zusammenfassung der neuesten Ergebnisse gesendet."
 
+#: includes/views/dashboard-page.php
+msgid "Bulk Actions"
+msgstr "Massenaktionen"
+
+#: includes/views/dashboard-page.php
+msgid "Apply"
+msgstr "Anwenden"
+
+#: includes/views/dashboard-page.php
+msgid "View"
+msgstr "Anzeigen"
+
+#: includes/views/dashboard-page.php
+msgid "Are you sure you want to delete this result?"
+msgstr "Sind Sie sicher, dass Sie dieses Ergebnis löschen möchten?"
+
+#: includes/views/dashboard-page.php
+msgid "%d result"
+msgid_plural "%d results"
+msgstr[0] "%d Ergebnis"
+msgstr[1] "%d Ergebnisse"
+
 

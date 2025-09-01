@@ -10,6 +10,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LLMVM_Logger {
 
     /**
+     * Track recent log entries to prevent duplicates
+     */
+    private static $recent_logs = [];
+    private static $max_recent_logs = 100;
+
+    /**
      * Write a log line.
      *
      * @param string $message Message to log.
@@ -53,6 +59,34 @@ class LLMVM_Logger {
         // Ensure ctx_str is a string to prevent PHP 8.1 deprecation warnings.
         $ctx_str = is_string( $ctx_str ) ? $ctx_str : '';
         $line      = sprintf( '[LLMVM %s] %s%s', $timestamp, $message, $ctx_str );
+        
+        // Check for duplicate log entries (within last 5 seconds)
+        $log_key = $message . '|' . md5( serialize( $context ) );
+        $current_time = time();
+        
+        // Clean old entries (older than 5 seconds)
+        self::$recent_logs = array_filter( self::$recent_logs, function( $entry ) use ( $current_time ) {
+            return ( $current_time - $entry['time'] ) < 5;
+        } );
+        
+        // Check if this exact log entry was already written recently
+        foreach ( self::$recent_logs as $entry ) {
+            if ( $entry['key'] === $log_key ) {
+                return; // Skip duplicate
+            }
+        }
+        
+        // Add to recent logs
+        self::$recent_logs[] = [
+            'key' => $log_key,
+            'time' => $current_time,
+        ];
+        
+        // Limit array size
+        if ( count( self::$recent_logs ) > self::$max_recent_logs ) {
+            self::$recent_logs = array_slice( self::$recent_logs, -self::$max_recent_logs );
+        }
+        
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for plugin functionality.
         error_log( $line );
 
@@ -85,20 +119,17 @@ class LLMVM_Logger {
         
         // Write to log file using WordPress filesystem API
         if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
-            // Always use read-then-write method for reliability
-            $existing_content = '';
-            if ( $wp_filesystem->exists( $log_file ) ) {
-                $existing_content = $wp_filesystem->get_contents( $log_file );
-                if ( ! is_string( $existing_content ) ) {
-                    $existing_content = '';
+            // Use a simple append approach with error suppression
+            $result = @file_put_contents( $log_file, $line . PHP_EOL, LOCK_EX | FILE_APPEND );
+            if ( false === $result ) {
+                // Fallback to WordPress filesystem if direct write fails
+                $existing_content = '';
+                if ( $wp_filesystem->exists( $log_file ) ) {
+                    $existing_content = $wp_filesystem->get_contents( $log_file );
                 }
+                $new_content = $existing_content . $line . PHP_EOL;
+                $wp_filesystem->put_contents( $log_file, $new_content, FS_CHMOD_FILE );
             }
-            
-            // Append new line to existing content
-            $new_content = $existing_content . $line . PHP_EOL;
-            
-            // Write the complete content back
-            $wp_filesystem->put_contents( $log_file, $new_content, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
         }
     }
 }

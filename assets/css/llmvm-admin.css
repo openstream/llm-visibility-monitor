@@ -18,7 +18,141 @@
     white-space: pre-wrap;
 }
 
-/* Dashboard Table Styles */
+/* WordPress-style Table Styles */
+.wp-list-table .column-title {
+    width: 30%;
+}
+
+.wp-list-table .column-model {
+    width: 15%;
+}
+
+.wp-list-table .column-date {
+    width: 15%;
+}
+
+.wp-list-table .column-answer {
+    width: 40%;
+}
+
+/* Row Actions (hover actions) */
+.row-actions {
+    visibility: hidden;
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.row-actions span {
+    padding: 0 4px;
+}
+
+.row-actions span:first-child {
+    padding-left: 0;
+}
+
+.row-actions span:last-child {
+    padding-right: 0;
+}
+
+.row-actions a {
+    color: #666;
+    text-decoration: none;
+}
+
+.row-actions a:hover {
+    color: #0073aa;
+}
+
+.row-actions .delete a {
+    color: #a00;
+}
+
+.row-actions .delete a:hover {
+    color: #dc3232;
+}
+
+/* Show row actions on hover */
+.result-row:hover .row-actions {
+    visibility: visible;
+}
+
+/* Sort indicators */
+.sorting-indicator {
+    color: #0073aa;
+    font-weight: bold;
+}
+
+/* Checkbox column */
+.check-column {
+    width: 2.2em;
+    text-align: center;
+}
+
+/* Bulk actions */
+.bulkactions {
+    margin-right: 10px;
+}
+
+.bulkactions select {
+    margin-right: 5px;
+}
+
+/* Action buttons spacing */
+.tablenav .alignleft.actions {
+    margin-right: 10px;
+}
+
+.tablenav .alignleft.actions .button {
+    margin-right: 5px;
+}
+
+.tablenav .alignleft.actions .button:last-child {
+    margin-right: 0;
+}
+
+/* Primary button styling */
+.tablenav .alignleft.actions .button-primary {
+    margin-left: 5px;
+}
+
+/* Table navigation */
+.tablenav {
+    height: auto;
+    margin: 6px 0 20px !important;
+    vertical-align: middle;
+    overflow: hidden; /* Clearfix for floated children */
+}
+
+/* Ensure proper spacing for our dashboard */
+.wp-admin .tablenav {
+    margin-bottom: 20px !important;
+}
+
+/* Specific spacing for our dashboard table */
+.wp-list-table {
+    margin-top: 20px !important;
+}
+
+/* Ensure notice doesn't interfere with spacing */
+.notice {
+    margin: 20px 0 !important;
+}
+
+.tablenav-pages {
+    float: right;
+    height: auto;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.displaying-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+}
+
+/* Legacy dashboard table styles (for backward compatibility) */
 .llmvm-dashboard-table {
     width: 100%;
     border-collapse: collapse;

@@ -25,6 +25,7 @@ class LLMVM_Admin {
         
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
+        add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete_results' ] );
         
 
     }
@@ -127,6 +128,8 @@ class LLMVM_Admin {
                     LLMVM_Logger::log( 'API key save failed round-trip check' );
                 } else {
                     set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'API key saved securely.', 'llm-visibility-monitor' ) ], 60 );
+                    // Clear cached models when API key is updated
+                    delete_transient( 'llmvm_openrouter_models' );
                 }
                 $new['api_key'] = $encrypted;
             }
@@ -200,6 +203,12 @@ class LLMVM_Admin {
 
     /** Render model field */
     public function field_model(): void {
+        // Only render on settings page
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- GET parameter is safe for page detection.
+        if ( ! isset( $_GET['page'] ) || 'llmvm-settings' !== sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+            return;
+        }
+        
         $options = get_option( 'llmvm_options', [] );
         // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
         if ( ! is_array( $options ) ) {
@@ -281,7 +290,32 @@ class LLMVM_Admin {
             return;
         }
 
-        $results = LLMVM_Database::get_latest_results( 50 );
+        // Verify nonce for form submissions
+        if ( isset( $_POST['action'] ) && 'llmvm_bulk_delete' === $_POST['action'] ) {
+            if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'llmvm_bulk_delete_results' ) ) {
+                wp_die( esc_html__( 'Security check failed', 'llm-visibility-monitor' ) );
+            }
+        }
+
+        // Get sorting parameters
+        $orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+        $order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+        
+        // Validate orderby parameter
+        $allowed_columns = [ 'id', 'created_at', 'prompt', 'model' ];
+        if ( ! in_array( $orderby, $allowed_columns, true ) ) {
+            $orderby = 'created_at';
+        }
+        
+        // Validate order parameter
+        $order = strtoupper( $order );
+        if ( ! in_array( $order, [ 'ASC', 'DESC' ], true ) ) {
+            $order = 'DESC';
+        }
+
+        $results = LLMVM_Database::get_latest_results( 50, $orderby, $order );
+        $total_results = LLMVM_Database::get_total_results();
+        
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
         }
@@ -419,10 +453,7 @@ class LLMVM_Admin {
         
         if ( $id > 0 ) {
             // Delete the result from the database.
-            global $wpdb;
-            $table_name = $wpdb->prefix . 'llm_visibility_results';
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-            $deleted = $wpdb->delete( $table_name, [ 'id' => $id ], [ '%d' ] );
+            $deleted = LLMVM_Database::delete_results_by_ids( [ $id ] );
             
             if ( $deleted ) {
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Result deleted successfully.', 'llm-visibility-monitor' ) ], 60 );
@@ -432,7 +463,59 @@ class LLMVM_Admin {
             }
         }
         
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
+        // Always redirect to a clean dashboard URL to prevent accidental Run Now triggers
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
+        exit;
+    }
+
+    /** Handle Bulk Delete Results */
+    public function handle_bulk_delete_results(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_bulk_delete_results' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+        
+        // Check bulk action
+        $bulk_action = isset( $_POST['bulk_action'] ) ? sanitize_text_field( wp_unslash( $_POST['bulk_action'] ) ) : '';
+        if ( 'delete' !== $bulk_action ) {
+            wp_safe_redirect( wp_get_referer() ?: admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
+            exit;
+        }
+        
+        // Sanitize the result IDs input.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Input is properly sanitized below.
+        $ids = isset( $_POST['result_ids'] ) ? (array) wp_unslash( $_POST['result_ids'] ) : [];
+        $ids = array_map( 'sanitize_text_field', $ids );
+        $ids = array_map( 'intval', $ids );
+        $ids = array_filter( $ids );
+        
+        // Log the received data for debugging
+        LLMVM_Logger::log( 'Bulk delete attempt', [ 'bulk_action' => $bulk_action, 'ids_count' => count( $ids ), 'ids' => $ids ] );
+        
+        if ( ! empty( $ids ) ) {
+            // Delete the results from the database.
+            $deleted = LLMVM_Database::delete_results_by_ids( $ids );
+            
+            if ( $deleted ) {
+                /* translators: %d: number of results deleted */
+                set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => sprintf( __( '%d results deleted successfully.', 'llm-visibility-monitor' ), $deleted ) ], 60 );
+                LLMVM_Logger::log( 'Results bulk deleted by admin', [ 'count' => $deleted, 'ids' => $ids ] );
+            } else {
+                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'Failed to delete results.', 'llm-visibility-monitor' ) ], 60 );
+                LLMVM_Logger::log( 'Bulk delete failed', [ 'ids' => $ids ] );
+            }
+        } else {
+            set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'No results selected for deletion.', 'llm-visibility-monitor' ) ], 60 );
+            LLMVM_Logger::log( 'Bulk delete: no IDs provided' );
+        }
+        
+        // Always redirect to a clean dashboard URL to prevent accidental Run Now triggers
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
         exit;
     }
 
@@ -472,6 +555,12 @@ class LLMVM_Admin {
                 [ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'Llama 3.1 8B Instruct' ],
                 [ 'id' => 'meta-llama/llama-3.1-70b-instruct', 'name' => 'Llama 3.1 70B Instruct' ],
             ];
+        }
+
+        // Check for cached models first
+        $cached_models = get_transient( 'llmvm_openrouter_models' );
+        if ( false !== $cached_models && is_array( $cached_models ) ) {
+            return $cached_models;
         }
 
         LLMVM_Logger::log( 'Fetching OpenRouter models', [ 'key_length' => strlen( $decrypted_key ) ] );
@@ -551,6 +640,9 @@ class LLMVM_Admin {
 
         // Always include stub model at the top.
         array_unshift( $models, [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ] );
+
+        // Cache the models for 1 hour to reduce API calls
+        set_transient( 'llmvm_openrouter_models', $models, HOUR_IN_SECONDS );
 
         return $models;
     }

@@ -4,7 +4,7 @@ Tags: llm, monitoring, openrouter, ai, automation
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,7 +85,16 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 
 == Changelog ==
 
-= 0.2.0 =
+= 0.3.0 =
+* **Fixed cron scheduling issues**: Cron jobs now run at proper intervals (9:00 AM daily/weekly) instead of every minute
+* **Improved logging**: Eliminated duplicate log entries and excessive logging with deduplication logic
+* **Added OpenRouter models caching**: 1-hour cache to reduce API calls and improve settings page performance
+* **Enhanced bulk operations**: Fixed bulk delete functionality and resolved UI conflicts
+* **Improved dashboard UI**: Better spacing, mobile responsiveness, and user experience
+* **WordPress coding standards compliance**: Updated file operations, nonce handling, and translation loading
+* **Performance optimizations**: Reduced unnecessary API calls and improved overall efficiency
+
+= 0.2.0 (2025-08-27) =
 * Enhanced model selection with dropdown interface
 * Improved dashboard layout with action buttons
 * Better API key handling and error recovery
@@ -94,7 +103,7 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 * WordPress coding standards compliance
 * PHP 8.1 compatibility fixes
 
-= 0.1.0 =
+= 0.1.0 (2025-08-27) =
 * Initial release
 * Basic OpenRouter integration
 * Scheduled monitoring functionality
@@ -102,6 +111,9 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 * Admin interface
 
 == Upgrade Notice ==
+
+= 0.3.0 =
+This version fixes critical cron scheduling issues and significantly improves performance. Cron jobs now run at proper intervals instead of every minute, and logging has been optimized to eliminate duplicate entries. The settings page is now much faster due to OpenRouter models caching.
 
 = 0.2.0 =
 This version includes significant improvements to the model selection interface and better error handling. The dashboard has been redesigned for improved usability.

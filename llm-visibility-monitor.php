@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.2.0' );
+define( 'LLMVM_VERSION', '0.3.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 // Define plugin paths safely.
@@ -112,6 +112,21 @@ register_deactivation_hook( __FILE__, 'llmvm_deactivate' );
  * Initialize plugin.
  */
 function llmvm_init() {
+    static $initialized = false;
+    
+    // Prevent multiple initializations
+    if ( $initialized ) {
+        return;
+    }
+    $initialized = true;
+    
+    // Load text domain for translations (only for non-WordPress.org installations)
+    // WordPress.org automatically loads translations, so this is only needed for external installations
+    if ( ! defined( 'WP_PLUGIN_DIR' ) || strpos( plugin_dir_path( __FILE__ ), WP_PLUGIN_DIR ) === false ) {
+        // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Only loaded for non-WordPress.org installations.
+        load_plugin_textdomain( 'llm-visibility-monitor', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+    }
+    
     // Define paths first.
     llmvm_define_paths();
     
@@ -136,7 +151,17 @@ function llmvm_init() {
     }
 
     if ( class_exists( 'LLMVM_Cron' ) ) {
-        ( new LLMVM_Cron() )->hooks();
+        $cron = new LLMVM_Cron();
+        
+        // Set up cron hooks
+        $cron->hooks();
+        
+        // Schedule cron if not already scheduled
+        $options = get_option( 'llmvm_options', [] );
+        $frequency = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
+        $cron->reschedule( $frequency );
+        
+        LLMVM_Logger::log( 'Plugin initialized', [ 'frequency' => $frequency ] );
     }
     
     if ( class_exists( 'LLMVM_Email_Reporter' ) ) {
