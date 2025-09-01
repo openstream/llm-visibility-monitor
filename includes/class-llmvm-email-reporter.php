@@ -123,9 +123,9 @@ class LLMVM_Email_Reporter {
     <div class="content">
         <div class="summary">
             <h2>Summary</h2>
-            <p><strong>Total Results:</strong> ' . $total_results . '</p>
-            <p><strong>Successful Responses:</strong> <span class="success">' . $success_count . '</span></p>
-            <p><strong>Errors:</strong> <span class="error">' . $error_count . '</span></p>
+            <p><strong>Total Results:</strong> ' . esc_html( (string) $total_results ) . '</p>
+            <p><strong>Successful Responses:</strong> <span class="success">' . esc_html( (string) $success_count ) . '</span></p>
+            <p><strong>Errors:</strong> <span class="error">' . esc_html( (string) $error_count ) . '</span></p>
         </div>';
 
         if ( ! empty( $results ) ) {
@@ -154,7 +154,7 @@ class LLMVM_Email_Reporter {
                 $row_class = ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false ) ? 'error' : 'success';
 
                 $html .= '
-                <tr class="' . $row_class . '">
+                <tr class="' . esc_attr( $row_class ) . '">
                     <td>' . esc_html( $date ) . '</td>
                     <td class="prompt-cell">' . esc_html( $prompt ) . '</td>
                     <td class="model-cell">' . esc_html( $model ) . '</td>

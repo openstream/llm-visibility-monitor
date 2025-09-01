@@ -42,17 +42,29 @@ class LLMVM_Exporter {
         $csv_content .= "Date,Prompt,Model,Answer\n";
         
         foreach ( $results as $row ) {
+            // Properly escape CSV values using WordPress functions where appropriate
+            $created_at = wp_strip_all_tags( (string) ( $row['created_at'] ?? '' ) );
+            $prompt = wp_strip_all_tags( (string) ( $row['prompt'] ?? '' ) );
+            $model = wp_strip_all_tags( (string) ( $row['model'] ?? '' ) );
+            $answer = wp_strip_all_tags( (string) ( $row['answer'] ?? '' ) );
+            
+            // Escape double quotes for CSV format (CSV standard)
+            $created_at = str_replace( '"', '""', $created_at );
+            $prompt = str_replace( '"', '""', $prompt );
+            $model = str_replace( '"', '""', $model );
+            $answer = str_replace( '"', '""', $answer );
+            
             $csv_content .= sprintf(
                 '"%s","%s","%s","%s"' . "\n",
-                str_replace( '"', '""', (string) ( $row['created_at'] ?? '' ) ?: '' ),
-                str_replace( '"', '""', (string) ( $row['prompt'] ?? '' ) ?: '' ),
-                str_replace( '"', '""', (string) ( $row['model'] ?? '' ) ?: '' ),
-                str_replace( '"', '""', (string) ( $row['answer'] ?? '' ) ?: '' )
+                $created_at,
+                $prompt,
+                $model,
+                $answer
             );
         }
 
-        // Output CSV content.
-        echo $csv_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        // Output CSV content - this is raw CSV data, not HTML
+        echo $csv_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSV export, not HTML
         exit;
     }
 }
