@@ -106,21 +106,7 @@ function llmvm_deactivate() {
 }
 register_deactivation_hook( __FILE__, 'llmvm_deactivate' );
 
-/**
- * Load plugin translations (only for WordPress versions < 4.6).
- */
-function llmvm_load_textdomain() {
-    // WordPress 4.6+ automatically loads plugin translations
-    if ( version_compare( get_bloginfo( 'version' ), '4.6', '<' ) ) {
-        $plugin_dir = dirname( plugin_basename( __FILE__ ) ) ?: '';
-        if ( ! empty( $plugin_dir ) && is_string( $plugin_dir ) && '' !== $plugin_dir ) {
-            $languages_path = $plugin_dir . '/languages';
-            if ( is_string( $languages_path ) && ! empty( $languages_path ) ) {
-                load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
-            }
-        }
-    }
-}
+
 
 /**
  * Initialize plugin.
@@ -159,7 +145,6 @@ function llmvm_init() {
 }
 add_action( 'plugins_loaded', 'llmvm_init' );
 
-// Hook translations loading to init (for older WordPress versions)
-add_action( 'init', 'llmvm_load_textdomain' );
+
 
 
