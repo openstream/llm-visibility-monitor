@@ -1,6 +1,6 @@
 <?php
 /**
- * Simple plugin logger writing to error_log and a plugin file.
+ * Simple plugin logger writing to error_log and uploads directory.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -59,11 +59,25 @@ class LLMVM_Logger {
         $upload_dir = wp_upload_dir();
         $log_dir    = $upload_dir['basedir'] . '/llm-visibility-monitor';
         $log_file   = $log_dir . '/llmvm.log';
+        
+        // Ensure the log directory exists
         if ( ! is_dir( $log_dir ) ) {
             wp_mkdir_p( $log_dir );
         }
-        // phpcs:ignore WordPress.WP.AlternativeFunctions
-        file_put_contents( $log_file, $line . PHP_EOL, FILE_APPEND | LOCK_EX );
+        
+        // Use WordPress filesystem API for file operations
+        global $wp_filesystem;
+        if ( empty( $wp_filesystem ) ) {
+            require_once ABSPATH . '/wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+        
+        if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
+            // Read existing content and append new line
+            $existing_content = $wp_filesystem->get_contents( $log_file );
+            $new_content = $existing_content . $line . PHP_EOL;
+            $wp_filesystem->put_contents( $log_file, $new_content );
+        }
     }
 }
 
