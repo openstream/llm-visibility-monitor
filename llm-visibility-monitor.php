@@ -107,6 +107,22 @@ function llmvm_deactivate() {
 register_deactivation_hook( __FILE__, 'llmvm_deactivate' );
 
 /**
+ * Load plugin translations (only for WordPress versions < 4.6).
+ */
+function llmvm_load_textdomain() {
+    // WordPress 4.6+ automatically loads plugin translations
+    if ( version_compare( get_bloginfo( 'version' ), '4.6', '<' ) ) {
+        $plugin_dir = dirname( plugin_basename( __FILE__ ) ) ?: '';
+        if ( ! empty( $plugin_dir ) && is_string( $plugin_dir ) && '' !== $plugin_dir ) {
+            $languages_path = $plugin_dir . '/languages';
+            if ( is_string( $languages_path ) && ! empty( $languages_path ) ) {
+                load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
+            }
+        }
+    }
+}
+
+/**
  * Initialize plugin.
  */
 function llmvm_init() {
@@ -119,28 +135,13 @@ function llmvm_init() {
     
     llmvm_load_includes();
     
-    // Load translations first to ensure text domain is available.
-    $plugin_dir = dirname( plugin_basename( __FILE__ ) ) ?: '';
-    if ( ! empty( $plugin_dir ) && is_string( $plugin_dir ) && '' !== $plugin_dir ) {
-        $languages_path = $plugin_dir . '/languages';
-        if ( is_string( $languages_path ) && ! empty( $languages_path ) ) {
-            // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Custom translations included with plugin.
-            load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
-        }
-    }
-    
     // Ensure database is ready (safe to call on every load; guarded internally).
     if ( class_exists( 'LLMVM_Database' ) ) {
         LLMVM_Database::maybe_upgrade();
     }
 
-    // Test: Enable just the Admin class to confirm it's the culprit.
+    // Initialize admin classes
     if ( is_admin() && class_exists( 'LLMVM_Admin' ) ) {
-        // Ensure text domain is loaded before instantiating Admin class.
-        if ( ! is_textdomain_loaded( 'llm-visibility-monitor' ) ) {
-            // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Custom translations included with plugin.
-            load_plugin_textdomain( 'llm-visibility-monitor', false, $languages_path );
-        }
         ( new LLMVM_Admin() )->hooks();
     }
     
@@ -157,5 +158,8 @@ function llmvm_init() {
     }
 }
 add_action( 'plugins_loaded', 'llmvm_init' );
+
+// Hook translations loading to init (for older WordPress versions)
+add_action( 'init', 'llmvm_load_textdomain' );
 
 
