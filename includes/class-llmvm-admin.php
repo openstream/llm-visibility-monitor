@@ -474,7 +474,7 @@ class LLMVM_Admin {
             ];
         }
 
-        LLMVM_Logger::log( 'Fetching OpenRouter models with decrypted key length=' . strlen( $decrypted_key ) );
+        LLMVM_Logger::log( 'Fetching OpenRouter models', [ 'key_length' => strlen( $decrypted_key ) ] );
         
         $response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [
             'headers' => [
@@ -486,7 +486,7 @@ class LLMVM_Admin {
         ] );
 
         if ( is_wp_error( $response ) ) {
-            LLMVM_Logger::log( 'Failed to fetch OpenRouter models error=' . $response->get_error_message() );
+            LLMVM_Logger::log( 'Failed to fetch OpenRouter models', [ 'error' => $response->get_error_message() ] );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
                 [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
@@ -505,7 +505,7 @@ class LLMVM_Admin {
         $data = json_decode( $body, true );
 
         if ( $status_code !== 200 ) {
-            LLMVM_Logger::log( 'OpenRouter models API returned status=' . $status_code . ' body=' . substr( $body ?: '', 0, 200 ) );
+            LLMVM_Logger::log( 'OpenRouter models API error', [ 'status' => $status_code ] );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
                 [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],
@@ -520,7 +520,7 @@ class LLMVM_Admin {
         }
 
         if ( ! is_array( $data ) || ! isset( $data['data'] ) ) {
-            LLMVM_Logger::log( 'Invalid response from OpenRouter models API body=' . substr( $body ?: '', 0, 200 ) );
+            LLMVM_Logger::log( 'Invalid response from OpenRouter models API' );
             return [
                 [ 'id' => 'openrouter/stub-model-v1', 'name' => 'Stub Model (for testing)' ],
                 [ 'id' => 'openai/gpt-4o-mini', 'name' => 'GPT-4o Mini' ],

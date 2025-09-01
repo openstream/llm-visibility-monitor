@@ -75,7 +75,7 @@ class LLMVM_Cron {
             $prompts = [];
         }
 
-        LLMVM_Logger::log( 'Run start prompts=' . count( $prompts ) . ' model=' . $model );
+        LLMVM_Logger::log( 'Run start', [ 'prompts' => count( $prompts ), 'model' => $model ] );
 
 
 
@@ -92,7 +92,7 @@ class LLMVM_Cron {
                 update_option( 'llmvm_options', $options );
                 LLMVM_Logger::log( 'Cleared corrupted API key from options' );
             }
-            LLMVM_Logger::log( 'Run abort: missing API key for real model reason=' . $reason );
+            LLMVM_Logger::log( 'Run abort: missing API key for real model', [ 'reason' => $reason ] );
             return;
         }
 
@@ -103,7 +103,7 @@ class LLMVM_Cron {
                 continue;
             }
 
-            LLMVM_Logger::log( 'Sending prompt model=' . $model );
+            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $model ] );
             $response   = $client->query( $api_key, $prompt_text, $model );
             $resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
             $answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
@@ -112,7 +112,7 @@ class LLMVM_Cron {
 
             LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer );
             if ( $status && $status >= 400 ) {
-                LLMVM_Logger::log( 'OpenRouter error stored status=' . $status . ' error=' . $error );
+                LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
             }
         }
         LLMVM_Logger::log( 'Run completed' );

@@ -21,7 +21,7 @@ class LLMVM_Email_Reporter {
      * Send email report after a cron run completes.
      */
     public function send_report_after_run(): void {
-        LLMVM_Logger::log( 'Email reporter: send_report_after_run called' );
+        // Email reporter started
         
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
@@ -30,24 +30,24 @@ class LLMVM_Email_Reporter {
 
         // Check if email reporting is enabled
         if ( empty( $options['email_reports'] ) ) {
-            LLMVM_Logger::log( 'Email reporter: email reports disabled in settings' );
+            LLMVM_Logger::log( 'Email report: disabled in settings' );
             return;
         }
         
-        LLMVM_Logger::log( 'Email reporter: email reports enabled, proceeding' );
+        // Email reports enabled
 
         // Get the latest results from this run
         $latest_results = LLMVM_Database::get_latest_results( 10 );
-        LLMVM_Logger::log( 'Email reporter: fetched latest results count=' . count( $latest_results ) );
+        LLMVM_Logger::log( 'Email report: fetched results', [ 'count' => count( $latest_results ) ] );
         
         if ( empty( $latest_results ) ) {
-            LLMVM_Logger::log( 'Email reporter: no results found, skipping email' );
+            LLMVM_Logger::log( 'Email report: no results found, skipping' );
             return;
         }
 
         // Get admin email
         $admin_email = get_option( 'admin_email' );
-        LLMVM_Logger::log( 'Email reporter: admin email=' . $admin_email );
+        LLMVM_Logger::log( 'Email report: admin email', [ 'email' => $admin_email ] );
         
         if ( empty( $admin_email ) ) {
             LLMVM_Logger::log( 'Email report failed: no admin email configured' );
@@ -60,14 +60,14 @@ class LLMVM_Email_Reporter {
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-        LLMVM_Logger::log( 'Email reporter: attempting to send email to=' . $admin_email . ' subject=' . $subject );
+        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $admin_email ] );
         
         $sent = wp_mail( $admin_email, $subject, $message, $headers );
 
         if ( $sent ) {
-            LLMVM_Logger::log( 'Email report sent successfully to admin email=' . $admin_email );
+            LLMVM_Logger::log( 'Email report: sent successfully', [ 'to' => $admin_email ] );
         } else {
-            LLMVM_Logger::log( 'Email report failed to send to admin email=' . $admin_email );
+            LLMVM_Logger::log( 'Email report: failed to send', [ 'to' => $admin_email ] );
         }
     }
 

@@ -65,6 +65,12 @@ class LLMVM_Logger {
             wp_mkdir_p( $log_dir );
         }
         
+        // Rotate log file if it's too large (over 1MB)
+        if ( file_exists( $log_file ) && filesize( $log_file ) > 1024 * 1024 ) {
+            $backup_file = $log_dir . '/llmvm-' . date( 'Y-m-d-H-i-s' ) . '.log';
+            rename( $log_file, $backup_file );
+        }
+        
         // Use WordPress filesystem API for file operations
         global $wp_filesystem;
         if ( empty( $wp_filesystem ) ) {
@@ -73,10 +79,13 @@ class LLMVM_Logger {
         }
         
         if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
-            // Read existing content and append new line
-            $existing_content = $wp_filesystem->get_contents( $log_file );
-            $new_content = $existing_content . $line . PHP_EOL;
-            $wp_filesystem->put_contents( $log_file, $new_content );
+            // Append new line directly to avoid reading entire file
+            $wp_filesystem->put_contents( $log_file, $line . PHP_EOL, FILE_APPEND | LOCK_EX );
+            
+            // Ensure proper file permissions (readable by owner and group)
+            if ( file_exists( $log_file ) ) {
+                chmod( $log_file, 0644 );
+            }
         }
     }
 }
