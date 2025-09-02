@@ -36,6 +36,76 @@ class LLMVM_Database {
 
         self::create_table();
         update_option( 'llmvm_db_version', self::DB_VERSION );
+        
+        // Migrate existing prompts to include model field
+        self::migrate_prompts();
+        
+        // Clean up duplicate prompts
+        self::cleanup_duplicate_prompts();
+    }
+    
+    /**
+     * Migrate existing prompts to include model field.
+     */
+    private static function migrate_prompts(): void {
+        $prompts = get_option( 'llmvm_prompts', [] );
+        if ( ! is_array( $prompts ) ) {
+            return;
+        }
+        
+        $options = get_option( 'llmvm_options', [] );
+        $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+        
+        $migrated = false;
+        foreach ( $prompts as &$prompt ) {
+            if ( ! isset( $prompt['model'] ) ) {
+                $prompt['model'] = $default_model;
+                $migrated = true;
+            }
+        }
+        unset( $prompt );
+        
+        if ( $migrated ) {
+            update_option( 'llmvm_prompts', $prompts, false );
+        }
+    }
+    
+    /**
+     * Clean up duplicate prompts based on text content.
+     */
+    private static function cleanup_duplicate_prompts(): void {
+        $prompts = get_option( 'llmvm_prompts', [] );
+        if ( ! is_array( $prompts ) ) {
+            return;
+        }
+        
+        $seen_texts = [];
+        $unique_prompts = [];
+        $cleaned = false;
+        
+        foreach ( $prompts as $prompt ) {
+            if ( ! isset( $prompt['text'] ) ) {
+                continue;
+            }
+            
+            $text = trim( $prompt['text'] );
+            if ( '' === $text ) {
+                continue;
+            }
+            
+            // If we've seen this text before, skip it (keep the first occurrence)
+            if ( in_array( $text, $seen_texts, true ) ) {
+                $cleaned = true;
+                continue;
+            }
+            
+            $seen_texts[] = $text;
+            $unique_prompts[] = $prompt;
+        }
+        
+        if ( $cleaned ) {
+            update_option( 'llmvm_prompts', $unique_prompts, false );
+        }
     }
 
     /**
@@ -201,6 +271,7 @@ class LLMVM_Database {
         }
         return $row;
     }
+    
 }
 
 

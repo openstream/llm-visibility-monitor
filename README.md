@@ -106,6 +106,13 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
+### 0.4.0 (2025-09-02)
+- **New Feature**: Per-prompt model selection - each prompt can now use a different AI model
+- **Enhanced Flexibility**: Choose specific models for different types of prompts
+- **Improved UI**: Model selection dropdowns in prompt management interface
+- **Backward Compatibility**: Existing prompts automatically use the default model
+- **Performance**: Individual model validation and API key checking per prompt
+
 ### 0.3.0 (2025-09-01)
 - **Fixed cron scheduling issues**: Cron jobs now run at proper intervals (9:00 AM daily/weekly) instead of every minute
 - **Improved logging**: Eliminated duplicate log entries and excessive logging with deduplication logic

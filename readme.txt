@@ -4,7 +4,7 @@ Tags: llm, monitoring, openrouter, ai, automation
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,13 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 
 == Changelog ==
 
+= 0.4.0 (2025-09-02) =
+* **New Feature**: Per-prompt model selection - each prompt can now use a different AI model
+* **Enhanced Flexibility**: Choose specific models for different types of prompts
+* **Improved UI**: Model selection dropdowns in prompt management interface
+* **Backward Compatibility**: Existing prompts automatically use the default model
+* **Performance**: Individual model validation and API key checking per prompt
+
 = 0.3.0 =
 * **Fixed cron scheduling issues**: Cron jobs now run at proper intervals (9:00 AM daily/weekly) instead of every minute
 * **Improved logging**: Eliminated duplicate log entries and excessive logging with deduplication logic
@@ -111,6 +118,9 @@ Yes, the API key is encrypted using WordPress's built-in encryption functions an
 * Admin interface
 
 == Upgrade Notice ==
+
+= 0.4.0 (2025-09-02) =
+This version introduces per-prompt model selection, allowing you to choose different AI models for different types of prompts. Existing prompts will automatically use your default model, and you can customize the model for each prompt individually.
 
 = 0.3.0 =
 This version fixes critical cron scheduling issues and significantly improves performance. Cron jobs now run at proper intervals instead of every minute, and logging has been optimized to eliminate duplicate entries. The settings page is now much faster due to OpenRouter models caching.

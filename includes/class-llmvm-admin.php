@@ -35,8 +35,8 @@ class LLMVM_Admin {
      */
     public function register_menus(): void {
         // Ensure all parameters are properly typed to prevent PHP 8.1 deprecation warnings
-        $page_title = 'LLM Visibility Monitor';
-        $menu_title = 'LLM Visibility Monitor';
+        $page_title = __( 'LLM Visibility Monitor', 'llm-visibility-monitor' );
+        $menu_title = __( 'LLM Visibility Monitor', 'llm-visibility-monitor' );
         $capability = 'manage_options';
         $menu_slug = 'llmvm-settings';
         $callback = [ $this, 'render_settings_page' ];
@@ -49,7 +49,7 @@ class LLMVM_Admin {
             $callback
         );
 
-        $dashboard_title = 'LLM Visibility Dashboard';
+        $dashboard_title = __( 'LLM Visibility Dashboard', 'llm-visibility-monitor' );
         $dashboard_slug = 'llmvm-dashboard';
         $dashboard_callback = [ $this, 'render_dashboard_page' ];
 
@@ -61,7 +61,7 @@ class LLMVM_Admin {
             $dashboard_callback
         );
 
-        $result_title = 'LLM Visibility Result';
+        $result_title = __( 'LLM Visibility Result', 'llm-visibility-monitor' );
         $result_slug = 'llmvm-result';
         // Use a proper parent slug instead of null to prevent PHP 8.1 deprecation warnings
         // This creates a hidden submenu page that can be accessed directly via URL
@@ -359,6 +359,9 @@ class LLMVM_Admin {
         // Sanitize the prompt text input.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $model = isset( $_POST['prompt_model'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_model'] ) ) : '';
+        
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
@@ -366,8 +369,36 @@ class LLMVM_Admin {
             if ( false === $prompts ) {
                 $prompts = [];
             }
-            $prompts[] = [ 'id' => uniqid( 'p_', true ), 'text' => $text ];
-            update_option( 'llmvm_prompts', $prompts, false );
+            
+            // Check for duplicate prompts (same text and model)
+            $is_duplicate = false;
+            foreach ( $prompts as $existing_prompt ) {
+                if ( isset( $existing_prompt['text'] ) && 
+                     trim( $existing_prompt['text'] ) === trim( $text ) &&
+                     isset( $existing_prompt['model'] ) && 
+                     $existing_prompt['model'] === $model ) {
+                    $is_duplicate = true;
+                    break;
+                }
+            }
+            
+            if ( ! $is_duplicate ) {
+                // Use specified model or fall back to default
+                if ( '' === trim( $model ) ) {
+                    $options = get_option( 'llmvm_options', [] );
+                    $model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+                }
+                
+                $prompts[] = [ 
+                    'id' => uniqid( 'p_', true ), 
+                    'text' => $text,
+                    'model' => $model
+                ];
+                update_option( 'llmvm_prompts', $prompts, false );
+                set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt added successfully.', 'llm-visibility-monitor' ) ], 60 );
+            } else {
+                set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same model already exists.', 'llm-visibility-monitor' ) ], 60 );
+            }
         }
 
         wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
@@ -378,11 +409,13 @@ class LLMVM_Admin {
     public function handle_edit_prompt(): void {
         $this->verify_permissions_and_nonce( 'llmvm_edit_prompt' );
 
-        // Sanitize the prompt ID and text inputs.
+        // Sanitize the prompt ID, text, and model inputs.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $id   = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
+        $model = isset( $_POST['prompt_model'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_model'] ) ) : '';
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -390,14 +423,40 @@ class LLMVM_Admin {
         if ( false === $prompts ) {
             $prompts = [];
         }
+        $prompt_updated = false;
         foreach ( $prompts as &$prompt ) {
             if ( isset( $prompt['id'] ) && $prompt['id'] === $id ) {
-                $prompt['text'] = $text;
+                // Check if this would create a duplicate (same text and model as another prompt)
+                $is_duplicate = false;
+                foreach ( $prompts as $other_prompt ) {
+                    if ( $other_prompt['id'] !== $id && 
+                         isset( $other_prompt['text'] ) && 
+                         trim( $other_prompt['text'] ) === trim( $text ) &&
+                         isset( $other_prompt['model'] ) && 
+                         $other_prompt['model'] === $model ) {
+                        $is_duplicate = true;
+                        break;
+                    }
+                }
+                
+                if ( ! $is_duplicate ) {
+                    $prompt['text'] = $text;
+                    if ( '' !== trim( $model ) ) {
+                        $prompt['model'] = $model;
+                    }
+                    $prompt_updated = true;
+                    set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt updated successfully.', 'llm-visibility-monitor' ) ], 60 );
+                } else {
+                    set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same model already exists.', 'llm-visibility-monitor' ) ], 60 );
+                }
                 break;
             }
         }
         unset( $prompt );
-        update_option( 'llmvm_prompts', $prompts, false );
+        
+        if ( $prompt_updated ) {
+            update_option( 'llmvm_prompts', $prompts, false );
+        }
 
         wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
         exit;
@@ -420,6 +479,7 @@ class LLMVM_Admin {
             return isset( $p['id'] ) && $p['id'] !== $id;
         } ) );
         update_option( 'llmvm_prompts', $prompts, false );
+        set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt deleted successfully.', 'llm-visibility-monitor' ) ], 60 );
 
         wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
         exit;

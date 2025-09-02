@@ -139,8 +139,17 @@ class LLMVM_Cron {
                 continue;
             }
 
-            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $model, 'prompt_text' => $prompt_text ] );
-            $response   = $client->query( $api_key, $prompt_text, $model );
+            // Use prompt-specific model or fall back to global default
+            $prompt_model = isset( $prompt_item['model'] ) && '' !== trim( $prompt_item['model'] ) ? (string) $prompt_item['model'] : $model;
+            
+            // Check if we need API key for this specific model
+            if ( 'openrouter/stub-model-v1' !== $prompt_model && empty( $api_key ) ) {
+                LLMVM_Logger::log( 'Skipping prompt: missing API key for model', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text ] );
+                continue;
+            }
+
+            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text ] );
+            $response   = $client->query( $api_key, $prompt_text, $prompt_model );
             $resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
             $answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
             $status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
@@ -218,7 +227,7 @@ class LLMVM_Cron {
             }
         }
         
-        LLMVM_Logger::log( 'API key decryption failed: both methods failed' );
+                    LLMVM_Logger::log( 'API key decryption failed: both methods failed' );
         return '';
     }
 
