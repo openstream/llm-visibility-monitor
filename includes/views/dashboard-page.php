@@ -27,6 +27,32 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
     
     <hr class="wp-header-end">
 
+    <style>
+        .wp-list-table .column-answer {
+            width: 40%;
+            word-wrap: break-word;
+        }
+        .wp-list-table .column-prompt {
+            width: 25%;
+        }
+        .wp-list-table .column-model {
+            width: 15%;
+        }
+        .wp-list-table .column-date {
+            width: 15%;
+        }
+        .wp-list-table .column-user {
+            width: 10%;
+        }
+        .wp-list-table td {
+            vertical-align: top;
+            padding: 8px 10px;
+        }
+        .wp-list-table th {
+            padding: 8px 10px;
+        }
+    </style>
+
     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="llmvm-bulk-actions-form">
         <?php wp_nonce_field( 'llmvm_bulk_delete_results' ); ?>
         <input type="hidden" name="action" value="llmvm_bulk_delete_results" />
@@ -44,7 +70,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                 <a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_export_csv' ), 'llmvm_export_csv' ) ); ?>">
                     <?php echo esc_html__( 'Export CSV', 'llm-visibility-monitor' ); ?>
                 </a>
-                <a class="button" href="<?php echo esc_url( admin_url( 'options-general.php?page=llmvm-settings' ) ); ?>">
+                <a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-prompts' ) ); ?>">
                     <?php echo esc_html__( 'Manage Prompts', 'llm-visibility-monitor' ); ?>
                 </a>
                 <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
@@ -100,6 +126,14 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>
+                <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
+                <th scope="col" class="manage-column column-user sortable <?php echo esc_attr( $current_orderby === 'user_id' ? strtolower( $current_order ) : '' ); ?>">
+                    <a href="<?php echo esc_url( llmvm_get_sort_url( 'user_id', $current_orderby === 'user_id' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
+                        <span><?php echo esc_html__( 'User', 'llm-visibility-monitor' ); ?></span>
+                        <?php echo wp_kses_post( llmvm_get_sort_indicator( 'user_id', $current_orderby, $current_order ) ); ?>
+                    </a>
+                </th>
+                <?php endif; ?>
                 <th scope="col" class="manage-column column-answer">
                     <?php echo esc_html__( 'Answer', 'llm-visibility-monitor' ); ?>
                 </th>
@@ -109,7 +143,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         <tbody id="the-list">
             <?php if ( empty( $results ) ) : ?>
                 <tr>
-                    <td colspan="5"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
+                    <td colspan="<?php echo current_user_can( 'llmvm_manage_settings' ) ? '6' : '5'; ?>"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
                 </tr>
             <?php else : ?>
                 <?php foreach ( $results as $row ) : ?>
@@ -143,6 +177,23 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <td class="date column-date">
                             <?php echo esc_html( (string) ( $row['created_at'] ?? '' ) ); ?>
                         </td>
+                        <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
+                        <td class="user column-user">
+                            <?php 
+                            $user_id = isset( $row['user_id'] ) ? (int) $row['user_id'] : 0;
+                            if ( $user_id > 0 ) {
+                                $user = get_user_by( 'id', $user_id );
+                                if ( $user ) {
+                                    echo esc_html( $user->display_name );
+                                } else {
+                                    echo esc_html( sprintf( __( 'User %d', 'llm-visibility-monitor' ), $user_id ) );
+                                }
+                            } else {
+                                echo esc_html( __( 'Unknown', 'llm-visibility-monitor' ) );
+                            }
+                            ?>
+                        </td>
+                        <?php endif; ?>
                         <td class="answer column-answer">
                             <?php
                             $answer = (string) ( $row['answer'] ?? '' );
@@ -181,6 +232,14 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>
+                <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
+                <th scope="col" class="manage-column column-user sortable <?php echo esc_attr( $current_orderby === 'user_id' ? strtolower( $current_order ) : '' ); ?>">
+                    <a href="<?php echo esc_url( llmvm_get_sort_url( 'user_id', $current_orderby === 'user_id' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
+                        <span><?php echo esc_html__( 'User', 'llm-visibility-monitor' ); ?></span>
+                        <?php echo wp_kses_post( llmvm_get_sort_indicator( 'user_id', $current_orderby, $current_order ) ); ?>
+                    </a>
+                </th>
+                <?php endif; ?>
                 <th scope="col" class="manage-column column-answer">
                     <?php echo esc_html__( 'Answer', 'llm-visibility-monitor' ); ?>
                 </th>

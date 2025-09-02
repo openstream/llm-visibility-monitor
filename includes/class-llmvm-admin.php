@@ -10,9 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LLMVM_Admin {
 
     /**
-     * Register admin hooks.
+     * Constructor.
      */
-    public function hooks(): void {
+    public function __construct() {
         add_action( 'admin_menu', [ $this, 'register_menus' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_notices', [ $this, 'admin_notices' ] );
@@ -25,9 +25,7 @@ class LLMVM_Admin {
         
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
-        add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete_results' ] );
-        
-
+        add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete' ] );
     }
 
     /**
@@ -35,9 +33,11 @@ class LLMVM_Admin {
      */
     public function register_menus(): void {
         // Ensure all parameters are properly typed to prevent PHP 8.1 deprecation warnings
+        
+        // Settings page - only for administrators
         $page_title = __( 'LLM Visibility Monitor', 'llm-visibility-monitor' );
         $menu_title = __( 'LLM Visibility Monitor', 'llm-visibility-monitor' );
-        $capability = 'manage_options';
+        $capability = 'llmvm_manage_settings';
         $menu_slug = 'llmvm-settings';
         $callback = [ $this, 'render_settings_page' ];
 
@@ -49,6 +49,20 @@ class LLMVM_Admin {
             $callback
         );
 
+        // Prompts management page - for users who can manage prompts
+        $prompts_title = __( 'LLM Prompts', 'llm-visibility-monitor' );
+        $prompts_slug = 'llmvm-prompts';
+        $prompts_callback = [ $this, 'render_prompts_page' ];
+
+        add_management_page(
+            $prompts_title,
+            $prompts_title,
+            'llmvm_manage_prompts',
+            $prompts_slug,
+            $prompts_callback
+        );
+
+        // Dashboard page - for users with dashboard access
         $dashboard_title = __( 'LLM Visibility Dashboard', 'llm-visibility-monitor' );
         $dashboard_slug = 'llmvm-dashboard';
         $dashboard_callback = [ $this, 'render_dashboard_page' ];
@@ -56,11 +70,12 @@ class LLMVM_Admin {
         add_management_page(
             $dashboard_title,
             $dashboard_title,
-            $capability,
+            'llmvm_view_dashboard',
             $dashboard_slug,
             $dashboard_callback
         );
 
+        // Result detail page - for users with results access
         $result_title = __( 'LLM Visibility Result', 'llm-visibility-monitor' );
         $result_slug = 'llmvm-result';
         // Use a proper parent slug instead of null to prevent PHP 8.1 deprecation warnings
@@ -71,7 +86,7 @@ class LLMVM_Admin {
             'tools.php', // Use tools.php as parent instead of null
             $result_title,
             $result_title,
-            $capability,
+            'llmvm_view_results',
             $result_slug,
             $result_callback
         );
@@ -158,7 +173,7 @@ class LLMVM_Admin {
 
     /** Display one-time admin notices */
     public function admin_notices(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
             return;
         }
         $notice = get_transient( 'llmvm_notice' );
@@ -263,9 +278,9 @@ class LLMVM_Admin {
         echo '<p class="description">' . esc_html__( 'Reports will be sent to the WordPress admin email address with a summary of the latest results.', 'llm-visibility-monitor' ) . '</p>';
     }
 
-    /** Render settings page */
-    public function render_settings_page(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+    /** Render prompts management page */
+    public function render_prompts_page(): void {
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) ) {
             return;
         }
 
@@ -275,6 +290,44 @@ class LLMVM_Admin {
         if ( false === $prompts ) {
             $prompts = [];
         }
+        
+        // Get current user info for filtering
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
+        // Filter prompts based on user role
+        $user_prompts = [];
+        $all_prompts = [];
+        
+        foreach ( $prompts as $prompt ) {
+            $prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
+            
+            // Always add to user_prompts if it belongs to current user
+            if ( $prompt_user_id === $current_user_id ) {
+                $user_prompts[] = $prompt;
+            }
+            
+            // Add to all_prompts if admin (for viewing all prompts)
+            if ( $is_admin ) {
+                $all_prompts[] = $prompt;
+            }
+        }
+        
+        if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
+            return;
+        }
+        $prompts_file = LLMVM_PLUGIN_DIR . 'includes/views/prompts-page.php';
+        if ( is_file( $prompts_file ) && is_string( $prompts_file ) ) {
+            include $prompts_file;
+        }
+    }
+
+    /** Render settings page */
+    public function render_settings_page(): void {
+        if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+            return;
+        }
+
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
         }
@@ -286,7 +339,7 @@ class LLMVM_Admin {
 
     /** Render dashboard */
     public function render_dashboard_page(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
             return;
         }
 
@@ -297,12 +350,16 @@ class LLMVM_Admin {
             }
         }
 
+        // Get current user ID for filtering
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+
         // Get sorting parameters
         $orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
         $order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
         
         // Validate orderby parameter
-        $allowed_columns = [ 'id', 'created_at', 'prompt', 'model' ];
+        $allowed_columns = [ 'id', 'created_at', 'prompt', 'model', 'user_id' ];
         if ( ! in_array( $orderby, $allowed_columns, true ) ) {
             $orderby = 'created_at';
         }
@@ -313,8 +370,10 @@ class LLMVM_Admin {
             $order = 'DESC';
         }
 
-        $results = LLMVM_Database::get_latest_results( 50, $orderby, $order );
-        $total_results = LLMVM_Database::get_total_results();
+        // Get results filtered by user (unless admin)
+        $user_filter = $is_admin ? 0 : $current_user_id;
+        $results = LLMVM_Database::get_latest_results( 50, $orderby, $order, 0, $user_filter );
+        $total_results = LLMVM_Database::get_total_results( $user_filter );
         
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
@@ -327,7 +386,7 @@ class LLMVM_Admin {
 
     /** Render single result page */
     public function render_result_page(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'llmvm_view_results' ) ) {
             return;
         }
         
@@ -338,7 +397,15 @@ class LLMVM_Admin {
         
         // Sanitize the ID parameter
         $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
-        $row = $id ? LLMVM_Database::get_result_by_id( $id ) : null;
+        
+        // Get current user ID for ownership verification
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
+        // Get result with user filtering (unless admin)
+        $user_filter = $is_admin ? 0 : $current_user_id;
+        $row = $id ? LLMVM_Database::get_result_by_id( $id, $user_filter ) : null;
+        
         // Ensure $row is always an array or null for the view.
         if ( ! is_array( $row ) ) {
             $row = null;
@@ -354,6 +421,10 @@ class LLMVM_Admin {
 
     /** Handle Add Prompt */
     public function handle_add_prompt(): void {
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
         $this->verify_permissions_and_nonce( 'llmvm_add_prompt' );
 
         // Sanitize the prompt text input.
@@ -370,13 +441,18 @@ class LLMVM_Admin {
                 $prompts = [];
             }
             
-            // Check for duplicate prompts (same text and model)
+            // Get current user ID
+            $current_user_id = get_current_user_id();
+            
+            // Check for duplicate prompts (same text, model, and user)
             $is_duplicate = false;
             foreach ( $prompts as $existing_prompt ) {
                 if ( isset( $existing_prompt['text'] ) && 
                      trim( $existing_prompt['text'] ) === trim( $text ) &&
                      isset( $existing_prompt['model'] ) && 
-                     $existing_prompt['model'] === $model ) {
+                     $existing_prompt['model'] === $model &&
+                     isset( $existing_prompt['user_id'] ) && 
+                     $existing_prompt['user_id'] === $current_user_id ) {
                     $is_duplicate = true;
                     break;
                 }
@@ -392,7 +468,8 @@ class LLMVM_Admin {
                 $prompts[] = [ 
                     'id' => uniqid( 'p_', true ), 
                     'text' => $text,
-                    'model' => $model
+                    'model' => $model,
+                    'user_id' => $current_user_id
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt added successfully.', 'llm-visibility-monitor' ) ], 60 );
@@ -401,12 +478,17 @@ class LLMVM_Admin {
             }
         }
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
+        // Redirect back to the prompts page
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
         exit;
     }
 
     /** Handle Edit Prompt */
     public function handle_edit_prompt(): void {
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
         $this->verify_permissions_and_nonce( 'llmvm_edit_prompt' );
 
         // Sanitize the prompt ID, text, and model inputs.
@@ -423,17 +505,28 @@ class LLMVM_Admin {
         if ( false === $prompts ) {
             $prompts = [];
         }
+        
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
         $prompt_updated = false;
         foreach ( $prompts as &$prompt ) {
             if ( isset( $prompt['id'] ) && $prompt['id'] === $id ) {
-                // Check if this would create a duplicate (same text and model as another prompt)
+                // Check if user can edit this prompt (owner or admin)
+                if ( ! $is_admin && ( ! isset( $prompt['user_id'] ) || $prompt['user_id'] !== $current_user_id ) ) {
+                    wp_die( esc_html__( 'You can only edit your own prompts.', 'llm-visibility-monitor' ) );
+                }
+                
+                // Check if this would create a duplicate (same text, model, and user)
                 $is_duplicate = false;
                 foreach ( $prompts as $other_prompt ) {
                     if ( $other_prompt['id'] !== $id && 
                          isset( $other_prompt['text'] ) && 
                          trim( $other_prompt['text'] ) === trim( $text ) &&
                          isset( $other_prompt['model'] ) && 
-                         $other_prompt['model'] === $model ) {
+                         $other_prompt['model'] === $model &&
+                         isset( $other_prompt['user_id'] ) && 
+                         $other_prompt['user_id'] === $current_user_id ) {
                         $is_duplicate = true;
                         break;
                     }
@@ -458,12 +551,17 @@ class LLMVM_Admin {
             update_option( 'llmvm_prompts', $prompts, false );
         }
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
+        // Redirect back to the prompts page
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
         exit;
     }
 
     /** Handle Delete Prompt */
     public function handle_delete_prompt(): void {
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
         $this->verify_permissions_and_nonce( 'llmvm_delete_prompt' );
 
         // Sanitize the prompt ID input.
@@ -475,20 +573,36 @@ class LLMVM_Admin {
         if ( false === $prompts ) {
             $prompts = [];
         }
-        $prompts = array_values( array_filter( $prompts, static function ( $p ) use ( $id ) {
-            return isset( $p['id'] ) && $p['id'] !== $id;
-        } ) );
-        update_option( 'llmvm_prompts', $prompts, false );
-        set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt deleted successfully.', 'llm-visibility-monitor' ) ], 60 );
+        
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
+        // Filter prompts to only allow deletion of user's own prompts (unless admin)
+        $filtered_prompts = [];
+        foreach ( $prompts as $prompt ) {
+            if ( isset( $prompt['id'] ) && $prompt['id'] !== $id ) {
+                $filtered_prompts[] = $prompt;
+            } elseif ( isset( $prompt['id'] ) && $prompt['id'] === $id ) {
+                // Check if user can delete this prompt (owner or admin)
+                if ( $is_admin || ( isset( $prompt['user_id'] ) && $prompt['user_id'] === $current_user_id ) ) {
+                    // Allow deletion, don't add to filtered array
+                    set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt deleted successfully.', 'llm-visibility-monitor' ) ], 60 );
+                } else {
+                    // Don't allow deletion, keep the prompt
+                    $filtered_prompts[] = $prompt;
+                    set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'You can only delete your own prompts.', 'llm-visibility-monitor' ) ], 60 );
+                }
+            }
+        }
+        
+        update_option( 'llmvm_prompts', $filtered_prompts, false );
 
-        wp_safe_redirect( wp_get_referer() ?: admin_url( 'options-general.php?page=llmvm-settings' ) ?: '' );
+        // Redirect back to the prompts page
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
         exit;
     }
 
     private function verify_permissions_and_nonce( string $action ): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
-        }
         // Verify nonce with proper sanitization.
         $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
         if ( ! wp_verify_nonce( $nonce, $action ) ) {
@@ -498,7 +612,7 @@ class LLMVM_Admin {
 
     /** Handle Delete Result */
     public function handle_delete_result(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'llmvm_view_results' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
         
@@ -529,56 +643,39 @@ class LLMVM_Admin {
     }
 
     /** Handle Bulk Delete Results */
-    public function handle_bulk_delete_results(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+    public function handle_bulk_delete(): void {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
-        
-        // Verify nonce with proper sanitization.
-        $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
-        if ( ! wp_verify_nonce( $nonce, 'llmvm_bulk_delete_results' ) ) {
-            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+
+        // Verify nonce
+        if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'llmvm_bulk_delete_results' ) ) {
+            wp_die( esc_html__( 'Security check failed', 'llm-visibility-monitor' ) );
         }
-        
-        // Check bulk action
+
+        // Get bulk action and IDs
         $bulk_action = isset( $_POST['bulk_action'] ) ? sanitize_text_field( wp_unslash( $_POST['bulk_action'] ) ) : '';
-        if ( 'delete' !== $bulk_action ) {
-            wp_safe_redirect( wp_get_referer() ?: admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
-            exit;
-        }
-        
-        // Sanitize the result IDs input.
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Input is properly sanitized below.
-        $ids = isset( $_POST['result_ids'] ) ? (array) wp_unslash( $_POST['result_ids'] ) : [];
-        $ids = array_map( 'sanitize_text_field', $ids );
-        $ids = array_map( 'intval', $ids );
-        $ids = array_filter( $ids );
-        
-        // Log the received data for debugging
-        LLMVM_Logger::log( 'Bulk delete attempt', [ 'bulk_action' => $bulk_action, 'ids_count' => count( $ids ), 'ids' => $ids ] );
-        
-        if ( ! empty( $ids ) ) {
-            // Delete the results from the database.
-            $deleted = LLMVM_Database::delete_results_by_ids( $ids );
+        $result_ids = isset( $_POST['result_ids'] ) ? array_map( 'intval', (array) $_POST['result_ids'] ) : [];
+
+        if ( 'delete' === $bulk_action && ! empty( $result_ids ) ) {
+            $current_user_id = get_current_user_id();
+            $is_admin = current_user_can( 'llmvm_manage_settings' );
             
-            if ( $deleted ) {
-                /* translators: %d: number of results deleted */
+            // Delete results with user filtering (unless admin)
+            $user_filter = $is_admin ? 0 : $current_user_id;
+            $deleted = LLMVM_Database::delete_results_by_ids( $result_ids, $user_filter );
+            
+            if ( $deleted > 0 ) {
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => sprintf( __( '%d results deleted successfully.', 'llm-visibility-monitor' ), $deleted ) ], 60 );
-                LLMVM_Logger::log( 'Results bulk deleted by admin', [ 'count' => $deleted, 'ids' => $ids ] );
             } else {
-                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'Failed to delete results.', 'llm-visibility-monitor' ) ], 60 );
-                LLMVM_Logger::log( 'Bulk delete failed', [ 'ids' => $ids ] );
+                set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'No results were deleted. You can only delete your own results.', 'llm-visibility-monitor' ) ], 60 );
             }
-        } else {
-            set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'No results selected for deletion.', 'llm-visibility-monitor' ) ], 60 );
-            LLMVM_Logger::log( 'Bulk delete: no IDs provided' );
         }
-        
-        // Always redirect to a clean dashboard URL to prevent accidental Run Now triggers
-        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard' ) ?: '' );
+
+        // Redirect back to dashboard
+        wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard' ) );
         exit;
     }
-
 
 
     /**

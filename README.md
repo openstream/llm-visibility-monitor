@@ -106,35 +106,55 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
-### 0.4.0 (2025-09-02)
-- **New Feature**: Per-prompt model selection - each prompt can now use a different AI model
-- **Enhanced Flexibility**: Choose specific models for different types of prompts
-- **Improved UI**: Model selection dropdowns in prompt management interface
-- **Backward Compatibility**: Existing prompts automatically use the default model
-- **Performance**: Individual model validation and API key checking per prompt
+### 0.5.0 - 2025-09-02
+- **New Feature**: Implemented role-based access control
+  - Added "LLM Manager" role with limited admin access
+  - LLM Managers can manage prompts, view dashboard, and view results
+  - LLM Managers cannot access plugin settings
+  - Administrators retain full access to all features
+  - Other user roles have no LLM access
 
-### 0.3.0 (2025-09-01)
-- **Fixed cron scheduling issues**: Cron jobs now run at proper intervals (9:00 AM daily/weekly) instead of every minute
-- **Improved logging**: Eliminated duplicate log entries and excessive logging with deduplication logic
-- **Added OpenRouter models caching**: 1-hour cache to reduce API calls and improve settings page performance
-- **Enhanced bulk operations**: Fixed bulk delete functionality and resolved UI conflicts
-- **Improved dashboard UI**: Better spacing, mobile responsiveness, and user experience
-- **WordPress coding standards compliance**: Updated file operations, nonce handling, and translation loading
-- **Performance optimizations**: Reduced unnecessary API calls and improved overall efficiency
+### 0.4.0 - 2025-09-02
+- **New Feature**: Per-prompt model selection
+  - Users can now specify a different OpenRouter model for each individual prompt
+  - Falls back to global default model if no specific model is selected
+  - Prevents duplicate prompts with the same text and model combination
+  - Added admin notices for successful operations and warnings
 
-### 0.2.0 (2025-08-27)
-- Added email reports feature with HTML formatting
-- Implemented dashboard with sorting and bulk operations
-- Added German translations (de_DE, de_CH)
-- Enhanced security with proper nonce verification
-- Improved error handling and user feedback
+### 0.3.0 - 2025-09-01
+- **Enhancement**: Improved dashboard table functionality
+  - Added column sorting (click column headers to sort)
+  - Implemented bulk delete functionality for results
+  - Added hover actions for better user experience
+  - Fixed cron job scheduling issues
+  - Improved logging and removed debug backtraces
+  - Enhanced email reports with markdown to HTML conversion
+  - Fixed vertical spacing between buttons and table
 
-### 0.1.0 (2025-08-27)
-- Initial release with core LLM monitoring functionality
-- OpenRouter API integration
-- WordPress cron scheduling
-- CSV export capabilities
-- Basic admin interface
+### 0.2.0 - 2025-08-27
+- **New Feature**: Email reporting system
+  - Configurable email notifications for cron job results
+  - HTML-formatted reports with prompt, model, and answer details
+  - Customizable email settings in admin panel
+- **Enhancement**: Improved dashboard layout
+  - Better mobile responsiveness with adjusted column widths
+  - Action links moved to prompt column with hover display
+  - "Details" and "Delete" buttons for each result entry
+- **Enhancement**: Enhanced OpenRouter model selection
+  - Searchable dropdown for model selection
+  - Graceful fallback for API errors
+  - Better error handling and user feedback
+
+### 0.1.0 - 2025-08-27
+- **Initial Release**: Core LLM monitoring functionality
+  - OpenRouter API integration with secure API key storage
+  - Prompt management (CRUD operations)
+  - Scheduled cron jobs (daily/weekly)
+  - Results storage and dashboard
+  - CSV export functionality
+  - Comprehensive logging system
+  - WordPress admin interface
+  - German localization (de_DE, de_CH)
 
 ## License
 

@@ -2,13 +2,13 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.4.0
+ * Version: 0.5.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
- * Author: Openstream Internet Solutions
- * Author URI: https://www.openstream.ch
- * License: GPL-2.0-or-later
+ * Author: OpenStream
+ * Author URI: https://openstream.ch
+ * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: llm-visibility-monitor
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.4.0' );
+define( 'LLMVM_VERSION', '0.5.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 // Define plugin paths safely.
@@ -143,7 +143,7 @@ function llmvm_init() {
 
     // Initialize admin classes
     if ( is_admin() && class_exists( 'LLMVM_Admin' ) ) {
-        ( new LLMVM_Admin() )->hooks();
+        new LLMVM_Admin();
     }
     
     if ( is_admin() && class_exists( 'LLMVM_Exporter' ) ) {

@@ -27,6 +27,33 @@ class LLMVM_OpenRouter_Client {
 
         // Real request to OpenRouter.
         $url  = 'https://openrouter.ai/api/v1/chat/completions';
+        
+        // Debug: Log API key status (without exposing the actual key)
+        LLMVM_Logger::log( 'OpenRouter API request debug', [ 
+            'url' => $url,
+            'api_key_length' => strlen( $api_key ),
+            'api_key_starts_with' => substr( $api_key, 0, 4 ) . '...',
+            'api_key_ends_with' => '...' . substr( $api_key, -4 ),
+            'has_api_key' => ! empty( $api_key )
+        ] );
+        
+        // Test API key with a simple models request first
+        $test_response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'HTTP-Referer'  => home_url(),
+                'X-Title'       => 'LLM Visibility Monitor',
+            ],
+            'timeout' => 10,
+        ] );
+        
+        if ( is_wp_error( $test_response ) ) {
+            LLMVM_Logger::log( 'API key test failed', [ 'error' => $test_response->get_error_message() ] );
+        } else {
+            $test_status = wp_remote_retrieve_response_code( $test_response );
+            LLMVM_Logger::log( 'API key test result', [ 'status' => $test_status ] );
+        }
+        
         $body = [
             'model'    => $model,
             'messages' => [ [ 'role' => 'user', 'content' => $prompt ] ],
@@ -105,6 +132,16 @@ class LLMVM_OpenRouter_Client {
             return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg ];
         }
         $answer = $json['choices'][0]['message']['content'] ?? '';
+        
+        // Debug: Log the full answer length and structure
+        LLMVM_Logger::log( 'Answer extraction debug', [ 
+            'answer_length' => strlen( $answer ),
+            'answer_exists' => isset( $json['choices'][0]['message']['content'] ),
+            'choices_count' => isset( $json['choices'] ) ? count( $json['choices'] ) : 0,
+            'first_choice_keys' => isset( $json['choices'][0] ) ? array_keys( $json['choices'][0] ) : [],
+            'message_keys' => isset( $json['choices'][0]['message'] ) ? array_keys( $json['choices'][0]['message'] ) : []
+        ] );
+        
         // Only log a short preview of the answer to reduce log verbosity
         $preview = substr( (string) $answer, 0, 80 ) ?: '';
         if ( ! empty( trim( $preview ) ) ) {

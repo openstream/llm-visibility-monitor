@@ -211,4 +211,84 @@ msgid_plural "%d results"
 msgstr[0] "%d Ergebnis"
 msgstr[1] "%d Ergebnisse"
 
+#: includes/views/prompts-page.php
+msgid "As an administrator, you can see all prompts but can only delete your own."
+msgstr "Als Administrator können Sie alle Prompts sehen, aber nur Ihre eigenen löschen."
+
+#: includes/views/prompts-page.php
+msgid "All Prompts (Admin View)"
+msgstr "Alle Prompts (Admin-Ansicht)"
+
+#: includes/views/prompts-page.php
+msgid "Owner"
+msgstr "Besitzer"
+
+#: includes/views/prompts-page.php
+msgid "Unknown User"
+msgstr "Unbekannter Benutzer"
+
+#: includes/views/prompts-page.php
+msgid "Read-only"
+msgstr "Nur lesen"
+
+#: includes/views/prompts-page.php
+msgid "You can only see and manage your own prompts."
+msgstr "Sie können nur Ihre eigenen Prompts sehen und verwalten."
+
+#: includes/views/prompts-page.php
+msgid "Your Prompts"
+msgstr "Ihre Prompts"
+
+#: includes/views/prompts-page.php
+msgid "LLM Prompts Management"
+msgstr "LLM Prompts Verwaltung"
+
+#: includes/views/prompts-page.php
+msgid "Add New Prompt"
+msgstr "Neuen Prompt hinzufügen"
+
+#: includes/views/prompts-page.php
+msgid "Model (optional, uses default if empty):"
+msgstr "Modell (optional, verwendet Standard wenn leer):"
+
+#: includes/views/prompts-page.php
+msgid "Use default model"
+msgstr "Standardmodell verwenden"
+
+#: includes/views/prompts-page.php
+msgid "Default model"
+msgstr "Standardmodell"
+
+#: includes/views/prompts-page.php
+msgid "Model:"
+msgstr "Modell:"
+
+#: includes/class-llmvm-exporter.php
+msgid "CSV export requested"
+msgstr "CSV-Export angefordert"
+
+#: includes/class-llmvm-exporter.php
+msgid "CSV export completed"
+msgstr "CSV-Export abgeschlossen"
+
+#: includes/class-llmvm-exporter.php
+msgid "User ID"
+msgstr "Benutzer-ID"
+
+#: includes/class-llmvm-exporter.php
+msgid "User Name"
+msgstr "Benutzername"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "Report for:"
+msgstr "Bericht für:"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "Administrator Report (All Users)"
+msgstr "Administrator-Bericht (Alle Benutzer)"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "User:"
+msgstr "Benutzer:"
+
 

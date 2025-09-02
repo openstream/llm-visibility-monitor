@@ -110,9 +110,23 @@ class LLMVM_Cron {
         if ( ! is_array( $prompts ) ) {
             $prompts = [];
         }
+        
+        // Force refresh the option to avoid cached values
+        wp_cache_delete( 'llmvm_prompts', 'options' );
+        $prompts = get_option( 'llmvm_prompts', [] );
+        if ( ! is_array( $prompts ) ) {
+            $prompts = [];
+        }
+
+        // Debug: Log the actual prompts being fetched
+        LLMVM_Logger::log( 'Prompts fetched from options', [ 
+            'count' => count( $prompts ),
+            'prompt_ids' => array_column( $prompts, 'id' ),
+            'prompt_texts' => array_column( $prompts, 'text' ),
+            'user_ids' => array_column( $prompts, 'user_id' )
+        ] );
 
         LLMVM_Logger::log( 'Run start', [ 'prompts' => count( $prompts ), 'model' => $model, 'prompt_texts' => array_column( $prompts, 'text' ) ] );
-
 
 
         if ( empty( $prompts ) ) {
@@ -133,7 +147,38 @@ class LLMVM_Cron {
         }
 
         $client = new LLMVM_OpenRouter_Client();
+        
+        // Get the current user ID who is running the cron job
+        $current_user_id = get_current_user_id();
+        if ( $current_user_id === 0 ) {
+            // If no current user (e.g., system cron), use the prompt's user_id
+            $current_user_id = 1; // Default to admin
+        }
+        
+        // Filter prompts to only include those belonging to the current user
+        $user_prompts = [];
         foreach ( $prompts as $prompt_item ) {
+            $prompt_user_id = isset( $prompt_item['user_id'] ) ? (int) $prompt_item['user_id'] : 1;
+            if ( $prompt_user_id === $current_user_id ) {
+                $user_prompts[] = $prompt_item;
+            }
+        }
+        
+        // Debug: Log the filtered prompts for the current user
+        LLMVM_Logger::log( 'User prompts filtered', [ 
+            'current_user_id' => $current_user_id,
+            'total_prompts' => count( $prompts ),
+            'user_prompts_count' => count( $user_prompts ),
+            'user_prompt_ids' => array_column( $user_prompts, 'id' ),
+            'user_prompt_texts' => array_column( $user_prompts, 'text' )
+        ] );
+        
+        if ( empty( $user_prompts ) ) {
+            LLMVM_Logger::log( 'Run abort: no prompts found for current user', [ 'user_id' => $current_user_id ] );
+            return;
+        }
+        
+        foreach ( $user_prompts as $prompt_item ) {
             $prompt_text = isset( $prompt_item['text'] ) ? (string) $prompt_item['text'] : '';
             if ( '' === trim( $prompt_text ) ) {
                 continue;
@@ -142,36 +187,36 @@ class LLMVM_Cron {
             // Use prompt-specific model or fall back to global default
             $prompt_model = isset( $prompt_item['model'] ) && '' !== trim( $prompt_item['model'] ) ? (string) $prompt_item['model'] : $model;
             
-            // Check if we need API key for this specific model
-            if ( 'openrouter/stub-model-v1' !== $prompt_model && empty( $api_key ) ) {
-                LLMVM_Logger::log( 'Skipping prompt: missing API key for model', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text ] );
-                continue;
-            }
-
-            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text ] );
+            // Use the current user ID who is running the job, not the prompt's stored user_id
+            $user_id = $current_user_id;
+            
+            LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
             $response   = $client->query( $api_key, $prompt_text, $prompt_model );
             $resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
             $answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
             $status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
             $error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
-            LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ) ] );
-            LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer );
+            LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
+            LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
             if ( $status && $status >= 400 ) {
                 LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
             }
         }
         LLMVM_Logger::log( 'Run completed' );
         
-        // Fire action hook for email reporter and other extensions
-        do_action( 'llmvm_run_completed' );
+        // Get the results that were just created for this user
+        $user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $current_user_id );
+        
+        // Fire action hook for email reporter and other extensions with user context
+        do_action( 'llmvm_run_completed', $current_user_id, $user_results );
     }
 
     /**
      * Handle manual run from admin.
      */
     public function handle_run_now(): void {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
         // Verify nonce with proper sanitization.
@@ -179,7 +224,7 @@ class LLMVM_Cron {
         if ( ! wp_verify_nonce( $nonce, 'llmvm_run_now' ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
         }
-        LLMVM_Logger::log( 'Run Now triggered by admin' );
+        LLMVM_Logger::log( 'Run Now triggered', [ 'user_id' => get_current_user_id(), 'user_roles' => implode( ', ', wp_get_current_user()->roles ) ] );
         $this->run();
         wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );
         exit;
@@ -189,61 +234,33 @@ class LLMVM_Cron {
      * Decrypt API key stored in options.
      */
     public static function decrypt_api_key( string $ciphertext ): string {
-        $ciphertext = wp_unslash( $ciphertext );
-        
-        // If it's already plaintext (no colon separator), return as-is
-        if ( strpos( $ciphertext, ':' ) === false ) {
-            return $ciphertext;
-        }
-        
-        $parts = explode( ':', $ciphertext );
-        if ( count( $parts ) !== 2 ) {
-            return $ciphertext; // legacy/plaintext.
-        }
-        
-        [ $iv_b64, $payload_b64 ] = $parts;
-        $iv      = base64_decode( $iv_b64 );
-        $payload = base64_decode( $payload_b64 );
-        if ( ! $iv || ! $payload ) {
-            LLMVM_Logger::log( 'API key decryption failed: invalid base64 data' );
-            return '';
-        }
-        
-        // Try new method first (without AUTH_KEY)
-        $key = hash( 'sha256', wp_salt( 'auth' ), true );
-        $out = openssl_decrypt( $payload, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
-        
-        if ( false !== $out ) {
-            return is_string( $out ) ? $out : '';
-        }
-        
-        // Try old method (with AUTH_KEY) if new method failed
-        if ( defined( 'AUTH_KEY' ) ) {
-            $key = hash( 'sha256', wp_salt( 'auth' ) . AUTH_KEY, true );
-            $out = openssl_decrypt( $payload, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
-            
-            if ( false !== $out ) {
-                return is_string( $out ) ? $out : '';
+        // Try WordPress built-in decryption first (WordPress 6.4+)
+        if ( function_exists( 'wp_decrypt' ) ) {
+            $decrypted = wp_decrypt( $ciphertext );
+            if ( false !== $decrypted ) {
+                return $decrypted;
             }
         }
         
-                    LLMVM_Logger::log( 'API key decryption failed: both methods failed' );
-        return '';
+        // Fallback: assume it's plaintext (for backward compatibility)
+        return $ciphertext;
     }
 
     /**
      * Encrypt API key for storage.
      */
     public static function encrypt_api_key( string $plaintext ): string {
-        $iv  = random_bytes( 16 );
-        $key = hash( 'sha256', wp_salt( 'auth' ), true );
-        $ct  = openssl_encrypt( $plaintext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
-        if ( false === $ct ) {
-            LLMVM_Logger::log( 'API key encryption failed: openssl_encrypt returned false, storing as plaintext' );
-            return $plaintext; // fallback to plaintext if encryption fails.
+        // Try WordPress built-in encryption first (WordPress 6.4+)
+        if ( function_exists( 'wp_encrypt' ) ) {
+            return wp_encrypt( $plaintext );
         }
-        return base64_encode( $iv ) . ':' . base64_encode( $ct );
+        
+        // Fallback: store as plaintext for older WordPress versions
+        // This is not ideal for security, but ensures compatibility
+        return $plaintext;
     }
 }
+
+
 
 

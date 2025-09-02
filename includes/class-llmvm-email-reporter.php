@@ -20,7 +20,7 @@ class LLMVM_Email_Reporter {
     /**
      * Send email report after a cron run completes.
      */
-    public function send_report_after_run(): void {
+    public function send_report_after_run( int $user_id = 0, array $user_results = [] ): void {
         // Email reporter started
         
         $options = get_option( 'llmvm_options', [] );
@@ -35,46 +35,59 @@ class LLMVM_Email_Reporter {
         }
         
         // Email reports enabled
-
-        // Get the latest results from this run
-        $latest_results = LLMVM_Database::get_latest_results( 10 );
-        LLMVM_Logger::log( 'Email report: fetched results', [ 'count' => count( $latest_results ) ] );
         
-        if ( empty( $latest_results ) ) {
+        // If no user results provided, fall back to old behavior (for backward compatibility)
+        if ( empty( $user_results ) ) {
+            $user_results = LLMVM_Database::get_latest_results( 10 );
+        }
+        
+        if ( empty( $user_results ) ) {
             LLMVM_Logger::log( 'Email report: no results found, skipping' );
             return;
         }
 
-        // Get admin email
-        $admin_email = get_option( 'admin_email' );
-        LLMVM_Logger::log( 'Email report: admin email', [ 'email' => $admin_email ] );
+        // Determine recipient and results based on user role
+        $current_user = get_user_by( 'id', $user_id );
+        $is_admin = $current_user && current_user_can( 'llmvm_manage_settings', $user_id );
         
-        if ( empty( $admin_email ) ) {
-            LLMVM_Logger::log( 'Email report failed: no admin email configured' );
+        if ( $is_admin ) {
+            // Admin gets all results sent to admin email
+            $recipient_email = get_option( 'admin_email' );
+            $results_to_send = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, 0 ); // All results
+            $email_type = 'admin';
+        } else {
+            // Regular user gets only their results sent to their email
+            $recipient_email = $current_user ? $current_user->user_email : '';
+            $results_to_send = $user_results; // Only user's results
+            $email_type = 'user';
+        }
+        
+        if ( empty( $recipient_email ) ) {
+            LLMVM_Logger::log( 'Email report failed: no recipient email found', [ 'user_id' => $user_id, 'email_type' => $email_type ] );
             return;
         }
 
         // Prepare email content
         $subject = sprintf( '[%s] LLM Visibility Monitor Report', get_bloginfo( 'name' ) );
-        $message = $this->generate_report_email( $latest_results );
+        $message = $this->generate_report_email( $results_to_send, $email_type, $current_user );
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $admin_email ] );
+        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ) ] );
         
-        $sent = wp_mail( $admin_email, $subject, $message, $headers );
+        $sent = wp_mail( $recipient_email, $subject, $message, $headers );
 
         if ( $sent ) {
-            LLMVM_Logger::log( 'Email report: sent successfully', [ 'to' => $admin_email ] );
+            LLMVM_Logger::log( 'Email report: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type ] );
         } else {
-            LLMVM_Logger::log( 'Email report: failed to send', [ 'to' => $admin_email ] );
+            LLMVM_Logger::log( 'Email report: failed to send', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type ] );
         }
     }
 
     /**
      * Generate HTML email report.
      */
-    private function generate_report_email( array $results ): string {
+    private function generate_report_email( array $results, string $email_type, $user = null ): string {
         $total_results = count( $results );
         $success_count = 0;
         $error_count = 0;
@@ -117,13 +130,25 @@ class LLMVM_Email_Reporter {
 <body>
     <div class="header">
         <h1>LLM Visibility Monitor Report</h1>
-        <p>Generated on ' . current_time( 'Y-m-d H:i:s' ) . '</p>
-    </div>
+        <p>Generated on ' . current_time( 'Y-m-d H:i:s' ) . '</p>';
+        
+        if ( $email_type === 'user' && $user ) {
+            $html .= '<p>Report for: ' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_email ) . ')</p>';
+        } elseif ( $email_type === 'admin' ) {
+            $html .= '<p>Administrator Report (All Users)</p>';
+        }
+        
+        $html .= '</div>
     
     <div class="content">
         <div class="summary">
-            <h2>Summary</h2>
-            <p><strong>Total Results:</strong> ' . esc_html( (string) $total_results ) . '</p>
+            <h2>Summary</h2>';
+            
+        if ( $email_type === 'user' && $user ) {
+            $html .= '<p><strong>User:</strong> ' . esc_html( $user->display_name ) . '</p>';
+        }
+        
+        $html .= '<p><strong>Total Results:</strong> ' . esc_html( (string) $total_results ) . '</p>
             <p><strong>Successful Responses:</strong> <span class="success">' . esc_html( (string) $success_count ) . '</span></p>
             <p><strong>Errors:</strong> <span class="error">' . esc_html( (string) $error_count ) . '</span></p>
         </div>';
@@ -133,8 +158,13 @@ class LLMVM_Email_Reporter {
         <h2>Latest Results</h2>
         <table>
             <thead>
-                <tr>
-                    <th>Date (UTC)</th>
+                <tr>';
+                
+            if ( $email_type === 'admin' ) {
+                $html .= '<th>User</th>';
+            }
+            
+            $html .= '<th>Date (UTC)</th>
                     <th>Prompt</th>
                     <th>Model</th>
                     <th>Answer</th>
@@ -147,6 +177,7 @@ class LLMVM_Email_Reporter {
                 $prompt = isset( $result['prompt'] ) ? (string) $result['prompt'] : '';
                 $model = isset( $result['model'] ) ? (string) $result['model'] : '';
                 $answer = isset( $result['answer'] ) ? (string) $result['answer'] : '';
+                $result_user_id = isset( $result['user_id'] ) ? (int) $result['user_id'] : 0;
 
                 // Format the answer with WordPress functions
                 $formatted_answer = $this->format_answer_for_email( $answer );
@@ -154,8 +185,15 @@ class LLMVM_Email_Reporter {
                 $row_class = ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false ) ? 'error' : 'success';
 
                 $html .= '
-                <tr class="' . esc_attr( $row_class ) . '">
-                    <td>' . esc_html( $date ) . '</td>
+                <tr class="' . esc_attr( $row_class ) . '">';
+                
+                if ( $email_type === 'admin' ) {
+                    $result_user = get_user_by( 'id', $result_user_id );
+                    $user_display = $result_user ? $result_user->display_name : 'Unknown User';
+                    $html .= '<td>' . esc_html( $user_display ) . '</td>';
+                }
+                
+                $html .= '<td>' . esc_html( $date ) . '</td>
                     <td class="prompt-cell">' . esc_html( $prompt ) . '</td>
                     <td class="model-cell">' . esc_html( $model ) . '</td>
                     <td class="answer-cell">' . $formatted_answer . '</td>
