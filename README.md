@@ -26,6 +26,19 @@ Monitor LLM responses on a schedule and store/export results.
   - Latest results table (date, prompt, model, answer)
   - Export CSV
 
+### Role-Based Access Control
+- **Administrators**: Full access to all features including settings
+- **LLM Managers**: Can manage prompts, view dashboard, and view results (no settings access)
+- **Other Roles**: No LLM access
+- User-specific prompt management and result filtering
+- Secure isolation between user data
+
+### User-Specific Features
+- **Prompt Management**: Users can only see and manage their own prompts
+- **Results Dashboard**: Users only see their own results (admins see all)
+- **CSV Export**: Users export only their data, admins export everything
+- **Email Reports**: Personalized emails sent to each user's email address
+
 ### OpenRouter Integration
 
 - The plugin uses OpenRouter to call different models via a single API.
@@ -56,10 +69,12 @@ Monitor LLM responses on a schedule and store/export results.
 ### Email Reports
 
 - Optional email reports (enable in Settings):
-  - Automatically sent to WordPress admin email after each cron run
+  - **Administrators**: Receive emails at admin email with all results from all users
+  - **Regular Users**: Receive emails at their own email address with only their results
   - HTML-formatted reports with summary and latest results
   - Includes success/error counts and result previews
   - Links to dashboard for full details
+  - User ownership information included in admin reports
 
 ### Security
 
@@ -113,6 +128,23 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
   - LLM Managers cannot access plugin settings
   - Administrators retain full access to all features
   - Other user roles have no LLM access
+- **New Feature**: User-specific prompt management
+  - Users can only see and manage their own prompts
+  - Admins can see all prompts but only edit/delete their own
+  - Secure isolation between user data
+- **New Feature**: User-specific results filtering
+  - Dashboard shows only user's own results (unless admin)
+  - CSV export respects user permissions
+  - Proper user ID assignment in cron jobs
+- **New Feature**: Personalized email reporting
+  - Users receive emails at their own email address
+  - Admins receive emails at admin email with all results
+  - User ownership information in admin reports
+  - Smart filtering based on user role
+- **Enhancement**: Improved security and data isolation
+  - Fixed CSV export user filtering
+  - Enhanced cron job user context
+  - Better user permission enforcement
 
 ### 0.4.0 - 2025-09-02
 - **New Feature**: Per-prompt model selection

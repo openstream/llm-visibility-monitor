@@ -23,6 +23,8 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * **CSV Export**: Export results for external analysis
 * **Email Reports**: Receive email notifications with formatted results
 * **Role-Based Access Control**: Assign "LLM Manager" role for limited admin access
+* **User-Specific Data**: Secure isolation between user prompts, results, and exports
+* **Personalized Email Reports**: Users receive emails at their own address with only their data
 * **Comprehensive Logging**: Detailed logging for debugging and monitoring
 * **German Localization**: Full support for German (de_DE, de_CH)
 
@@ -73,6 +75,18 @@ Yes, the plugin provides CSV export functionality for all stored results.
 
 Yes! You can assign users the "LLM Manager" role, which gives them access to manage prompts and view results, but not access to plugin settings.
 
+= Can users see each other's data? =
+
+No! Each user can only see and manage their own prompts and results. Administrators can see all data for oversight purposes, but regular users are completely isolated.
+
+= How do email reports work? =
+
+Administrators receive emails at the WordPress admin email with all results from all users. Regular users receive emails at their own email address with only their own results.
+
+= Is my data secure from other users? =
+
+Yes! The plugin implements strict user isolation. Each user's prompts, results, and exports are completely separated from other users' data.
+
 == Screenshots ==
 
 1. Plugin settings page with OpenRouter configuration
@@ -89,6 +103,23 @@ Yes! You can assign users the "LLM Manager" role, which gives them access to man
   * LLM Managers cannot access plugin settings
   * Administrators retain full access to all features
   * Other user roles have no LLM access
+* **New Feature**: User-specific prompt management
+  * Users can only see and manage their own prompts
+  * Admins can see all prompts but only edit/delete their own
+  * Secure isolation between user data
+* **New Feature**: User-specific results filtering
+  * Dashboard shows only user's own results (unless admin)
+  * CSV export respects user permissions
+  * Proper user ID assignment in cron jobs
+* **New Feature**: Personalized email reporting
+  * Users receive emails at their own email address
+  * Admins receive emails at admin email with all results
+  * User ownership information in admin reports
+  * Smart filtering based on user role
+* **Enhancement**: Improved security and data isolation
+  * Fixed CSV export user filtering
+  * Enhanced cron job user context
+  * Better user permission enforcement
 
 = 0.4.0 =
 * **New Feature**: Per-prompt model selection
@@ -135,7 +166,7 @@ Yes! You can assign users the "LLM Manager" role, which gives them access to man
 == Upgrade Notice ==
 
 = 0.5.0 =
-This version introduces role-based access control. A new "LLM Manager" role will be created automatically, allowing you to grant limited admin access to other users.
+This version introduces comprehensive role-based access control and user data isolation. A new "LLM Manager" role will be created automatically, allowing you to grant limited admin access to other users. Users will now only see their own prompts and results, with administrators maintaining oversight of all data. Email reports are now personalized - users receive emails at their own address with only their data, while admins receive comprehensive reports at the admin email.
 
 = 0.4.0 =
 This version adds per-prompt model selection. Existing prompts will automatically use your global default model, but you can now assign specific models to individual prompts.
