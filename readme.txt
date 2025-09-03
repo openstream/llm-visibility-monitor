@@ -1,6 +1,6 @@
 === LLM Visibility Monitor ===
 Contributors: openstream
-Tags: llm, ai, monitoring, openrouter, cron, dashboard
+Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
@@ -166,7 +166,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 == Upgrade Notice ==
 
 = 0.5.0 =
-This version introduces comprehensive role-based access control and user data isolation. A new "LLM Manager" role will be created automatically, allowing you to grant limited admin access to other users. Users will now only see their own prompts and results, with administrators maintaining oversight of all data. Email reports are now personalized - users receive emails at their own address with only their data, while admins receive comprehensive reports at the admin email.
+This version introduces role-based access control and user data isolation. A new "LLM Manager" role will be created automatically. Users will only see their own data, with admins maintaining oversight. Email reports are now personalized per user.
 
 = 0.4.0 =
 This version adds per-prompt model selection. Existing prompts will automatically use your global default model, but you can now assign specific models to individual prompts.

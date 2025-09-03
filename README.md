@@ -192,3 +192,123 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 - Plugin license: GPL-2.0-or-later (see plugin header)
 - GPT license: see the `LICENSE` file added to the repository for applicable GPT terms
+
+## WordPress Coding Standards Compliance
+
+This plugin follows WordPress coding standards and passes the WordPress plugin check. We've documented common compliance issues and their solutions to help with future development.
+
+### Common Compliance Issues & Solutions
+
+#### 1. SQL Preparation Issues (`WordPress.DB.PreparedSQL.NotPrepared`)
+
+**Problem:** WordPress coding standards require all SQL queries with variables to use `$wpdb->prepare()` with proper placeholders.
+
+**Solution:** Use inline `phpcs:ignore` comments for legitimate cases where variables are safe:
+
+```php
+// ✅ CORRECT: Inline ignore comment for safe variables
+$rows = $wpdb->get_results( $wpdb->prepare(
+    'SELECT * FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+    $user_id,
+    $limit,
+    $offset
+), ARRAY_A );
+
+// ❌ WRONG: Comment above the line (tool ignores it)
+// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+$rows = $wpdb->get_results( $wpdb->prepare(
+    'SELECT * FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d',
+    $user_id,
+    $limit,
+    $offset
+), ARRAY_A );
+```
+
+**Key Points:**
+- `phpcs:ignore` comments must be **inline** with the specific line, not above it
+- Always justify why the ignore is necessary
+- Use for safe variables like `self::table_name()` (constant) or validated values like `$order` (ASC/DESC only)
+
+#### 2. Direct Database Query Warnings (`WordPress.DB.DirectDatabaseQuery`)
+
+**Problem:** WordPress discourages "direct" database calls, but this is misleading for legitimate `$wpdb` usage.
+
+**Solution:** Use inline ignore comments for standard WordPress database operations:
+
+```php
+// ✅ CORRECT: Inline ignore for legitimate $wpdb usage
+$result = $wpdb->insert(
+    self::table_name(),
+    $insert_data,
+    array( '%s', '%s', '%s', '%s', '%d' )
+); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
+```
+
+**Key Points:**
+- These warnings are often **false positives** for legitimate WordPress patterns
+- `$wpdb` methods ARE the correct WordPress way to interact with databases
+- Always explain why the ignore is justified
+
+#### 3. Table Name Handling
+
+**Problem:** Dynamic table names in SQL queries can cause compliance issues.
+
+**Solution:** Use a consistent `table_name()` method and inline ignores:
+
+```php
+class LLMVM_Database {
+    /**
+     * Get the table name with proper prefix.
+     */
+    public static function table_name(): string {
+        global $wpdb;
+        return $wpdb->prefix . 'llm_visibility_results';
+    }
+    
+    // Usage with inline ignore
+    $query = 'SELECT * FROM ' . self::table_name() . ' WHERE user_id = %d'; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string
+}
+```
+
+#### 4. ORDER BY Clause Issues
+
+**Problem:** Using `%s` placeholders for ORDER BY direction causes SQL syntax errors.
+
+**Solution:** Concatenate validated variables directly:
+
+```php
+// ✅ CORRECT: Direct concatenation for validated values
+$order = ( 'DESC' === $order ) ? 'DESC' : 'ASC'; // Validate first
+$query = 'SELECT * FROM ' . self::table_name() . ' ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d';
+
+// ❌ WRONG: Using placeholder for ORDER BY direction
+$query = $wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' ORDER BY id %s, id DESC LIMIT %d OFFSET %d', $order );
+```
+
+### Best Practices for Future Development
+
+1. **Always use inline `phpcs:ignore` comments** - they're more reliable than comments above lines
+2. **Justify every ignore comment** - explain why the ignore is necessary
+3. **Validate variables before using them** - especially for SQL concatenation
+4. **Use `self::table_name()` consistently** - never hardcode table names
+5. **Test with `wp plugin check`** - more accurate than `phpcs` alone
+6. **Document complex SQL patterns** - help future developers understand the approach
+
+### Testing Compliance
+
+```bash
+# Run WordPress plugin check (most accurate)
+ddev exec "cd /var/www/html/wp-content/plugins && wp plugin check llm-visibility-monitor"
+
+# Run PHP CodeSniffer (for development)
+ddev exec "cd /var/www/html/wp-content/plugins && phpcs --standard=WordPress llm-visibility-monitor"
+```
+
+### Common False Positives
+
+Some warnings from `wp plugin check` are false positives for legitimate WordPress patterns:
+- `WordPress.DB.DirectDatabaseQuery.DirectQuery` for `$wpdb` methods
+- `WordPress.DB.DirectDatabaseQuery.NoCaching` for custom table operations
+- `WordPress.DB.PreparedSQL.NotPrepared` for safe, validated variables
+
+These can be safely ignored with proper justification in inline comments.
