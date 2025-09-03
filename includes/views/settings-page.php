@@ -7,9 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     <h1><?php echo esc_html__( 'LLM Visibility Monitor - Settings', 'llm-visibility-monitor' ); ?></h1>
 
     <p>
-        <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
-            <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
-        </a>
         <a class="button llmvm-button-margin" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>">
             <?php echo esc_html__( 'Open Dashboard', 'llm-visibility-monitor' ); ?>
         </a>

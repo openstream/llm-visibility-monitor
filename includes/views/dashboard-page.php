@@ -73,9 +73,6 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                 <a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-prompts' ) ); ?>">
                     <?php echo esc_html__( 'Manage Prompts', 'llm-visibility-monitor' ); ?>
                 </a>
-                <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
-                    <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
-                </a>
             </div>
             
             <div class="tablenav-pages">
@@ -186,6 +183,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                                 if ( $user ) {
                                     echo esc_html( $user->display_name );
                                 } else {
+                                    /* translators: %d: user ID */
                                     echo esc_html( sprintf( __( 'User %d', 'llm-visibility-monitor' ), $user_id ) );
                                 }
                             } else {

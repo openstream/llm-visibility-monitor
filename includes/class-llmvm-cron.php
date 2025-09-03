@@ -24,6 +24,9 @@ class LLMVM_Cron {
 
         // Admin-triggered run-now endpoint.
         add_action( 'admin_post_llmvm_run_now', [ $this, 'handle_run_now' ] );
+        
+        // Admin-triggered single prompt run endpoint.
+        add_action( 'admin_post_llmvm_run_single_prompt', [ $this, 'handle_run_single_prompt' ] );
     }
 
     /**
@@ -213,6 +216,95 @@ class LLMVM_Cron {
     }
 
     /**
+     * Run a single prompt by ID.
+     */
+    public function run_single_prompt( string $prompt_id ): void {
+        $options   = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $raw_key   = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+        $api_key   = $raw_key !== '' ? self::decrypt_api_key( $raw_key ) : '';
+        $model   = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+        $prompts = get_option( 'llmvm_prompts', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $prompts ) ) {
+            $prompts = [];
+        }
+        
+        // Find the specific prompt
+        $target_prompt = null;
+        foreach ( $prompts as $prompt ) {
+            if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+                $target_prompt = $prompt;
+                break;
+            }
+        }
+        
+        if ( ! $target_prompt ) {
+            LLMVM_Logger::log( 'Single prompt run failed: prompt not found', [ 'prompt_id' => $prompt_id ] );
+            return;
+        }
+        
+        // Check if current user can run this prompt (owner or admin)
+        $current_user_id = get_current_user_id();
+        $prompt_user_id = isset( $target_prompt['user_id'] ) ? (int) $target_prompt['user_id'] : 1;
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
+        if ( ! $is_admin && $prompt_user_id !== $current_user_id ) {
+            LLMVM_Logger::log( 'Single prompt run failed: user not authorized', [ 
+                'prompt_id' => $prompt_id, 
+                'current_user_id' => $current_user_id, 
+                'prompt_user_id' => $prompt_user_id 
+            ] );
+            return;
+        }
+        
+        LLMVM_Logger::log( 'Single prompt run start', [ 
+            'prompt_id' => $prompt_id,
+            'prompt_text' => $target_prompt['text'] ?? '',
+            'current_user_id' => $current_user_id,
+            'prompt_user_id' => $prompt_user_id
+        ] );
+        
+        $client = new LLMVM_OpenRouter_Client();
+        
+        $prompt_text = isset( $target_prompt['text'] ) ? (string) $target_prompt['text'] : '';
+        if ( '' === trim( $prompt_text ) ) {
+            LLMVM_Logger::log( 'Single prompt run failed: empty prompt text', [ 'prompt_id' => $prompt_id ] );
+            return;
+        }
+
+        // Use prompt-specific model or fall back to global default
+        $prompt_model = isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ? (string) $target_prompt['model'] : $model;
+        
+        // Use the current user ID who is running the job
+        $user_id = $current_user_id;
+        
+        LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
+        $response   = $client->query( $api_key, $prompt_text, $prompt_model );
+        $resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+        $answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+        $status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
+        $error      = isset( $response['error'] ) ? (string) $response['error'] : '';
+
+        LLMVM_Logger::log( 'Inserting single prompt result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
+        LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+        if ( $status && $status >= 400 ) {
+            LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
+        }
+        
+        LLMVM_Logger::log( 'Single prompt run completed', [ 'prompt_id' => $prompt_id ] );
+        
+        // Get the result that was just created
+        $user_results = LLMVM_Database::get_latest_results( 1, 'created_at', 'DESC', 0, $current_user_id );
+        
+        // Fire action hook for email reporter and other extensions with user context
+        do_action( 'llmvm_run_completed', $current_user_id, $user_results );
+    }
+
+    /**
      * Handle manual run from admin.
      */
     public function handle_run_now(): void {
@@ -227,6 +319,39 @@ class LLMVM_Cron {
         LLMVM_Logger::log( 'Run Now triggered', [ 'user_id' => get_current_user_id(), 'user_roles' => implode( ', ', wp_get_current_user()->roles ) ] );
         $this->run();
         wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );
+        exit;
+    }
+
+    /**
+     * Handle manual run of a single prompt.
+     */
+    public function handle_run_single_prompt(): void {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+        
+        // Verify nonce with proper sanitization.
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_run_single_prompt' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+        
+        // Get and sanitize the prompt ID
+        $prompt_id = isset( $_GET['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_GET['prompt_id'] ) ) : '';
+        if ( empty( $prompt_id ) ) {
+            wp_die( esc_html__( 'No prompt ID provided', 'llm-visibility-monitor' ) );
+        }
+        
+        LLMVM_Logger::log( 'Single prompt run triggered', [ 
+            'user_id' => get_current_user_id(), 
+            'user_roles' => implode( ', ', wp_get_current_user()->roles ),
+            'prompt_id' => $prompt_id
+        ] );
+        
+        $this->run_single_prompt( $prompt_id );
+        
+        // Redirect back to prompts page with success message
+        wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-prompts&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );
         exit;
     }
 

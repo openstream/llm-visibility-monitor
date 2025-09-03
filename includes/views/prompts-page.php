@@ -40,49 +40,136 @@ if ( $is_admin ) {
 ?>
 
 <style>
-.llmvm-prompt-display {
-    background: #f9f9f9;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-}
-
-.llmvm-prompt-display p {
-    margin: 0 0 8px 0;
-}
-
-.llmvm-prompt-display p:last-child {
-    margin-bottom: 0;
-}
-
 .llmvm-prompt-cell {
+    width: 60%;
+}
+.column-model {
     width: 40%;
 }
-
-.column-model {
-    width: 20%;
+/* Admin table with 3 columns */
+.llmvm-admin-table .llmvm-prompt-cell {
+    width: 50%;
 }
-
+.llmvm-admin-table .column-model {
+    width: 35%;
+}
 .column-owner {
     width: 15%;
 }
-
-.column-actions {
-    width: 15%;
-}
-
-.wp-list-table td {
-    vertical-align: top;
+.llmvm-prompt-display {
     padding: 8px 10px;
 }
-
-.wp-list-table th {
-    padding: 8px 10px;
+.column-model select {
+    width: 100%;
+    margin-bottom: 8px;
+}
+.column-model .button {
+    margin-top: 8px;
+}
+.llmvm-button-group {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+.llmvm-button-group .button,
+.llmvm-button-group input[type="submit"] {
+    margin: 0;
+}
+.llmvm-all-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 8px;
+}
+.llmvm-all-buttons .button,
+.llmvm-all-buttons input[type="submit"] {
+    margin: 0;
+}
+/* Remove the margin between button groups */
+.llmvm-button-group {
+    margin-bottom: 0;
+}
+/* Ensure proper spacing and alignment */
+.column-model {
+    padding: 8px;
+    position: relative;
+    min-height: 120px;
+}
+.llmvm-prompt-cell textarea {
+    margin-bottom: 0;
+}
+/* Make the form take available space and push action buttons to bottom */
+.column-model form {
+    margin-bottom: 8px;
+}
+/* Position action buttons at the bottom */
+.llmvm-action-buttons {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: flex-end;
+}
+/* Responsive design for mobile devices */
+@media screen and (max-width: 782px) {
+    .llmvm-prompt-cell {
+        width: 100%;
+        margin-bottom: 16px;
+    }
+    .column-model {
+        width: 100%;
+        min-height: auto;
+        position: relative;
+    }
+    .llmvm-all-buttons {
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 12px;
+    }
+    .llmvm-all-buttons .button,
+    .llmvm-all-buttons input[type="submit"] {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+    }
+    /* Stack buttons vertically on very small screens */
+    @media screen and (max-width: 480px) {
+        .llmvm-all-buttons {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .llmvm-all-buttons .button,
+        .llmvm-all-buttons input[type="submit"] {
+            flex: none;
+            width: 100%;
+        }
+    }
 }
 </style>
 
 <div class="wrap">
     <h1><?php echo esc_html__( 'LLM Prompts Management', 'llm-visibility-monitor' ); ?></h1>
+
+    <p>
+        <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
+            <?php echo esc_html__( 'Run All Prompts Now', 'llm-visibility-monitor' ); ?>
+        </a>
+        <a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ); ?>">
+            <?php echo esc_html__( 'View Dashboard', 'llm-visibility-monitor' ); ?>
+        </a>
+    </p>
+
+    <?php
+    // Check for run completion message with proper sanitization and nonce verification
+    $run_completed = '';
+    if ( isset( $_GET['llmvm_ran'] ) && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'llmvm_run_completed' ) ) {
+        $run_completed = sanitize_text_field( wp_unslash( $_GET['llmvm_ran'] ) );
+    }
+    if ( '1' === $run_completed ) :
+    ?>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ) ?></p></div>
+    <?php endif; ?>
 
     <h2><?php echo esc_html__( 'Add New Prompt', 'llm-visibility-monitor' ); ?></h2>
     
@@ -125,13 +212,12 @@ if ( $is_admin ) {
 
     <?php if ( $is_admin && ! empty( $all_prompts ) ) : ?>
         <h2><?php echo esc_html__( 'All Prompts (Admin View)', 'llm-visibility-monitor' ); ?></h2>
-        <table class="widefat fixed striped">
+        <table class="widefat fixed striped llmvm-admin-table">
             <thead>
                 <tr>
                     <th class="llmvm-prompt-cell"><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
-                    <th class="column-model"><?php echo esc_html__( 'Model', 'llm-visibility-monitor' ); ?></th>
+                    <th class="column-model"><?php echo esc_html__( 'Model & Actions', 'llm-visibility-monitor' ); ?></th>
                     <th class="column-owner"><?php echo esc_html__( 'Owner', 'llm-visibility-monitor' ); ?></th>
-                    <th class="column-actions"><?php echo esc_html__( 'Actions', 'llm-visibility-monitor' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -144,71 +230,57 @@ if ( $is_admin ) {
                     <tr>
                         <td class="llmvm-prompt-cell">
                             <?php if ( $is_owner ) : ?>
-                                <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
-                                    <?php wp_nonce_field( 'llmvm_edit_prompt' ); ?>
-                                    <input type="hidden" name="action" value="llmvm_edit_prompt" />
-                                    <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
-                                    <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
-                                    <p>
-                                        <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
-                                        <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_model" class="regular-text">
-                                            <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
-                                            <?php
-                                            $options = get_option( 'llmvm_options', [] );
-                                            $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-                                            $models = LLMVM_Admin::get_openrouter_models();
-                                            $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                                            foreach ( $models as $model ) {
-                                                $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
-                                                echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
-                                                echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
-                                                echo '</option>';
-                                            }
-                                            ?>
-                                        </select>
-                                    </p>
-                                    <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary small', '', false ); ?>
-                                </form>
+                                <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
                             <?php else : ?>
                                 <div class="llmvm-prompt-display">
                                     <p><?php echo esc_html( (string) ( $prompt['text'] ?? '' ) ); ?></p>
-                                    <p><em><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?> 
-                                    <?php
-                                    $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                                    if ( '' === trim( $current_model ) ) {
-                                        echo '<em>' . esc_html__( 'Default model', 'llm-visibility-monitor' ) . '</em>';
-                                    } else {
-                                        echo esc_html( $current_model );
-                                    }
-                                    ?>
-                                    </em></p>
                                 </div>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php
-                            $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                            if ( '' === trim( $current_model ) ) {
-                                echo '<em>' . esc_html__( 'Default model', 'llm-visibility-monitor' ) . '</em>';
-                            } else {
-                                echo esc_html( $current_model );
-                            }
-                            ?>
-                        </td>
-                        <td>
-                            <?php echo esc_html( $owner_name ); ?>
-                        </td>
-                        <td>
                             <?php if ( $is_owner ) : ?>
-                                <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this prompt?', 'llm-visibility-monitor' ) ); ?>');">
-                                    <?php wp_nonce_field( 'llmvm_delete_prompt' ); ?>
-                                    <input type="hidden" name="action" value="llmvm_delete_prompt" />
-                                    <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
-                                    <?php submit_button( __( 'Delete', 'llm-visibility-monitor' ), 'link-delete', '', false ); ?>
-                                </form>
+                                <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
+                                <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
+                                    <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
+                                    <?php
+                                    $options = get_option( 'llmvm_options', [] );
+                                    $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+                                    $models = LLMVM_Admin::get_openrouter_models();
+                                    $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
+                                    foreach ( $models as $model ) {
+                                        $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
+                                        echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
+                                        echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
+                                        echo '</option>';
+                                    }
+                                    ?>
+                                </select>
+                                <br><br>
+                                <div class="llmvm-all-buttons">
+                                    <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">
+                                        <?php wp_nonce_field( 'llmvm_edit_prompt' ); ?>
+                                        <input type="hidden" name="action" value="llmvm_edit_prompt" />
+                                        <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
+                                        <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
+                                        <input type="hidden" name="prompt_model" value="<?php echo esc_attr( (string) ( $prompt['model'] ?? '' ) ); ?>" />
+                                        <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
+                                    </form>
+                                    <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
+                                        <?php wp_nonce_field( 'llmvm_delete_prompt' ); ?>
+                                        <input type="hidden" name="action" value="llmvm_delete_prompt" />
+                                        <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
+                                        <?php submit_button( __( 'Delete', 'llm-visibility-monitor' ), 'link-delete', '', false ); ?>
+                                    </form>
+                                    <a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_single_prompt&prompt_id=' . urlencode( (string) ( $prompt['id'] ?? '' ) ) ), 'llmvm_run_single_prompt' ) ); ?>">
+                                        <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
+                                    </a>
+                                </div>
                             <?php else : ?>
                                 <span class="description"><?php echo esc_html__( 'Read-only', 'llm-visibility-monitor' ); ?></span>
                             <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php echo esc_html( $owner_name ); ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -222,57 +294,56 @@ if ( $is_admin ) {
             <thead>
                 <tr>
                     <th class="llmvm-prompt-cell"><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
-                    <th class="column-model"><?php echo esc_html__( 'Model', 'llm-visibility-monitor' ); ?></th>
-                    <th class="column-actions"><?php echo esc_html__( 'Actions', 'llm-visibility-monitor' ); ?></th>
+                    <th class="column-model"><?php echo esc_html__( 'Model & Actions', 'llm-visibility-monitor' ); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ( $user_prompts as $prompt ) : ?>
+                    <?php 
+                    // For user prompts, the current user is always the owner
+                    $is_owner = true;
+                    ?>
                     <tr>
                         <td class="llmvm-prompt-cell">
-                            <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
-                                <?php wp_nonce_field( 'llmvm_edit_prompt' ); ?>
-                                <input type="hidden" name="action" value="llmvm_edit_prompt" />
-                                <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
-                                <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
-                                <p>
-                                    <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
-                                    <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_model" class="regular-text">
-                                        <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
-                                        <?php
-                                        $options = get_option( 'llmvm_options', [] );
-                                        $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-                                        $models = LLMVM_Admin::get_openrouter_models();
-                                        $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                                        foreach ( $models as $model ) {
-                                            $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
-                                            echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
-                                            echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
-                                            echo '</option>';
-                                        }
-                                        ?>
-                                    </select>
-                                </p>
-                                <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary small', '', false ); ?>
-                            </form>
+                            <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
                         </td>
                         <td>
-                            <?php
-                            $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                            if ( '' === trim( $current_model ) ) {
-                                echo '<em>' . esc_html__( 'Default model', 'llm-visibility-monitor' ) . '</em>';
-                            } else {
-                                echo esc_html( $current_model );
-                            }
-                            ?>
-                        </td>
-                        <td>
-                            <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this prompt?', 'llm-visibility-monitor' ) ); ?>');">
-                                <?php wp_nonce_field( 'llmvm_delete_prompt' ); ?>
-                                <input type="hidden" name="action" value="llmvm_delete_prompt" />
-                                <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
-                                <?php submit_button( __( 'Delete', 'llm-visibility-monitor' ), 'link-delete', '', false ); ?>
-                            </form>
+                            <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
+                            <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
+                                <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
+                                <?php
+                                $options = get_option( 'llmvm_options', [] );
+                                $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+                                $models = LLMVM_Admin::get_openrouter_models();
+                                $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
+                                foreach ( $models as $model ) {
+                                    $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
+                                    echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
+                                    echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
+                                    echo '</option>';
+                                }
+                                ?>
+                            </select>
+                            <br><br>
+                            <div class="llmvm-all-buttons">
+                                <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">
+                                    <?php wp_nonce_field( 'llmvm_edit_prompt' ); ?>
+                                    <input type="hidden" name="action" value="llmvm_edit_prompt" />
+                                    <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
+                                    <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
+                                    <input type="hidden" name="prompt_model" value="<?php echo esc_attr( (string) ( $prompt['model'] ?? '' ) ); ?>" />
+                                    <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
+                                </form>
+                                <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
+                                    <?php wp_nonce_field( 'llmvm_delete_prompt' ); ?>
+                                    <input type="hidden" name="action" value="llmvm_delete_prompt" />
+                                    <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
+                                    <?php submit_button( __( 'Delete', 'llm-visibility-monitor' ), 'link-delete', '', false ); ?>
+                                    </form>
+                                <a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_single_prompt&prompt_id=' . urlencode( (string) ( $prompt['id'] ?? '' ) ) ), 'llmvm_run_single_prompt' ) ); ?>">
+                                    <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -295,3 +366,49 @@ if ( $is_admin ) {
         <?php endif; ?>
     </p>
 </div>
+
+<script>
+jQuery(document).ready(function($) {
+    // Sync textarea content with hidden input fields
+    $('.llmvm-prompt-cell textarea').on('input', function() {
+        var promptId = $(this).closest('tr').find('input[name="prompt_id"]').val();
+        var textareaValue = $(this).val();
+        $('input[name="prompt_text"][form*="' + promptId + '"]').val(textareaValue);
+    });
+    
+    // Sync model selector with hidden input field
+    $('select[id^="llmvm-prompt-model-"]').on('change', function() {
+        var promptId = $(this).data('prompt-id');
+        var modelValue = $(this).val();
+        $('input[name="prompt_model"][form*="' + promptId + '"]').val(modelValue);
+    });
+    
+    // Sync content before form submission to ensure latest content is saved
+    $('form[action*="admin-post.php"]').on('submit', function(e) {
+        var $form = $(this);
+        var promptId = $form.find('input[name="prompt_id"]').val();
+        
+        // Sync textarea content
+        var $textarea = $form.closest('tr').find('.llmvm-prompt-cell textarea');
+        var $hiddenTextInput = $form.find('input[name="prompt_text"]');
+        if ($textarea.length && $hiddenTextInput.length) {
+            $hiddenTextInput.val($textarea.val());
+        }
+        
+        // Sync model selector content
+        var $modelSelect = $form.closest('tr').find('select[id^="llmvm-prompt-model-"]');
+        var $hiddenModelInput = $form.find('input[name="prompt_model"]');
+        if ($modelSelect.length && $hiddenModelInput.length) {
+            $hiddenModelInput.val($modelSelect.val());
+        }
+    });
+    
+    // Handle delete confirmation
+    $('.delete-prompt-form').on('submit', function(e) {
+        if (!confirm('<?php echo esc_js( __( 'Delete this prompt?', 'llm-visibility-monitor' ) ); ?>')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>

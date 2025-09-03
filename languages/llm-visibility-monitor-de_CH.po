@@ -291,4 +291,8 @@ msgstr "Administrator-Bericht (Alle Benutzer)"
 msgid "User:"
 msgstr "Benutzer:"
 
+#: includes/views/prompts-page.php
+msgid "Run All Prompts Now"
+msgstr "Alle Prompts jetzt ausführen"
+
 

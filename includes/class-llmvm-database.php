@@ -146,7 +146,7 @@ class LLMVM_Database {
         $table_name = self::table_name();
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries.
-        $result = $wpdb->query( "TRUNCATE TABLE {$table_name}" );
+        $result = $wpdb->query( $wpdb->prepare( 'TRUNCATE TABLE %i', $table_name ) );
         
         if ( false === $result ) {
             LLMVM_Logger::log( 'Failed to clear results table', [ 'error' => $wpdb->last_error ] );
@@ -231,18 +231,18 @@ class LLMVM_Database {
         
         // Build query with user filtering
         if ( $user_id > 0 ) {
-            $query = sprintf(
-                'SELECT id, created_at, prompt, model, answer, user_id FROM %s WHERE user_id = %%d ORDER BY %s %s, id DESC LIMIT %d OFFSET %d',
+            $query = $wpdb->prepare(
+                'SELECT id, created_at, prompt, model, answer, user_id FROM %i WHERE user_id = %d ORDER BY %i %s, id DESC LIMIT %d OFFSET %d',
                 $table_name,
+                $user_id,
                 $orderby,
                 $order,
                 $limit,
                 $offset
             );
-            $query = $wpdb->prepare( $query, $user_id );
         } else {
-            $query = sprintf(
-                'SELECT id, created_at, prompt, model, answer, user_id FROM %s ORDER BY %s %s, id DESC LIMIT %d OFFSET %d',
+            $query = $wpdb->prepare(
+                'SELECT id, created_at, prompt, model, answer, user_id FROM %i ORDER BY %i %s, id DESC LIMIT %d OFFSET %d',
                 $table_name,
                 $orderby,
                 $order,
@@ -252,7 +252,7 @@ class LLMVM_Database {
         }
         
         /** @var array<int,array<string,mixed>> $rows */
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table operations require direct queries.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
         $rows = $wpdb->get_results( $query, ARRAY_A );
         
         // Ensure we always return an array, even if $wpdb->get_results() returns null or false.
@@ -273,13 +273,12 @@ class LLMVM_Database {
         $table_name = self::table_name();
         
         if ( $user_id > 0 ) {
-            $query = sprintf( 'SELECT COUNT(*) FROM %s WHERE user_id = %%d', $table_name );
-            $query = $wpdb->prepare( $query, $user_id );
+            $query = $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', $table_name, $user_id );
         } else {
-            $query = sprintf( 'SELECT COUNT(*) FROM %s', $table_name );
+            $query = $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name );
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table operations require direct queries.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
         $count = $wpdb->get_var( $query );
         return (int) $count;
     }
@@ -307,19 +306,28 @@ class LLMVM_Database {
             return 0;
         }
         
-        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+        // Build placeholders for each ID
+        $id_placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
         
         if ( $user_id > 0 ) {
             // Delete only results owned by the specified user
-            $query = sprintf( 'DELETE FROM %s WHERE id IN (%s) AND user_id = %%d', $table_name, $placeholders );
-            $query = $wpdb->prepare( $query, ...array_merge( $ids, [ $user_id ] ) );
+            // Use %i for table name and %d for each ID and user_id
+            $all_params = array_merge( [ $table_name ], $ids, [ $user_id ] );
+            $query = $wpdb->prepare(
+                'DELETE FROM %i WHERE id IN (' . $id_placeholders . ') AND user_id = %d',
+                ...$all_params
+            );
         } else {
             // Delete results regardless of ownership (admin function)
-            $query = sprintf( 'DELETE FROM %s WHERE id IN (%s)', $table_name, $placeholders );
-            $query = $wpdb->prepare( $query, ...$ids );
+            // Use %i for table name and %d for each ID
+            $all_params = array_merge( [ $table_name ], $ids );
+            $query = $wpdb->prepare(
+                'DELETE FROM %i WHERE id IN (' . $id_placeholders . ')',
+                ...$all_params
+            );
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table operations require direct queries.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
         $deleted = $wpdb->query( $query );
         
         return (int) $deleted;
@@ -337,14 +345,12 @@ class LLMVM_Database {
         $table_name = self::table_name();
         
         if ( $user_id > 0 ) {
-            $query = sprintf( 'SELECT id, created_at, prompt, model, answer, user_id FROM %s WHERE id = %%d AND user_id = %%d', $table_name );
-            $query = $wpdb->prepare( $query, $id, $user_id );
+            $query = $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id FROM %i WHERE id = %d AND user_id = %d', $table_name, $id, $user_id );
         } else {
-            $query = sprintf( 'SELECT id, created_at, prompt, model, answer, user_id FROM %s WHERE id = %%d', $table_name );
-            $query = $wpdb->prepare( $query, $id );
+            $query = $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id FROM %i WHERE id = %d', $table_name, $id );
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table operations require direct queries.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
         $row = $wpdb->get_row( $query, ARRAY_A );
         // Ensure we return null if $wpdb->get_row() returns null, false, or non-array.
         if ( ! is_array( $row ) ) {

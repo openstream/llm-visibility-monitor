@@ -232,7 +232,7 @@ class LLMVM_Admin {
         $value = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
         
         // Get available models (will fallback to common models if API key decryption fails)
-        $models = $this->get_openrouter_models();
+        $models = self::get_openrouter_models();
         
         echo '<select name="llmvm_options[model]" id="llmvm-model-select" class="llmvm-model-select">';
         echo '<option value="">' . esc_html__( 'Select a model...', 'llm-visibility-monitor' ) . '</option>';
@@ -666,6 +666,7 @@ class LLMVM_Admin {
             $deleted = LLMVM_Database::delete_results_by_ids( $result_ids, $user_filter );
             
             if ( $deleted > 0 ) {
+                /* translators: %d: number of results deleted */
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => sprintf( __( '%d results deleted successfully.', 'llm-visibility-monitor' ), $deleted ) ], 60 );
             } else {
                 set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'No results were deleted. You can only delete your own results.', 'llm-visibility-monitor' ) ], 60 );
@@ -681,7 +682,7 @@ class LLMVM_Admin {
     /**
      * Fetch available models from OpenRouter API.
      */
-    private function get_openrouter_models(): array {
+    public static function get_openrouter_models(): array {
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
             $options = [];
