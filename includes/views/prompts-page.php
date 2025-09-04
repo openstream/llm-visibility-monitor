@@ -685,6 +685,12 @@ jQuery(document).ready(function($) {
                     var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
                     if (typeof getSelectedModelsFunction === 'function') {
                         var selectedModels = getSelectedModelsFunction();
+                        if (selectedModels.length > 0) {
+                            console.log('=== TIMER SYNC ===');
+                            console.log('Prompt ID:', promptId);
+                            console.log('Selected models:', selectedModels);
+                            console.log('Setting hidden input to:', selectedModels.join(','));
+                        }
                         $hiddenModelInput.val(selectedModels.join(','));
                     }
                 }
@@ -692,10 +698,26 @@ jQuery(document).ready(function($) {
         });
     }, 1000); // Sync every second
     
-    // Try to intercept form submission at the document level
-    // Removed conflicting document-level form submission handler
+    // Removed click handler - relying on timer sync instead
     
-    // Removed all debugging code
+    // Add form submission debugging
+    $('form[action*="admin-post.php"]').on('submit', function(e) {
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('Form action:', $(this).attr('action'));
+        console.log('Form method:', $(this).attr('method'));
+        
+        var $form = $(this);
+        var promptId = $form.find('input[name="prompt_id"]').val();
+        var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+        
+        console.log('Prompt ID:', promptId);
+        console.log('Hidden model input value:', $hiddenModelInput.val());
+        console.log('Hidden model input name:', $hiddenModelInput.attr('name'));
+        
+        // Log all form data
+        var formData = $form.serialize();
+        console.log('Form data:', formData);
+    });
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
         console.error('Error stack:', error.stack);
