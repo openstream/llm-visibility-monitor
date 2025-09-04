@@ -651,7 +651,6 @@ jQuery(document).ready(function($) {
         var promptId = $form.find('input[name="prompt_id"]').val();
         console.log('=== FORM SUBMISSION STARTING ===');
         console.log('Form submitted! Event triggered.');
-        e.preventDefault(); // Prevent the form from submitting to test if our handler is working
         console.log('Form prompt ID:', promptId);
         console.log('Form action:', $form.attr('action'));
         
