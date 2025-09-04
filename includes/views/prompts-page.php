@@ -646,6 +646,7 @@ jQuery(document).ready(function($) {
         console.log('Form', index, ':', $(this).attr('action'), 'ID:', $(this).attr('id'), 'Class:', $(this).attr('class'));
     });
     
+    console.log('=== ATTACHING FORM SUBMISSION HANDLER ===');
     $('form[action*="admin-post.php"]').on('submit', function(e) {
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
@@ -653,6 +654,9 @@ jQuery(document).ready(function($) {
         console.log('Form submitted! Event triggered.');
         console.log('Form prompt ID:', promptId);
         console.log('Form action:', $form.attr('action'));
+        
+        // Temporary alert to test if this handler is being called
+        alert('Form submission handler called!');
         
         // Sync textarea content
         var $textarea = $form.closest('tr').find('.llmvm-prompt-cell textarea');
