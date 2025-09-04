@@ -643,6 +643,9 @@ jQuery(document).ready(function($) {
     $('form[action*="admin-post.php"]').on('submit', function(e) {
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
+        console.log('=== FORM SUBMISSION STARTING ===');
+        console.log('Form prompt ID:', promptId);
+        console.log('Form action:', $form.attr('action'));
         
         // Sync textarea content
         var $textarea = $form.closest('tr').find('.llmvm-prompt-cell textarea');
@@ -654,19 +657,30 @@ jQuery(document).ready(function($) {
         // Sync multi-model selector content
         // For "Your Prompts" section, the model container is in the same table cell as the form
         var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
+        console.log('Form submission - Looking in td, found containers:', $modelContainer.length);
         if ($modelContainer.length === 0) {
             // Fallback: try to find it in the closest tr
             $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+            console.log('Form submission - Looking in tr, found containers:', $modelContainer.length);
         }
         var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
         console.log('Form submission - Model container found:', $modelContainer.length > 0);
         console.log('Form submission - Hidden model input found:', $hiddenModelInput.length > 0);
+        console.log('Form submission - Model container ID:', $modelContainer.attr('id'));
+        
         if ($modelContainer.length && $hiddenModelInput.length) {
-            var selectedModels = $modelContainer.data('getSelectedModels')();
-            console.log('Form submission - Selected models:', selectedModels);
-            $hiddenModelInput.val(selectedModels.join(','));
-            console.log('Form submission - Hidden input value set to:', $hiddenModelInput.val());
+            var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
+            console.log('Form submission - getSelectedModels function exists:', typeof getSelectedModelsFunction === 'function');
+            if (typeof getSelectedModelsFunction === 'function') {
+                var selectedModels = getSelectedModelsFunction();
+                console.log('Form submission - Selected models:', selectedModels);
+                $hiddenModelInput.val(selectedModels.join(','));
+                console.log('Form submission - Hidden input value set to:', $hiddenModelInput.val());
+            } else {
+                console.log('Form submission - getSelectedModels function not found');
+            }
         }
+        console.log('=== FORM SUBMISSION COMPLETE ===');
     });
     
     // Handle delete confirmation
