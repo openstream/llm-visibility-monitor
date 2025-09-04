@@ -218,7 +218,7 @@ if ( $is_admin ) {
                         <?php echo esc_html( $usage_summary['prompts']['used'] ); ?> / <?php echo esc_html( $usage_summary['prompts']['limit'] ); ?>
                     </span>
                     <?php if ( $usage_summary['prompts']['remaining'] > 0 ) : ?>
-                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['prompts']['remaining'] ); ?> remaining)</span>
+                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['prompts']['remaining'] ); ?> <?php echo esc_html__( 'remaining', 'llm-visibility-monitor' ); ?>)</span>
                     <?php endif; ?>
                 </div>
                 
@@ -228,7 +228,7 @@ if ( $is_admin ) {
                         <?php echo esc_html( $usage_summary['runs']['used'] ); ?> / <?php echo esc_html( $usage_summary['runs']['limit'] ); ?>
                     </span>
                     <?php if ( $usage_summary['runs']['remaining'] > 0 ) : ?>
-                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['runs']['remaining'] ); ?> remaining)</span>
+                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['runs']['remaining'] ); ?> <?php echo esc_html__( 'remaining', 'llm-visibility-monitor' ); ?>)</span>
                     <?php endif; ?>
                 </div>
                 
