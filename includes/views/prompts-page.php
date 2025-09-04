@@ -514,19 +514,55 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
-            _renderMenu: function(ul, items) {
-                console.log('_renderMenu called with', items.length, 'items');
-                var that = this;
-                $.each(items, function(index, item) {
-                    console.log('Rendering item in _renderMenu:', item);
-                    that._renderItemData(ul, item);
+            open: function(event, ui) {
+                console.log('Autocomplete opened, manually populating dropdown');
+                var widget = $searchInput.autocomplete('widget');
+                var ul = widget.find('ul');
+                
+                // Clear existing items
+                ul.empty();
+                
+                // Get current matches from the source
+                var term = $searchInput.val().toLowerCase();
+                var matches;
+                
+                if (term === '') {
+                    matches = allModels;
+                } else {
+                    matches = allModels.filter(function(model) {
+                        return model.name.toLowerCase().indexOf(term) !== -1 || 
+                               model.id.toLowerCase().indexOf(term) !== -1;
+                    });
+                }
+                
+                console.log('Manually populating with', matches.length, 'items');
+                
+                // Manually add items to the dropdown
+                $.each(matches, function(index, model) {
+                    var item = {
+                        label: model.name + ' (' + model.id + ')',
+                        value: model.id,
+                        id: model.id,
+                        name: model.name
+                    };
+                    
+                    var $li = $('<li>')
+                        .append('<div>' + item.label + '</div>')
+                        .data('ui-autocomplete-item', item)
+                        .appendTo(ul);
                 });
-            },
-            _renderItemData: function(ul, item) {
-                console.log('_renderItemData called with:', item);
-                return $('<li>')
-                    .append('<div>' + item.label + '</div>')
-                    .appendTo(ul);
+                
+                // Show the dropdown
+                widget.show();
+                
+                // Add click handlers for the manually created items
+                ul.find('li').on('click', function() {
+                    var item = $(this).data('ui-autocomplete-item');
+                    console.log('Manually selected item:', item);
+                    addModel(item);
+                    $searchInput.val('');
+                    widget.hide();
+                });
             }
         });
         
