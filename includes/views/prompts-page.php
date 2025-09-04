@@ -493,7 +493,7 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
-            _renderItem: function(ul, item) {
+            renderItem: function(ul, item) {
                 console.log('Rendering item:', item);
                 var $li = $('<li>')
                     .append('<div>' + item.name + ' (' + item.id + ')</div>');
