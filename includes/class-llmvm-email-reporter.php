@@ -655,6 +655,15 @@ class LLMVM_Email_Reporter {
             error_log( 'LLMVM Email Formatted: ' . substr( $formatted, 0, 500 ) );
         }
         
+        // Temporary direct file debugging (remove after testing)
+        file_put_contents( ABSPATH . 'llmvm-debug.txt', 
+            "=== EMAIL FORMAT DEBUG ===\n" .
+            "Original: " . substr( $answer, 0, 500 ) . "\n" .
+            "Formatted: " . substr( $formatted, 0, 500 ) . "\n" .
+            "Time: " . date( 'Y-m-d H:i:s' ) . "\n\n", 
+            FILE_APPEND | LOCK_EX 
+        );
+        
         // Convert **bold** to <strong> (non-greedy match)
         $formatted = preg_replace( '/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $formatted );
         
@@ -695,6 +704,14 @@ class LLMVM_Email_Reporter {
             error_log( 'LLMVM List Input: ' . substr( $text, 0, 300 ) );
         }
         
+        // Temporary direct file debugging (remove after testing)
+        file_put_contents( ABSPATH . 'llmvm-debug.txt', 
+            "=== LIST CONVERSION DEBUG ===\n" .
+            "Input: " . substr( $text, 0, 300 ) . "\n" .
+            "Time: " . date( 'Y-m-d H:i:s' ) . "\n\n", 
+            FILE_APPEND | LOCK_EX 
+        );
+        
         // Split into lines
         $lines = explode( "\n", $text );
         $in_list = false;
@@ -708,6 +725,14 @@ class LLMVM_Email_Reporter {
             // Debug: Log each line being processed
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG && preg_match( '/^\s*\d+[\.\):]/', $trimmed ) ) {
                 error_log( 'LLMVM Processing line: ' . $trimmed );
+            }
+            
+            // Temporary direct file debugging for numbered lines
+            if ( preg_match( '/^\s*\d+[\.\):]/', $trimmed ) ) {
+                file_put_contents( ABSPATH . 'llmvm-debug.txt', 
+                    "Processing numbered line: " . $trimmed . "\n", 
+                    FILE_APPEND | LOCK_EX 
+                );
             }
             
             // Check for unordered list items (starting with - or * or +)
