@@ -263,12 +263,12 @@ class LLMVM_Email_Reporter {
             background-color: #f8f9fa;
         }
         
-        /* Column widths for desktop */
-        .date-col { width: 15%; min-width: 120px; }
-        .prompt-col { width: 20%; min-width: 150px; }
-        .model-col { width: 15%; min-width: 120px; }
-        .answer-col { width: 50%; }
-        .user-col { width: 12%; min-width: 100px; }
+        /* Column widths for desktop - optimized for content */
+        .date-col { width: 12%; min-width: 100px; }
+        .prompt-col { width: 25%; min-width: 180px; }
+        .model-col { width: 18%; min-width: 140px; }
+        .answer-col { width: 45%; }
+        .user-col { width: 10%; min-width: 80px; }
         
         /* Mobile responsive styles */
         @media only screen and (max-width: 600px) {
@@ -307,58 +307,76 @@ class LLMVM_Email_Reporter {
                 border-bottom: none;
             }
             
-            /* Stack table columns on mobile */
-            .results-table,
-            .results-table thead,
-            .results-table tbody,
+            /* Mobile table options */
+            .results-section {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .results-table {
+                min-width: 500px;
+                font-size: 13px;
+            }
+            
             .results-table th,
-            .results-table td,
-            .results-table tr {
-                display: block;
-            }
-            
-            .results-table thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
-            }
-            
-            .results-table tr {
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                padding: 15px;
-                background: #ffffff;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
             .results-table td {
-                border: none;
-                position: relative;
-                padding: 8px 0;
-                padding-left: 35%;
-                font-size: 14px;
+                padding: 10px 8px;
             }
             
-            .results-table td:before {
-                content: attr(data-label) ": ";
-                position: absolute;
-                left: 6px;
-                width: 30%;
-                padding-right: 10px;
-                white-space: nowrap;
-                font-weight: 600;
-                color: #495057;
-                font-size: 12px;
-            }
-            
-            .answer-content {
-                max-height: 200px;
-                overflow-y: auto;
-                border: 1px solid #e9ecef;
-                border-radius: 4px;
-                padding: 10px;
-                background: #f8f9fa;
+            /* Alternative: Stack table columns on very small screens */
+            @media only screen and (max-width: 480px) {
+                .results-table,
+                .results-table thead,
+                .results-table tbody,
+                .results-table th,
+                .results-table td,
+                .results-table tr {
+                    display: block;
+                }
+                
+                .results-table thead tr {
+                    position: absolute;
+                    top: -9999px;
+                    left: -9999px;
+                }
+                
+                .results-table tr {
+                    border: 1px solid #e9ecef;
+                    border-radius: 8px;
+                    margin-bottom: 15px;
+                    padding: 15px;
+                    background: #ffffff;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .results-table td {
+                    border: none;
+                    position: relative;
+                    padding: 8px 0;
+                    padding-left: 35%;
+                    font-size: 14px;
+                }
+                
+                .results-table td:before {
+                    content: attr(data-label) ": ";
+                    position: absolute;
+                    left: 6px;
+                    width: 30%;
+                    padding-right: 10px;
+                    white-space: nowrap;
+                    font-weight: 600;
+                    color: #495057;
+                    font-size: 12px;
+                }
+                
+                .answer-content {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    border: 1px solid #e9ecef;
+                    border-radius: 4px;
+                    padding: 10px;
+                    background: #f8f9fa;
+                }
             }
         }
         
@@ -521,6 +539,7 @@ class LLMVM_Email_Reporter {
             $html .= '
             <div class="results-section">
                 <h2>📋 Latest Results</h2>
+                <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 On mobile devices, you can scroll horizontally to view the full table.</p>
                 <table class="results-table">
                     <thead>
                         <tr>';
