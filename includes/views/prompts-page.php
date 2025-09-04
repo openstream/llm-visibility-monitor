@@ -135,7 +135,11 @@ if ( $is_admin ) {
 .ui-autocomplete {
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 999999 !important;
+    position: absolute !important;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
 }
 .ui-autocomplete .ui-menu-item {
     padding: 4px 8px;
@@ -451,6 +455,7 @@ jQuery(document).ready(function($) {
         }
         
         // Initialize autocomplete
+        console.log('Initializing autocomplete for:', $searchInput.attr('id'));
         $searchInput.autocomplete({
             source: function(request, response) {
                 console.log('Autocomplete search term:', request.term);
@@ -476,6 +481,7 @@ jQuery(document).ready(function($) {
                 if (matches.length > 0) {
                     console.log('First filtered match:', matches[0]);
                 }
+                console.log('Calling response with', matches.length, 'matches');
                 response(matches);
             },
             select: function(event, ui) {
@@ -488,11 +494,19 @@ jQuery(document).ready(function($) {
                 event.preventDefault();
             },
             _renderItem: function(ul, item) {
-                return $('<li>')
-                    .append('<div>' + item.name + ' (' + item.id + ')</div>')
-                    .appendTo(ul);
+                console.log('Rendering item:', item);
+                var $li = $('<li>')
+                    .append('<div>' + item.name + ' (' + item.id + ')</div>');
+                console.log('Created list item:', $li);
+                return $li.appendTo(ul);
             }
         });
+        
+        // Debug: Check if autocomplete widget was created
+        setTimeout(function() {
+            console.log('Autocomplete widget data:', $searchInput.data('ui-autocomplete'));
+            console.log('Autocomplete widget element:', $searchInput.autocomplete('widget'));
+        }, 1000);
         
         // Add model to selection
         function addModel(model) {
