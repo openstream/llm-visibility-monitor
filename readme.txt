@@ -119,11 +119,6 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Credit usage calculation and display before execution
   * Different confirmation messages for admin vs. regular users
   * Prevention of runs that would exceed monthly limits
-* **New Feature**: Background queue system
-  * Prevents concurrent runs and browser timeouts
-  * Queue management for handling multiple users
-  * Background processing for long-running operations
-  * Improved user experience for large-scale monitoring
 * **Enhancement**: Improved German localization
   * Complete translation coverage for all new features
   * Proper formality handling (informal "Du" vs. formal "Sie")
@@ -218,7 +213,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 == Upgrade Notice ==
 
 = 0.7.0 =
-Introduces dual-tier user roles (Free/Pro) with configurable usage limits. Existing users auto-migrated to Free plan. Enhanced run confirmation and background queue processing improve user experience.
+Introduces dual-tier user roles (Free/Pro) with configurable usage limits. Existing users auto-migrated to Free plan. Enhanced run confirmation system with usage tracking improves user experience.
 
 = 0.6.0 =
 This version introduces multi-model selection for prompts. Users can now select multiple AI models for each prompt, allowing for comprehensive comparison of responses across different models. The interface has been enhanced with a searchable multi-select dropdown for better user experience.
