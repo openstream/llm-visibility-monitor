@@ -178,7 +178,7 @@ class LLMVM_Cron {
 			}
 			
 			// Check if user has enough runs
-			if ( ! LLMVM_Usage_Manager::can_execute_runs( $current_user_id, $total_runs ) ) {
+			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
 				LLMVM_Logger::log( 'Run aborted: insufficient runs remaining', [ 'user_id' => $current_user_id, 'runs_needed' => $total_runs ] );
 				return;
 			}
@@ -324,7 +324,7 @@ class LLMVM_Cron {
 		// Check usage limits for non-admin users
 		if ( ! $is_admin ) {
 			$runs_needed = count( $prompt_models );
-			if ( ! LLMVM_Usage_Manager::can_execute_runs( $current_user_id, $runs_needed ) ) {
+			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $runs_needed ) ) {
 				LLMVM_Logger::log( 'Single prompt run aborted: insufficient runs remaining', [
 					'user_id' => $current_user_id,
 					'runs_needed' => $runs_needed,
