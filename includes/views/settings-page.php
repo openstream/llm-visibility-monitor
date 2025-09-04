@@ -51,11 +51,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </tr>
                 <tr>
                     <td><strong><?php echo esc_html__( 'LLM Manager Pro', 'llm-visibility-monitor' ); ?></strong></td>
-                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Pro plan: 10 prompts, 6 models/prompt, 300 runs/month', 'llm-visibility-monitor' ); ?></td>
+                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Pro plan with higher usage limits', 'llm-visibility-monitor' ); ?></td>
                 </tr>
                 <tr>
                     <td><strong><?php echo esc_html__( 'LLM Manager Free', 'llm-visibility-monitor' ); ?></strong></td>
-                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Free plan: 3 prompts, 3 models/prompt, 30 runs/month', 'llm-visibility-monitor' ); ?></td>
+                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Free plan with basic usage limits', 'llm-visibility-monitor' ); ?></td>
                 </tr>
                 <tr>
                     <td><strong><?php echo esc_html__( 'Other Roles', 'llm-visibility-monitor' ); ?></strong></td>
