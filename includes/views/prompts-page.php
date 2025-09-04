@@ -834,24 +834,26 @@ jQuery(document).ready(function($) {
             console.log('Target value:', e.target.value);
         });
         
-        // Add custom test buttons next to save buttons
-        console.log('=== CREATING TEST BUTTONS ===');
+        // Replace unresponsive save buttons with working ones
+        console.log('=== REPLACING SAVE BUTTONS ===');
         var $saveButtons = $('input[type="submit"][value="Speichern"]');
-        console.log('Found save buttons for test:', $saveButtons.length);
+        console.log('Found save buttons to replace:', $saveButtons.length);
         
         $saveButtons.each(function(index) {
             var $saveButton = $(this);
             var $form = $saveButton.closest('form');
-            console.log('Creating test button for save button', index);
+            console.log('Replacing save button', index);
             
-            // Create a test button
-            var $testButton = $('<button type="button" style="background: red; color: white; margin-left: 10px;">TEST SAVE</button>');
-            $testButton.insertAfter($saveButton);
-            console.log('Test button created and inserted');
+            // Create a new working button
+            var $newButton = $('<button type="button" class="button button-primary">Speichern</button>');
+            $newButton.insertAfter($saveButton);
             
-            // Add click handler to test button
-            $testButton.on('click', function() {
-                console.log('=== TEST BUTTON CLICKED ===');
+            // Hide the original button
+            $saveButton.hide();
+            
+            // Add click handler to new button
+            $newButton.on('click', function() {
+                console.log('=== NEW SAVE BUTTON CLICKED ===');
                 
                 // Sync the model data first
                 var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
@@ -859,9 +861,6 @@ jQuery(document).ready(function($) {
                     $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
                 }
                 var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-                
-                console.log('Model container found:', $modelContainer.length);
-                console.log('Hidden model input found:', $hiddenModelInput.length);
                 
                 if ($modelContainer.length && $hiddenModelInput.length) {
                     var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
@@ -874,7 +873,7 @@ jQuery(document).ready(function($) {
                 }
                 
                 // Submit the form
-                console.log('=== SUBMITTING FORM VIA TEST BUTTON ===');
+                console.log('=== SUBMITTING FORM VIA NEW BUTTON ===');
                 $form[0].submit();
             });
         });
