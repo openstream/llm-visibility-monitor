@@ -847,6 +847,16 @@ jQuery(document).ready(function($) {
             console.log('Save form', index, ':', $(this).attr('action'));
             console.log('Form has prompt_id:', $(this).find('input[name="prompt_id"]').length > 0);
         });
+        
+        // Test manual form submission
+        if ($saveForms.length > 0) {
+            console.log('=== TESTING MANUAL FORM SUBMIT ===');
+            var $testForm = $saveForms.first();
+            console.log('Testing form submission for:', $testForm.find('input[name="prompt_id"]').val());
+            
+            // Try to trigger the form submission manually
+            $testForm.trigger('submit');
+        }
     }, 2000);
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
