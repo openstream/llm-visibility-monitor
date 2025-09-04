@@ -835,13 +835,19 @@ jQuery(document).ready(function($) {
         });
         
         // Add custom test buttons next to save buttons
-        $('input[type="submit"][value="Speichern"]').each(function() {
+        console.log('=== CREATING TEST BUTTONS ===');
+        var $saveButtons = $('input[type="submit"][value="Speichern"]');
+        console.log('Found save buttons for test:', $saveButtons.length);
+        
+        $saveButtons.each(function(index) {
             var $saveButton = $(this);
             var $form = $saveButton.closest('form');
+            console.log('Creating test button for save button', index);
             
             // Create a test button
             var $testButton = $('<button type="button" style="background: red; color: white; margin-left: 10px;">TEST SAVE</button>');
             $testButton.insertAfter($saveButton);
+            console.log('Test button created and inserted');
             
             // Add click handler to test button
             $testButton.on('click', function() {
