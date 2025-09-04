@@ -640,6 +640,12 @@ jQuery(document).ready(function($) {
     });
     
     // Sync content before form submission to ensure latest content is saved
+    var forms = $('form[action*="admin-post.php"]');
+    console.log('Found', forms.length, 'forms with admin-post.php action');
+    forms.each(function(index) {
+        console.log('Form', index, ':', $(this).attr('action'), 'ID:', $(this).attr('id'), 'Class:', $(this).attr('class'));
+    });
+    
     $('form[action*="admin-post.php"]').on('submit', function(e) {
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
