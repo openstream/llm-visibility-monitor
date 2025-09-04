@@ -649,8 +649,9 @@ class LLMVM_Email_Reporter {
         // Convert markdown lists to HTML lists (do this first to avoid conflicts)
         $formatted = $this->convert_markdown_lists( $formatted );
         
-        // Debug: Log the formatted result to see what's being generated
+        // Debug: Log the original and formatted result to see what's being generated
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'LLMVM Email Original: ' . substr( $answer, 0, 500 ) );
             error_log( 'LLMVM Email Formatted: ' . substr( $formatted, 0, 500 ) );
         }
         
@@ -689,6 +690,11 @@ class LLMVM_Email_Reporter {
      * Convert markdown lists to HTML lists with robust handling for different LLM formats.
      */
     private function convert_markdown_lists( string $text ): string {
+        // Debug: Log the input text
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'LLMVM List Input: ' . substr( $text, 0, 300 ) );
+        }
+        
         // Split into lines
         $lines = explode( "\n", $text );
         $in_list = false;
@@ -698,6 +704,11 @@ class LLMVM_Email_Reporter {
         
         foreach ( $lines as $line ) {
             $trimmed = trim( $line );
+            
+            // Debug: Log each line being processed
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG && preg_match( '/^\s*\d+[\.\):]/', $trimmed ) ) {
+                error_log( 'LLMVM Processing line: ' . $trimmed );
+            }
             
             // Check for unordered list items (starting with - or * or +)
             if ( preg_match( '/^[\s]*[-*+][\s]+(.+)$/', $trimmed, $matches ) ) {
