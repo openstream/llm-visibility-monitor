@@ -766,7 +766,7 @@ class LLMVM_Database {
 			$update_format[] = '%s';
 		}
 		
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
 			$table_name,
 			$update_data,
 			array( 'id' => $job_id ),

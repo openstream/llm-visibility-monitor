@@ -588,7 +588,7 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
+            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verification handled in verify_permissions_and_nonce(), will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
                 $models_input = array_map( 'sanitize_text_field', $raw_models );
@@ -717,7 +717,7 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
+            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verification handled in verify_permissions_and_nonce(), will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
                 $models_input = array_map( 'sanitize_text_field', $raw_models );
