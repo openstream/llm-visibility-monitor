@@ -698,13 +698,31 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Debug: Check submit buttons using event delegation
+    // Debug: Check submit buttons using multiple event types
     $(document).on('click', 'input[type="submit"]', function(e) {
         console.log('=== SUBMIT BUTTON CLICKED ===');
         console.log('Button value:', $(this).val());
         console.log('Button name:', $(this).attr('name'));
         console.log('Button form:', $(this).closest('form').attr('action'));
         console.log('Form has admin-post.php action:', $(this).closest('form').attr('action').indexOf('admin-post.php') !== -1);
+    });
+    
+    // Also try mousedown and mouseup events
+    $(document).on('mousedown', 'input[type="submit"]', function(e) {
+        console.log('=== SUBMIT BUTTON MOUSEDOWN ===');
+        console.log('Button value:', $(this).val());
+    });
+    
+    $(document).on('mouseup', 'input[type="submit"]', function(e) {
+        console.log('=== SUBMIT BUTTON MOUSEUP ===');
+        console.log('Button value:', $(this).val());
+    });
+    
+    // Try form submit event as well
+    $(document).on('submit', 'form[action*="admin-post.php"]', function(e) {
+        console.log('=== FORM SUBMIT EVENT ===');
+        console.log('Form action:', $(this).attr('action'));
+        console.log('Form method:', $(this).attr('method'));
     });
     
     // Debug: Check if submit buttons exist
