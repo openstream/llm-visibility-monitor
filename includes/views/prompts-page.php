@@ -429,6 +429,10 @@ jQuery(document).ready(function($) {
     
     // Debug: Log models to console
     console.log('Available models:', availableModels);
+    if (availableModels && availableModels.length > 0) {
+        console.log('First model example:', availableModels[0]);
+        console.log('Model structure check - has name:', 'name' in availableModels[0], 'has id:', 'id' in availableModels[0]);
+    }
     
     // Initialize multi-model selectors
     function initializeMultiModelSelector(containerId) {
@@ -469,6 +473,9 @@ jQuery(document).ready(function($) {
                 });
                 
                 console.log('Filtered matches:', matches);
+                if (matches.length > 0) {
+                    console.log('First filtered match:', matches[0]);
+                }
                 response(matches);
             },
             select: function(event, ui) {
@@ -479,6 +486,11 @@ jQuery(document).ready(function($) {
             },
             focus: function(event, ui) {
                 event.preventDefault();
+            },
+            _renderItem: function(ul, item) {
+                return $('<li>')
+                    .append('<div>' + item.name + ' (' + item.id + ')</div>')
+                    .appendTo(ul);
             }
         });
         
