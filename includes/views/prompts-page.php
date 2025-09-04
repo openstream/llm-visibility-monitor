@@ -825,6 +825,15 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Test if we can detect any clicks at all
+        $(document).on('click', 'body', function(e) {
+            console.log('=== BODY CLICK DETECTED ===');
+            console.log('Target element:', e.target);
+            console.log('Target tag:', e.target.tagName);
+            console.log('Target type:', e.target.type);
+            console.log('Target value:', e.target.value);
+        });
+        
         // Removed programmatic click test to prevent page reloads
     }, 1000);
     
