@@ -906,6 +906,17 @@ jQuery(document).ready(function($) {
             $submitButton.on('blur', function(e) {
                 console.log('=== SUBMIT BUTTON BLUR (TEST) ===');
             });
+            
+            // Try to manually trigger a click event to see if the button responds
+            console.log('=== TESTING MANUAL CLICK TRIGGER ===');
+            setTimeout(function() {
+                console.log('Manually triggering click on button');
+                $submitButton.trigger('click');
+            }, 3000);
+            
+            // Try to add a simple alert to see if the button is actually clickable
+            $submitButton.css('background-color', 'red');
+            $submitButton.attr('onclick', 'alert("Button clicked!"); return false;');
         });
     }, 2000);
     } catch (error) {
