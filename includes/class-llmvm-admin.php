@@ -26,6 +26,10 @@ class LLMVM_Admin {
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
         add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete' ] );
+        
+        // Role management handlers.
+        add_action( 'admin_post_llmvm_change_user_plan', [ $this, 'handle_change_user_plan' ] );
+        add_action( 'admin_post_llmvm_remove_llm_access', [ $this, 'handle_remove_llm_access' ] );
     }
 
     /**
@@ -124,6 +128,9 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_pro_max_prompts', __( 'Pro Plan - Max Prompts', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_prompts' ], 'llmvm-settings', 'llmvm_section_limits' );
         add_settings_field( 'llmvm_pro_max_models', __( 'Pro Plan - Max Models per Prompt', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_models' ], 'llmvm-settings', 'llmvm_section_limits' );
         add_settings_field( 'llmvm_pro_max_runs', __( 'Pro Plan - Max Runs per Month', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_runs' ], 'llmvm-settings', 'llmvm_section_limits' );
+
+        // User Role Management Section
+        add_settings_section( 'llmvm_section_roles', __( 'User Role Management', 'llm-visibility-monitor' ), [ $this, 'section_roles_description' ], 'llmvm-settings' );
     }
 
     /**
@@ -367,6 +374,62 @@ class LLMVM_Admin {
         $value = isset( $options['pro_max_runs'] ) ? (int) $options['pro_max_runs'] : 300;
         echo '<input type="number" name="llmvm_options[pro_max_runs]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
         echo '<p class="description">' . esc_html__( 'Maximum number of runs Pro plan users can execute per month.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render user role management section description */
+    public function section_roles_description(): void {
+        echo '<p>' . esc_html__( 'Manage users with LLM Manager roles. You can assign users to Free or Pro plans, or remove their LLM Manager access.', 'llm-visibility-monitor' ) . '</p>';
+        
+        // Get users with LLM Manager roles
+        $free_users = get_users( array( 'role' => 'llm_manager_free' ) );
+        $pro_users = get_users( array( 'role' => 'llm_manager_pro' ) );
+        
+        if ( empty( $free_users ) && empty( $pro_users ) ) {
+            echo '<p><em>' . esc_html__( 'No users currently have LLM Manager roles assigned.', 'llm-visibility-monitor' ) . '</em></p>';
+            return;
+        }
+        
+        echo '<div style="margin-top: 20px;">';
+        
+        if ( ! empty( $free_users ) ) {
+            echo '<h4>' . esc_html__( 'LLM Manager Free Users', 'llm-visibility-monitor' ) . '</h4>';
+            echo '<table class="widefat" style="margin-bottom: 20px;">';
+            echo '<thead><tr><th>' . esc_html__( 'User', 'llm-visibility-monitor' ) . '</th><th>' . esc_html__( 'Email', 'llm-visibility-monitor' ) . '</th><th>' . esc_html__( 'Actions', 'llm-visibility-monitor' ) . '</th></tr></thead>';
+            echo '<tbody>';
+            foreach ( $free_users as $user ) {
+                echo '<tr>';
+                echo '<td>' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_login ) . ')</td>';
+                echo '<td>' . esc_html( $user->user_email ) . '</td>';
+                echo '<td>';
+                echo '<a href="' . esc_url( admin_url( 'user-edit.php?user_id=' . $user->ID ) ) . '" class="button button-small">' . esc_html__( 'Edit User', 'llm-visibility-monitor' ) . '</a> ';
+                echo '<a href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_change_user_plan&user_id=' . $user->ID . '&plan=pro' ), 'llmvm_change_user_plan' ) ) . '" class="button button-small button-primary">' . esc_html__( 'Upgrade to Pro', 'llm-visibility-monitor' ) . '</a> ';
+                echo '<a href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_remove_llm_access&user_id=' . $user->ID ), 'llmvm_remove_llm_access' ) ) . '" class="button button-small" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to remove LLM Manager access from this user?', 'llm-visibility-monitor' ) ) . '\')">' . esc_html__( 'Remove Access', 'llm-visibility-monitor' ) . '</a>';
+                echo '</td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+        }
+        
+        if ( ! empty( $pro_users ) ) {
+            echo '<h4>' . esc_html__( 'LLM Manager Pro Users', 'llm-visibility-monitor' ) . '</h4>';
+            echo '<table class="widefat">';
+            echo '<thead><tr><th>' . esc_html__( 'User', 'llm-visibility-monitor' ) . '</th><th>' . esc_html__( 'Email', 'llm-visibility-monitor' ) . '</th><th>' . esc_html__( 'Actions', 'llm-visibility-monitor' ) . '</th></tr></thead>';
+            echo '<tbody>';
+            foreach ( $pro_users as $user ) {
+                echo '<tr>';
+                echo '<td>' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_login ) . ')</td>';
+                echo '<td>' . esc_html( $user->user_email ) . '</td>';
+                echo '<td>';
+                echo '<a href="' . esc_url( admin_url( 'user-edit.php?user_id=' . $user->ID ) ) . '" class="button button-small">' . esc_html__( 'Edit User', 'llm-visibility-monitor' ) . '</a> ';
+                echo '<a href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_change_user_plan&user_id=' . $user->ID . '&plan=free' ), 'llmvm_change_user_plan' ) ) . '" class="button button-small">' . esc_html__( 'Downgrade to Free', 'llm-visibility-monitor' ) . '</a> ';
+                echo '<a href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_remove_llm_access&user_id=' . $user->ID ), 'llmvm_remove_llm_access' ) ) . '" class="button button-small" onclick="return confirm(\'' . esc_js( __( 'Are you sure you want to remove LLM Manager access from this user?', 'llm-visibility-monitor' ) ) . '\')">' . esc_html__( 'Remove Access', 'llm-visibility-monitor' ) . '</a>';
+                echo '</td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+        }
+        
+        echo '</div>';
     }
 
     /** Render prompts management page */
@@ -1026,6 +1089,80 @@ class LLMVM_Admin {
             LLMVM_VERSION,
             true
         );
+    }
+
+    /** Handle changing user plan */
+    public function handle_change_user_plan(): void {
+        if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+
+        // Verify nonce
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_change_user_plan' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+
+        $user_id = isset( $_GET['user_id'] ) ? (int) $_GET['user_id'] : 0;
+        $plan = isset( $_GET['plan'] ) ? sanitize_text_field( wp_unslash( $_GET['plan'] ) ) : '';
+
+        if ( $user_id <= 0 || ! in_array( $plan, [ 'free', 'pro' ], true ) ) {
+            wp_die( esc_html__( 'Invalid parameters', 'llm-visibility-monitor' ) );
+        }
+
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            wp_die( esc_html__( 'User not found', 'llm-visibility-monitor' ) );
+        }
+
+        // Remove existing LLM Manager roles
+        $user->remove_role( 'llm_manager_free' );
+        $user->remove_role( 'llm_manager_pro' );
+
+        // Add new role
+        if ( $plan === 'free' ) {
+            $user->add_role( 'llm_manager_free' );
+            $message = __( 'User downgraded to Free plan successfully.', 'llm-visibility-monitor' );
+        } else {
+            $user->add_role( 'llm_manager_pro' );
+            $message = __( 'User upgraded to Pro plan successfully.', 'llm-visibility-monitor' );
+        }
+
+        set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => $message ], 60 );
+        wp_safe_redirect( admin_url( 'options-general.php?page=llmvm-settings' ) );
+        exit;
+    }
+
+    /** Handle removing LLM access from user */
+    public function handle_remove_llm_access(): void {
+        if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+
+        // Verify nonce
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'llmvm_remove_llm_access' ) ) {
+            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+
+        $user_id = isset( $_GET['user_id'] ) ? (int) $_GET['user_id'] : 0;
+
+        if ( $user_id <= 0 ) {
+            wp_die( esc_html__( 'Invalid user ID', 'llm-visibility-monitor' ) );
+        }
+
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            wp_die( esc_html__( 'User not found', 'llm-visibility-monitor' ) );
+        }
+
+        // Remove LLM Manager roles
+        $user->remove_role( 'llm_manager_free' );
+        $user->remove_role( 'llm_manager_pro' );
+
+        set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'LLM Manager access removed from user successfully.', 'llm-visibility-monitor' ) ], 60 );
+        wp_safe_redirect( admin_url( 'options-general.php?page=llmvm-settings' ) );
+        exit;
     }
 }
 

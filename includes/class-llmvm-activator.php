@@ -42,6 +42,13 @@ class LLMVM_Activator {
 	 * Create LLM Manager roles with appropriate capabilities.
 	 */
 	private static function create_llm_manager_roles(): void {
+		// Migrate existing users from old llm_manager role to llm_manager_free
+		$users_with_old_role = get_users( array( 'role' => 'llm_manager' ) );
+		foreach ( $users_with_old_role as $user ) {
+			$user->remove_role( 'llm_manager' );
+			$user->add_role( 'llm_manager_free' );
+		}
+
 		// Remove existing roles if they exist (for updates).
 		remove_role( 'llm_manager' );
 		remove_role( 'llm_manager_free' );
