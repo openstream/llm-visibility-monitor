@@ -203,6 +203,57 @@ if ( $is_admin ) {
 <div class="wrap">
     <h1><?php echo esc_html__( 'LLM Prompts Management', 'llm-visibility-monitor' ); ?></h1>
 
+    <?php
+    // Display usage information for non-admin users
+    if ( ! $is_admin ) {
+        $usage_summary = LLMVM_Usage_Manager::get_usage_summary( $current_user_id );
+        ?>
+        <div class="llmvm-usage-display" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <h3 style="margin-top: 0;"><?php echo esc_html__( 'Your Usage Summary', 'llm-visibility-monitor' ); ?> (<?php echo esc_html( $usage_summary['plan_name'] ); ?> Plan)</h3>
+            
+            <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                <div>
+                    <strong><?php echo esc_html__( 'Prompts:', 'llm-visibility-monitor' ); ?></strong>
+                    <span style="color: <?php echo $usage_summary['prompts']['used'] >= $usage_summary['prompts']['limit'] ? '#d63638' : '#00a32a'; ?>">
+                        <?php echo esc_html( $usage_summary['prompts']['used'] ); ?> / <?php echo esc_html( $usage_summary['prompts']['limit'] ); ?>
+                    </span>
+                    <?php if ( $usage_summary['prompts']['remaining'] > 0 ) : ?>
+                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['prompts']['remaining'] ); ?> remaining)</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div>
+                    <strong><?php echo esc_html__( 'Runs this month:', 'llm-visibility-monitor' ); ?></strong>
+                    <span style="color: <?php echo $usage_summary['runs']['used'] >= $usage_summary['runs']['limit'] ? '#d63638' : '#00a32a'; ?>">
+                        <?php echo esc_html( $usage_summary['runs']['used'] ); ?> / <?php echo esc_html( $usage_summary['runs']['limit'] ); ?>
+                    </span>
+                    <?php if ( $usage_summary['runs']['remaining'] > 0 ) : ?>
+                        <span style="color: #666;">(<?php echo esc_html( $usage_summary['runs']['remaining'] ); ?> remaining)</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div>
+                    <strong><?php echo esc_html__( 'Max models per prompt:', 'llm-visibility-monitor' ); ?></strong>
+                    <span><?php echo esc_html( $usage_summary['models_per_prompt_limit'] ); ?></span>
+                </div>
+            </div>
+            
+            <?php if ( $usage_summary['prompts']['used'] >= $usage_summary['prompts']['limit'] ) : ?>
+                <div style="color: #d63638; margin-top: 10px; font-weight: bold;">
+                    ⚠️ <?php echo esc_html__( 'You have reached your prompt limit. Delete some prompts to create new ones.', 'llm-visibility-monitor' ); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ( $usage_summary['runs']['used'] >= $usage_summary['runs']['limit'] ) : ?>
+                <div style="color: #d63638; margin-top: 10px; font-weight: bold;">
+                    ⚠️ <?php echo esc_html__( 'You have reached your monthly run limit. Your limit will reset next month.', 'llm-visibility-monitor' ); ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+    ?>
+
     <p>
         <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=llmvm_run_now' ), 'llmvm_run_now' ) ); ?>">
             <?php echo esc_html__( 'Run All Prompts Now', 'llm-visibility-monitor' ); ?>

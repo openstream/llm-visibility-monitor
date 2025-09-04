@@ -45,10 +45,16 @@ class LLMVM_Usage_Manager {
 	 * Get free plan limits.
 	 */
 	public static function get_free_limits(): array {
+		$options = get_option( 'llmvm_options', array() );
+		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+		
 		return array(
-			'max_prompts' => 3,
-			'max_models_per_prompt' => 3,
-			'max_runs_per_month' => 30,
+			'max_prompts' => isset( $options['free_max_prompts'] ) ? (int) $options['free_max_prompts'] : 3,
+			'max_models_per_prompt' => isset( $options['free_max_models'] ) ? (int) $options['free_max_models'] : 3,
+			'max_runs_per_month' => isset( $options['free_max_runs'] ) ? (int) $options['free_max_runs'] : 30,
 			'plan_name' => 'Free'
 		);
 	}
@@ -57,10 +63,16 @@ class LLMVM_Usage_Manager {
 	 * Get pro plan limits.
 	 */
 	public static function get_pro_limits(): array {
+		$options = get_option( 'llmvm_options', array() );
+		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+		
 		return array(
-			'max_prompts' => 10,
-			'max_models_per_prompt' => 6,
-			'max_runs_per_month' => 300,
+			'max_prompts' => isset( $options['pro_max_prompts'] ) ? (int) $options['pro_max_prompts'] : 10,
+			'max_models_per_prompt' => isset( $options['pro_max_models'] ) ? (int) $options['pro_max_models'] : 6,
+			'max_runs_per_month' => isset( $options['pro_max_runs'] ) ? (int) $options['pro_max_runs'] : 300,
 			'plan_name' => 'Pro'
 		);
 	}

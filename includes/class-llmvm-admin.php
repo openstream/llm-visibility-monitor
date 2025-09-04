@@ -113,6 +113,17 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
+
+        // Usage Limits Section
+        add_settings_section( 'llmvm_section_limits', __( 'Usage Limits', 'llm-visibility-monitor' ), [ $this, 'section_limits_description' ], 'llmvm-settings' );
+
+        add_settings_field( 'llmvm_free_max_prompts', __( 'Free Plan - Max Prompts', 'llm-visibility-monitor' ), [ $this, 'field_free_max_prompts' ], 'llmvm-settings', 'llmvm_section_limits' );
+        add_settings_field( 'llmvm_free_max_models', __( 'Free Plan - Max Models per Prompt', 'llm-visibility-monitor' ), [ $this, 'field_free_max_models' ], 'llmvm-settings', 'llmvm_section_limits' );
+        add_settings_field( 'llmvm_free_max_runs', __( 'Free Plan - Max Runs per Month', 'llm-visibility-monitor' ), [ $this, 'field_free_max_runs' ], 'llmvm-settings', 'llmvm_section_limits' );
+
+        add_settings_field( 'llmvm_pro_max_prompts', __( 'Pro Plan - Max Prompts', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_prompts' ], 'llmvm-settings', 'llmvm_section_limits' );
+        add_settings_field( 'llmvm_pro_max_models', __( 'Pro Plan - Max Models per Prompt', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_models' ], 'llmvm-settings', 'llmvm_section_limits' );
+        add_settings_field( 'llmvm_pro_max_runs', __( 'Pro Plan - Max Runs per Month', 'llm-visibility-monitor' ), [ $this, 'field_pro_max_runs' ], 'llmvm-settings', 'llmvm_section_limits' );
     }
 
     /**
@@ -167,6 +178,15 @@ class LLMVM_Admin {
         
         $email_reports   = ! empty( $input['email_reports'] );
         $new['email_reports'] = $email_reports;
+
+        // Usage limits
+        $new['free_max_prompts'] = isset( $input['free_max_prompts'] ) ? max( 1, (int) $input['free_max_prompts'] ) : 3;
+        $new['free_max_models'] = isset( $input['free_max_models'] ) ? max( 1, (int) $input['free_max_models'] ) : 3;
+        $new['free_max_runs'] = isset( $input['free_max_runs'] ) ? max( 1, (int) $input['free_max_runs'] ) : 30;
+        
+        $new['pro_max_prompts'] = isset( $input['pro_max_prompts'] ) ? max( 1, (int) $input['pro_max_prompts'] ) : 10;
+        $new['pro_max_models'] = isset( $input['pro_max_models'] ) ? max( 1, (int) $input['pro_max_models'] ) : 6;
+        $new['pro_max_runs'] = isset( $input['pro_max_runs'] ) ? max( 1, (int) $input['pro_max_runs'] ) : 300;
 
         return $new;
     }
@@ -276,6 +296,77 @@ class LLMVM_Admin {
         $value = ! empty( $options['email_reports'] );
         echo '<label><input type="checkbox" name="llmvm_options[email_reports]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Send email reports to admin after each cron run', 'llm-visibility-monitor' ) . '</label>';
         echo '<p class="description">' . esc_html__( 'Reports will be sent to the WordPress admin email address with a summary of the latest results.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render usage limits section description */
+    public function section_limits_description(): void {
+        echo '<p>' . esc_html__( 'Configure usage limits for Free and Pro user plans. These limits control how many prompts users can create, how many models they can select per prompt, and how many runs they can execute per month.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render free max prompts field */
+    public function field_free_max_prompts(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['free_max_prompts'] ) ? (int) $options['free_max_prompts'] : 3;
+        echo '<input type="number" name="llmvm_options[free_max_prompts]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of prompts Free plan users can create.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render free max models field */
+    public function field_free_max_models(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['free_max_models'] ) ? (int) $options['free_max_models'] : 3;
+        echo '<input type="number" name="llmvm_options[free_max_models]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of models Free plan users can select per prompt.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render free max runs field */
+    public function field_free_max_runs(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['free_max_runs'] ) ? (int) $options['free_max_runs'] : 30;
+        echo '<input type="number" name="llmvm_options[free_max_runs]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of runs Free plan users can execute per month.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render pro max prompts field */
+    public function field_pro_max_prompts(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['pro_max_prompts'] ) ? (int) $options['pro_max_prompts'] : 10;
+        echo '<input type="number" name="llmvm_options[pro_max_prompts]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of prompts Pro plan users can create.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render pro max models field */
+    public function field_pro_max_models(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['pro_max_models'] ) ? (int) $options['pro_max_models'] : 6;
+        echo '<input type="number" name="llmvm_options[pro_max_models]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of models Pro plan users can select per prompt.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render pro max runs field */
+    public function field_pro_max_runs(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['pro_max_runs'] ) ? (int) $options['pro_max_runs'] : 300;
+        echo '<input type="number" name="llmvm_options[pro_max_runs]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of runs Pro plan users can execute per month.', 'llm-visibility-monitor' ) . '</p>';
     }
 
     /** Render prompts management page */
