@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.6.0
+Stable tag: 0.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * **Results Dashboard**: View all LLM responses in a sortable, searchable table
 * **CSV Export**: Export results for external analysis
 * **Email Reports**: Receive email notifications with formatted results
-* **Role-Based Access Control**: Assign "LLM Manager" role for limited admin access
+* **Role-Based Access Control**: Assign "LLM Manager Free" or "LLM Manager Pro" roles with configurable usage limits
 * **User-Specific Data**: Secure isolation between user prompts, results, and exports
 * **Multi-Model Selection**: Select multiple AI models from 300+ available models for each prompt to compare responses
 * **Personalized Email Reports**: Users receive emails at their own address with only their data
@@ -40,7 +40,8 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 **Role-Based Access:**
 
 * **Administrators**: Full access to all features including settings
-* **LLM Managers**: Can manage prompts, view dashboard, and view results (no settings access)
+* **LLM Manager Pro**: 10 prompts max, 6 models per prompt, 300 runs per month
+* **LLM Manager Free**: 3 prompts max, 3 models per prompt, 30 runs per month
 * **Other Roles**: No LLM access
 
 == Installation ==
@@ -74,7 +75,7 @@ Yes, the plugin provides CSV export functionality for all stored results.
 
 = Is there role-based access control? =
 
-Yes! You can assign users the "LLM Manager" role, which gives them access to manage prompts and view results, but not access to plugin settings.
+Yes! You can assign users the "LLM Manager Free" or "LLM Manager Pro" roles, which give them access to manage prompts and view results with different usage limits, but not access to plugin settings.
 
 = Can users see each other's data? =
 
@@ -96,6 +97,43 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 4. Individual result detail view
 
 == Changelog ==
+
+= 0.7.0 =
+* **New Feature**: Dual-tier user role system
+  * Added "LLM Manager Pro" role with higher usage limits
+  * Renamed existing role to "LLM Manager Free" with basic limits
+  * Automatic migration of existing users from old role to new Free role
+  * Role management interface in settings for upgrading/downgrading users
+* **New Feature**: Configurable usage limits
+  * Free plan: 3 prompts max, 3 models per prompt, 30 runs per month
+  * Pro plan: 10 prompts max, 6 models per prompt, 300 runs per month
+  * All limits configurable via Settings → LLM Visibility Monitor
+  * Real-time usage tracking and enforcement
+* **New Feature**: Usage monitoring and display
+  * Usage summary display on prompts page showing current vs. limits
+  * Color-coded warnings when approaching or exceeding limits
+  * Monthly run tracking with automatic reset
+  * Prompt and model count tracking per user
+* **New Feature**: Enhanced run confirmation system
+  * JavaScript popups for "Run All Prompts Now" and individual "Run Now" buttons
+  * Credit usage calculation and display before execution
+  * Different confirmation messages for admin vs. regular users
+  * Prevention of runs that would exceed monthly limits
+* **New Feature**: Background queue system
+  * Prevents concurrent runs and browser timeouts
+  * Queue management for handling multiple users
+  * Background processing for long-running operations
+  * Improved user experience for large-scale monitoring
+* **Enhancement**: Improved German localization
+  * Complete translation coverage for all new features
+  * Proper formality handling (informal "Du" vs. formal "Sie")
+  * Fixed untranslated strings in usage summary
+  * Updated model selection placeholder text
+* **Enhancement**: Enhanced settings interface
+  * Configurable limits section in settings
+  * User role management with upgrade/downgrade actions
+  * Generic role descriptions instead of hardcoded limits
+  * Improved admin interface organization
 
 = 0.6.0 =
 * **New Feature**: Multi-model selection for prompts
@@ -178,6 +216,9 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * German localization (de_DE, de_CH)
 
 == Upgrade Notice ==
+
+= 0.7.0 =
+This version introduces a dual-tier user role system with configurable usage limits. Existing "LLM Manager" users will be automatically migrated to "LLM Manager Free" with basic limits. New "LLM Manager Pro" role offers higher limits. All limits are configurable in settings. Enhanced run confirmation system and background queue processing improve user experience.
 
 = 0.6.0 =
 This version introduces multi-model selection for prompts. Users can now select multiple AI models for each prompt, allowing for comprehensive comparison of responses across different models. The interface has been enhanced with a searchable multi-select dropdown for better user experience.

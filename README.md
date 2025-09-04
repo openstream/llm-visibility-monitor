@@ -124,6 +124,43 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
+### 0.7.0 - 2025-01-15
+- **New Feature**: Dual-tier user role system
+  - Added "LLM Manager Pro" role with higher usage limits
+  - Renamed existing role to "LLM Manager Free" with basic limits
+  - Automatic migration of existing users from old role to new Free role
+  - Role management interface in settings for upgrading/downgrading users
+- **New Feature**: Configurable usage limits
+  - Free plan: 3 prompts max, 3 models per prompt, 30 runs per month
+  - Pro plan: 10 prompts max, 6 models per prompt, 300 runs per month
+  - All limits configurable via Settings → LLM Visibility Monitor
+  - Real-time usage tracking and enforcement
+- **New Feature**: Usage monitoring and display
+  - Usage summary display on prompts page showing current vs. limits
+  - Color-coded warnings when approaching or exceeding limits
+  - Monthly run tracking with automatic reset
+  - Prompt and model count tracking per user
+- **New Feature**: Enhanced run confirmation system
+  - JavaScript popups for "Run All Prompts Now" and individual "Run Now" buttons
+  - Credit usage calculation and display before execution
+  - Different confirmation messages for admin vs. regular users
+  - Prevention of runs that would exceed monthly limits
+- **New Feature**: Background queue system
+  - Prevents concurrent runs and browser timeouts
+  - Queue management for handling multiple users
+  - Background processing for long-running operations
+  - Improved user experience for large-scale monitoring
+- **Enhancement**: Improved German localization
+  - Complete translation coverage for all new features
+  - Proper formality handling (informal "Du" vs. formal "Sie")
+  - Fixed untranslated strings in usage summary
+  - Updated model selection placeholder text
+- **Enhancement**: Enhanced settings interface
+  - Configurable limits section in settings
+  - User role management with upgrade/downgrade actions
+  - Generic role descriptions instead of hardcoded limits
+  - Improved admin interface organization
+
 ### 0.6.0 - 2025-09-04
 - **New Feature**: Multi-model selection for prompts
   - Users can now select multiple AI models for each individual prompt
