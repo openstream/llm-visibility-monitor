@@ -237,7 +237,7 @@ msgstr "Sie können nur Ihre eigenen Prompts sehen und verwalten."
 
 #: includes/views/prompts-page.php
 msgid "Your Prompts"
-msgstr "Ihre Prompts"
+msgstr "Deine Prompts"
 
 #: includes/views/prompts-page.php
 msgid "LLM Prompts Management"
@@ -301,7 +301,7 @@ msgstr "Dashboard anzeigen"
 
 #: includes/views/prompts-page.php
 msgid "Your Usage Summary"
-msgstr "Ihre Nutzungsübersicht"
+msgstr "Deine Nutzungsübersicht"
 
 #: includes/views/prompts-page.php
 msgid "Free Plan"
