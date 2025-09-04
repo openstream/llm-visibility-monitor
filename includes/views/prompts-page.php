@@ -645,12 +645,35 @@ jQuery(document).ready(function($) {
         
         // Update the display of selected models
         function updateDisplay() {
+            console.log('=== updateDisplay called for', containerId, '===');
+            console.log('Selected models:', selectedModels);
+            console.log('Available models count:', availableModels.length);
             $selectedDiv.empty();
             selectedModels.forEach(function(modelId) {
+                console.log('Looking for model:', modelId);
                 var model = availableModels.find(function(m) { return m.id === modelId; });
+                console.log('Found model:', model);
                 if (model) {
                     var $tag = $('<span class="llmvm-model-tag">' + 
                         model.name + ' (' + model.id + ')' +
+                        ' <a href="#" class="remove" data-model="' + modelId + '">&times;</a>' +
+                        '</span>');
+                    $selectedDiv.append($tag);
+                } else {
+                    // Handle case where model is not found in available models
+                    console.log('Model not found in available models, creating fallback display for:', modelId);
+                    // Extract a readable name from the model ID
+                    var displayName = modelId;
+                    if (modelId.includes('/')) {
+                        var parts = modelId.split('/');
+                        if (parts.length >= 2) {
+                            displayName = parts[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                            // Capitalize first letter of each word
+                            displayName = displayName.replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+                        }
+                    }
+                    var $tag = $('<span class="llmvm-model-tag">' + 
+                        displayName + ' (' + modelId + ')' +
                         ' <a href="#" class="remove" data-model="' + modelId + '">&times;</a>' +
                         '</span>');
                     $selectedDiv.append($tag);
