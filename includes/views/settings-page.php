@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <hr />
         
         <h2><?php echo esc_html__( 'User Role Management', 'llm-visibility-monitor' ); ?></h2>
-        <p><?php echo esc_html__( 'To grant limited admin access to other users, assign them the "LLM Manager" role through the WordPress Users page.', 'llm-visibility-monitor' ); ?></p>
+        <p><?php echo esc_html__( 'To grant limited admin access to other users, assign them the "LLM Manager Free" or "LLM Manager Pro" role through the WordPress Users page.', 'llm-visibility-monitor' ); ?></p>
         
         <h3><?php echo esc_html__( 'Available Roles and Capabilities', 'llm-visibility-monitor' ); ?></h3>
         <table class="widefat">
@@ -48,11 +48,15 @@ if ( ! defined( 'ABSPATH' ) ) {
             <tbody>
                 <tr>
                     <td><strong><?php echo esc_html__( 'Administrator', 'llm-visibility-monitor' ); ?></strong></td>
-                    <td><?php echo esc_html__( 'Full access: Settings, Prompts, Dashboard, Results', 'llm-visibility-monitor' ); ?></td>
+                    <td><?php echo esc_html__( 'Full access: Settings, Prompts, Dashboard, Results (Unlimited usage)', 'llm-visibility-monitor' ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'LLM Manager', 'llm-visibility-monitor' ); ?></strong></td>
-                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings)', 'llm-visibility-monitor' ); ?></td>
+                    <td><strong><?php echo esc_html__( 'LLM Manager Pro', 'llm-visibility-monitor' ); ?></strong></td>
+                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Pro plan: 10 prompts, 6 models/prompt, 300 runs/month', 'llm-visibility-monitor' ); ?></td>
+                </tr>
+                <tr>
+                    <td><strong><?php echo esc_html__( 'LLM Manager Free', 'llm-visibility-monitor' ); ?></strong></td>
+                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Free plan: 3 prompts, 3 models/prompt, 30 runs/month', 'llm-visibility-monitor' ); ?></td>
                 </tr>
                 <tr>
                     <td><strong><?php echo esc_html__( 'Other Roles', 'llm-visibility-monitor' ); ?></strong></td>
