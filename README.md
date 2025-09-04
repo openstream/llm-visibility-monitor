@@ -35,6 +35,7 @@ Monitor LLM responses on a schedule and store/export results.
 
 ### User-Specific Features
 - **Prompt Management**: Users can only see and manage their own prompts
+- **Multi-Model Selection**: Users can select multiple AI models for each prompt
 - **Results Dashboard**: Users only see their own results (admins see all)
 - **CSV Export**: Users export only their data, admins export everything
 - **Email Reports**: Personalized emails sent to each user's email address
@@ -120,6 +121,19 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 4. If logging is enabled, check `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 
 ## Changelog
+
+### 0.6.0 - 2025-09-04
+- **New Feature**: Multi-model selection for prompts
+  - Users can now select multiple AI models for each individual prompt
+  - Searchable multi-select dropdown with real-time filtering
+  - All selected models are executed when running prompts (cron, "Run Now", individual execution)
+  - Enhanced prompt management interface with improved model selection UX
+  - Backward compatibility maintained for existing single-model prompts
+- **Enhancement**: Improved model selection interface
+  - Custom dropdown with search functionality
+  - Visual display of selected models with remove buttons
+  - Better handling of model data and form submission
+  - Fixed issues with model saving and display
 
 ### 0.5.0 - 2025-09-02
 - **New Feature**: Implemented role-based access control

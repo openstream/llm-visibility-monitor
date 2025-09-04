@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.5.0
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,12 +18,13 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 
 * **OpenRouter Integration**: Connect to multiple AI models through OpenRouter's unified API
 * **Scheduled Monitoring**: Set up daily or weekly cron jobs to automatically send prompts
-* **Prompt Management**: Create, edit, and delete prompts with individual model selection
+* **Prompt Management**: Create, edit, and delete prompts with multi-model selection
 * **Results Dashboard**: View all LLM responses in a sortable, searchable table
 * **CSV Export**: Export results for external analysis
 * **Email Reports**: Receive email notifications with formatted results
 * **Role-Based Access Control**: Assign "LLM Manager" role for limited admin access
 * **User-Specific Data**: Secure isolation between user prompts, results, and exports
+* **Multi-Model Selection**: Select multiple AI models for each prompt to compare responses
 * **Personalized Email Reports**: Users receive emails at their own address with only their data
 * **Comprehensive Logging**: Detailed logging for debugging and monitoring
 * **German Localization**: Full support for German (de_DE, de_CH)
@@ -33,7 +34,7 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * Monitor AI model performance over time
 * Track response quality and consistency
 * Generate regular reports for stakeholders
-* Test different prompts and models
+* Test different prompts and models simultaneously
 * Maintain audit trails of AI interactions
 
 **Role-Based Access:**
@@ -61,7 +62,7 @@ Yes, you'll need to create an account at [openrouter.ai](https://openrouter.ai) 
 
 = Can I use different models for different prompts? =
 
-Yes! Each prompt can be configured to use a specific AI model, or it can fall back to your global default model.
+Yes! Each prompt can be configured to use multiple AI models simultaneously, or it can fall back to your global default model. This allows you to compare responses across different models for the same prompt.
 
 = How often can I run the monitoring? =
 
@@ -95,6 +96,19 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 4. Individual result detail view
 
 == Changelog ==
+
+= 0.6.0 =
+* **New Feature**: Multi-model selection for prompts
+  * Users can now select multiple AI models for each individual prompt
+  * Searchable multi-select dropdown with real-time filtering
+  * All selected models are executed when running prompts (cron, "Run Now", individual execution)
+  * Enhanced prompt management interface with improved model selection UX
+  * Backward compatibility maintained for existing single-model prompts
+* **Enhancement**: Improved model selection interface
+  * Custom dropdown with search functionality
+  * Visual display of selected models with remove buttons
+  * Better handling of model data and form submission
+  * Fixed issues with model saving and display
 
 = 0.5.0 =
 * **New Feature**: Implemented role-based access control
@@ -164,6 +178,9 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * German localization (de_DE, de_CH)
 
 == Upgrade Notice ==
+
+= 0.6.0 =
+This version introduces multi-model selection for prompts. Users can now select multiple AI models for each prompt, allowing for comprehensive comparison of responses across different models. The interface has been enhanced with a searchable multi-select dropdown for better user experience.
 
 = 0.5.0 =
 This version introduces role-based access control and user data isolation. A new "LLM Manager" role will be created automatically. Users will only see their own data, with admins maintaining oversight. Email reports are now personalized per user.
