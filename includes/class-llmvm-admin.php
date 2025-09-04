@@ -437,6 +437,9 @@ class LLMVM_Admin {
             $models_input = wp_unslash( $_POST['prompt_models'] );
         }
         
+        // Debug: Log what we received
+        LLMVM_Logger::log('Models input received', ['models_input' => $models_input]);
+        
         // Handle both single model (backward compatibility) and multiple models
         $models = array();
         if ( is_array( $models_input ) ) {
@@ -454,6 +457,9 @@ class LLMVM_Admin {
                 $models[] = $model;
             }
         }
+        
+        // Debug: Log processed models
+        LLMVM_Logger::log('Processed models', ['models' => $models]);
         
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
@@ -536,6 +542,9 @@ class LLMVM_Admin {
             $models_input = wp_unslash( $_POST['prompt_models'] );
         }
         
+        // Debug: Log what we received
+        LLMVM_Logger::log('Edit prompt - Models input received', ['models_input' => $models_input]);
+        
         // Handle both single model (backward compatibility) and multiple models
         $models = array();
         if ( is_array( $models_input ) ) {
@@ -553,6 +562,9 @@ class LLMVM_Admin {
                 $models[] = $model;
             }
         }
+        
+        // Debug: Log processed models
+        LLMVM_Logger::log('Edit prompt - Processed models', ['models' => $models]);
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];

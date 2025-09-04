@@ -462,8 +462,19 @@ jQuery(document).ready(function($) {
         
         // Load existing models if any
         var currentModelsData = $container.data('current-models');
+        console.log('Current models data:', currentModelsData);
+        console.log('Is array:', Array.isArray(currentModelsData));
         if (currentModelsData && Array.isArray(currentModelsData)) {
             selectedModels = currentModelsData.slice(); // Copy the array
+            console.log('Loaded existing models:', selectedModels);
+            updateDisplay();
+            updateHiddenInput();
+        } else if (currentModelsData && typeof currentModelsData === 'string') {
+            // Handle case where models are stored as comma-separated string
+            selectedModels = currentModelsData.split(',').filter(function(model) {
+                return model.trim() !== '';
+            });
+            console.log('Loaded existing models from string:', selectedModels);
             updateDisplay();
             updateHiddenInput();
         }
