@@ -588,7 +588,7 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) {
-            $raw_models = wp_unslash( $_POST['prompt_models'] );
+            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
                 $models_input = array_map( 'sanitize_text_field', $raw_models );
@@ -717,7 +717,7 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) {
-            $raw_models = wp_unslash( $_POST['prompt_models'] );
+            $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
                 $models_input = array_map( 'sanitize_text_field', $raw_models );
