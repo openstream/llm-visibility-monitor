@@ -834,42 +834,24 @@ jQuery(document).ready(function($) {
             console.log('Target value:', e.target.value);
         });
         
-        // Add a simple test button to see if any button works
-        console.log('=== ADDING SIMPLE TEST BUTTON ===');
-        var $testButton = $('<button type="button" style="background: green; color: white; padding: 10px; margin: 10px;">SIMPLE TEST BUTTON</button>');
-        $testButton.appendTo('body');
+        // Simple approach: just sync model data on form submission
+        console.log('=== SETTING UP SIMPLE MODEL SYNC ===');
         
-        $testButton.on('click', function() {
-            console.log('=== SIMPLE TEST BUTTON CLICKED ===');
-            alert('Simple test button works!');
-        });
-        
-        // Also try to replace save buttons with a different approach
-        console.log('=== REPLACING SAVE BUTTONS ===');
-        var $saveButtons = $('input[type="submit"][value="Speichern"]');
-        console.log('Found save buttons to replace:', $saveButtons.length);
-        
-        $saveButtons.each(function(index) {
-            var $saveButton = $(this);
-            var $form = $saveButton.closest('form');
-            console.log('Replacing save button', index);
+        // Add a simple form submission handler that syncs model data
+        $('form[action*="admin-post.php"]').on('submit', function(e) {
+            var $form = $(this);
+            var promptId = $form.find('input[name="prompt_id"]').val();
             
-            // Create a new working button with different styling
-            var $newButton = $('<button type="button" style="background: blue; color: white; padding: 5px 10px; margin-left: 10px;">SAVE</button>');
-            $newButton.insertAfter($saveButton);
-            
-            // Hide the original button
-            $saveButton.hide();
-            
-            // Add click handler to new button
-            $newButton.on('click', function() {
-                console.log('=== NEW SAVE BUTTON CLICKED ===');
+            // Only handle edit prompt forms
+            if (promptId) {
+                console.log('=== SYNCING MODELS FOR PROMPT:', promptId, '===');
                 
-                // Sync the model data first
+                // Find the model container
                 var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
                 if ($modelContainer.length === 0) {
                     $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
                 }
+                
                 var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
                 
                 if ($modelContainer.length && $hiddenModelInput.length) {
@@ -881,18 +863,7 @@ jQuery(document).ready(function($) {
                         console.log('Hidden input value set to:', $hiddenModelInput.val());
                     }
                 }
-                
-                // Log the form data before submitting
-                console.log('=== FORM DATA BEFORE SUBMISSION ===');
-                var formData = new FormData($form[0]);
-                for (var pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + pair[1]);
-                }
-                
-                // Submit the form
-                console.log('=== SUBMITTING FORM VIA NEW BUTTON ===');
-                $form[0].submit();
-            });
+            }
         });
         
         // Removed programmatic click test to prevent page reloads
