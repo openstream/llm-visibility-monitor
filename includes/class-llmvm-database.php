@@ -634,10 +634,10 @@ class LLMVM_Database {
 		$table_name = self::usage_table_name();
 		
 		$usage = $wpdb->get_row( $wpdb->prepare( 
-			'SELECT prompts_used, runs_used FROM ' . $table_name . ' WHERE user_id = %d AND month_year = %s', 
+			'SELECT prompts_used, runs_used FROM ' . $table_name . ' WHERE user_id = %d AND month_year = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::usage_table_name() returns constant string
 			$user_id, 
 			$month_year 
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::usage_table_name() returns constant string.
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb methods
 		
 		if ( ! is_array( $usage ) ) {
 			return array( 'prompts_used' => 0, 'runs_used' => 0 );
@@ -661,13 +661,13 @@ class LLMVM_Database {
 		
 		// Try to update existing record
 		$updated = $wpdb->query( $wpdb->prepare( 
-			'UPDATE ' . $table_name . ' SET prompts_used = prompts_used + %d, runs_used = runs_used + %d, updated_at = %s WHERE user_id = %d AND month_year = %s',
+			'UPDATE ' . $table_name . ' SET prompts_used = prompts_used + %d, runs_used = runs_used + %d, updated_at = %s WHERE user_id = %d AND month_year = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::usage_table_name() returns constant string
 			$prompts_increment,
 			$runs_increment,
 			$now,
 			$user_id,
 			$month_year
-		) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::usage_table_name() returns constant string.
+		) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb methods
 		
 		// If no rows were updated, insert new record
 		if ( 0 === $updated ) {
@@ -723,10 +723,10 @@ class LLMVM_Database {
 		$table_name = self::queue_table_name();
 		
 		$jobs = $wpdb->get_results( $wpdb->prepare( 
-			'SELECT id, user_id, prompt_id, models, created_at FROM ' . $table_name . ' WHERE status = %s ORDER BY created_at ASC LIMIT %d',
+			'SELECT id, user_id, prompt_id, models, created_at FROM ' . $table_name . ' WHERE status = %s ORDER BY created_at ASC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::queue_table_name() returns constant string
 			'pending',
 			$limit
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::queue_table_name() returns constant string.
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb methods
 		
 		if ( ! is_array( $jobs ) ) {
 			return array();
@@ -790,9 +790,9 @@ class LLMVM_Database {
 				SUM(CASE WHEN status = "processing" THEN 1 ELSE 0 END) as processing_jobs,
 				SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_jobs,
 				SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed_jobs
-			FROM ' . $table_name . ' WHERE user_id = %d',
+			FROM ' . $table_name . ' WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::queue_table_name() returns constant string
 			$user_id
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::queue_table_name() returns constant string.
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb methods
 		
 		if ( ! is_array( $status ) ) {
 			return array(

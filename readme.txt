@@ -218,7 +218,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 == Upgrade Notice ==
 
 = 0.7.0 =
-This version introduces a dual-tier user role system with configurable usage limits. Existing "LLM Manager" users will be automatically migrated to "LLM Manager Free" with basic limits. New "LLM Manager Pro" role offers higher limits. All limits are configurable in settings. Enhanced run confirmation system and background queue processing improve user experience.
+Introduces dual-tier user roles (Free/Pro) with configurable usage limits. Existing users auto-migrated to Free plan. Enhanced run confirmation and background queue processing improve user experience.
 
 = 0.6.0 =
 This version introduces multi-model selection for prompts. Users can now select multiple AI models for each prompt, allowing for comprehensive comparison of responses across different models. The interface has been enhanced with a searchable multi-select dropdown for better user experience.

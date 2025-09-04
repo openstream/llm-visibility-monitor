@@ -588,7 +588,13 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) {
-            $models_input = wp_unslash( $_POST['prompt_models'] );
+            $raw_models = wp_unslash( $_POST['prompt_models'] );
+            // Sanitize if it's an array
+            if ( is_array( $raw_models ) ) {
+                $models_input = array_map( 'sanitize_text_field', $raw_models );
+            } else {
+                $models_input = sanitize_text_field( $raw_models );
+            }
         }
         
         
@@ -625,6 +631,7 @@ class LLMVM_Admin {
             // Check usage limits
             if ( ! LLMVM_Usage_Manager::can_add_prompt( $current_user_id ) ) {
                 $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+                // translators: %d is the maximum number of prompts allowed
                 set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => sprintf( __( 'You have reached your prompt limit (%d prompts). Please delete some prompts or upgrade your plan.', 'llm-visibility-monitor' ), $limits['max_prompts'] ) ], 60 );
                 wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
                 exit;
@@ -633,7 +640,8 @@ class LLMVM_Admin {
             // Check model limit for this prompt
             if ( ! LLMVM_Usage_Manager::can_add_models_to_prompt( $current_user_id, count( $models ) ) ) {
                 $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
-                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => sprintf( __( 'You have selected too many models (%d). Your plan allows a maximum of %d models per prompt.', 'llm-visibility-monitor' ), count( $models ), $limits['max_models_per_prompt'] ) ], 60 );
+                // translators: %1$d is the number of models selected, %2$d is the maximum models allowed per prompt
+                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => sprintf( __( 'You have selected too many models (%1$d). Your plan allows a maximum of %2$d models per prompt.', 'llm-visibility-monitor' ), count( $models ), $limits['max_models_per_prompt'] ) ], 60 );
                 wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
                 exit;
             }
@@ -709,7 +717,13 @@ class LLMVM_Admin {
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
         if ( isset( $_POST['prompt_models'] ) ) {
-            $models_input = wp_unslash( $_POST['prompt_models'] );
+            $raw_models = wp_unslash( $_POST['prompt_models'] );
+            // Sanitize if it's an array
+            if ( is_array( $raw_models ) ) {
+                $models_input = array_map( 'sanitize_text_field', $raw_models );
+            } else {
+                $models_input = sanitize_text_field( $raw_models );
+            }
         }
         
         
