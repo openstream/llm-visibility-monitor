@@ -23,8 +23,8 @@ class LLMVM_Activator {
 		// Create or upgrade DB table.
 		LLMVM_Database::maybe_upgrade();
 
-		// Create LLM Manager role.
-		self::create_llm_manager_role();
+		// Create LLM Manager roles.
+		self::create_llm_manager_roles();
 
 		// Schedule cron based on current setting.
 		$options = get_option( 'llmvm_options', array() );
@@ -39,18 +39,30 @@ class LLMVM_Activator {
 	}
 
 	/**
-	 * Create LLM Manager role with appropriate capabilities.
+	 * Create LLM Manager roles with appropriate capabilities.
 	 */
-	private static function create_llm_manager_role(): void {
-		// Remove existing role if it exists (for updates).
+	private static function create_llm_manager_roles(): void {
+		// Remove existing roles if they exist (for updates).
 		remove_role( 'llm_manager' );
+		remove_role( 'llm_manager_free' );
+		remove_role( 'llm_manager_pro' );
 
-		// Create new LLM Manager role.
-		add_role( 'llm_manager', __( 'LLM Manager', 'llm-visibility-monitor' ), array(
+		// Create LLM Manager Free role (renamed from original LLM Manager).
+		add_role( 'llm_manager_free', __( 'LLM Manager Free', 'llm-visibility-monitor' ), array(
 			'read'                    => true,
 			'llmvm_manage_prompts'    => true,
 			'llmvm_view_dashboard'    => true,
 			'llmvm_view_results'      => true,
+			'llmvm_free_plan'         => true,
+		) );
+
+		// Create LLM Manager Pro role.
+		add_role( 'llm_manager_pro', __( 'LLM Manager Pro', 'llm-visibility-monitor' ), array(
+			'read'                    => true,
+			'llmvm_manage_prompts'    => true,
+			'llmvm_view_dashboard'    => true,
+			'llmvm_view_results'      => true,
+			'llmvm_pro_plan'          => true,
 		) );
 
 		// Add LLM capabilities to administrator role.
@@ -60,6 +72,7 @@ class LLMVM_Activator {
 			$admin_role->add_cap( 'llmvm_view_dashboard' );
 			$admin_role->add_cap( 'llmvm_view_results' );
 			$admin_role->add_cap( 'llmvm_manage_settings' );
+			$admin_role->add_cap( 'llmvm_unlimited_plan' );
 		}
 	}
 }
