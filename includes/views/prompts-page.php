@@ -410,11 +410,9 @@ if ( $is_admin ) {
 
 <script>
 console.log('=== SCRIPT TAG LOADED ===');
-alert('Script is loading!');
 jQuery(document).ready(function($) {
     try {
         console.log('=== JQUERY READY FUNCTION STARTING ===');
-        alert('jQuery ready function is starting!');
     // Get available models for autocomplete
     var availableModels = <?php 
         $models = LLMVM_Admin::get_openrouter_models();
@@ -656,9 +654,13 @@ jQuery(document).ready(function($) {
         // Sync multi-model selector content
         var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
         var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+        console.log('Form submission - Model container found:', $modelContainer.length > 0);
+        console.log('Form submission - Hidden model input found:', $hiddenModelInput.length > 0);
         if ($modelContainer.length && $hiddenModelInput.length) {
             var selectedModels = $modelContainer.data('getSelectedModels')();
+            console.log('Form submission - Selected models:', selectedModels);
             $hiddenModelInput.val(selectedModels.join(','));
+            console.log('Form submission - Hidden input value set to:', $hiddenModelInput.val());
         }
     });
     
