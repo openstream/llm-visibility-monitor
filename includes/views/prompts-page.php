@@ -568,43 +568,104 @@ jQuery(document).ready(function($) {
         
         // Show all models when input is focused (clicked)
         $searchInput.on('focus', function() {
-            console.log('Input focused, triggering autocomplete');
+            console.log('Input focused, manually creating dropdown');
             
-            // Try different approaches to show the dropdown
-            $searchInput.autocomplete('search', '');
+            // Get the widget
+            var widget = $searchInput.autocomplete('widget');
+            var ul = widget.find('ul');
             
-            // Also try opening the menu directly
-            setTimeout(function() {
-                console.log('Trying to open autocomplete menu directly');
-                $searchInput.autocomplete('search', '');
-            }, 50);
+            // Clear existing items
+            ul.empty();
             
-            // Debug: Check dropdown visibility after a short delay
-            setTimeout(function() {
-                var widget = $searchInput.autocomplete('widget');
-                console.log('Dropdown widget after focus:', widget);
-                console.log('Dropdown is visible:', widget.is(':visible'));
-                console.log('Dropdown position:', widget.position());
-                console.log('Dropdown CSS display:', widget.css('display'));
-                console.log('Dropdown CSS visibility:', widget.css('visibility'));
-                console.log('Dropdown CSS z-index:', widget.css('z-index'));
-                console.log('Dropdown height:', widget.height());
-                console.log('Dropdown children count:', widget.children().length);
+            // Manually add all models to the dropdown
+            console.log('Manually adding', allModels.length, 'models to dropdown');
+            
+            $.each(allModels, function(index, model) {
+                var item = {
+                    label: model.name + ' (' + model.id + ')',
+                    value: model.id,
+                    id: model.id,
+                    name: model.name
+                };
                 
-                // Try to force show the dropdown
-                if (!widget.is(':visible')) {
-                    console.log('Dropdown not visible, trying to force show');
-                    widget.show();
-                    widget.css('display', 'block');
-                    widget.css('visibility', 'visible');
-                }
-            }, 100);
+                var $li = $('<li>')
+                    .append('<div>' + item.label + '</div>')
+                    .data('ui-autocomplete-item', item)
+                    .appendTo(ul);
+            });
+            
+            // Force show the dropdown
+            widget.css({
+                'display': 'block',
+                'visibility': 'visible',
+                'position': 'absolute',
+                'top': $searchInput.offset().top + $searchInput.outerHeight(),
+                'left': $searchInput.offset().left,
+                'width': $searchInput.outerWidth(),
+                'z-index': 999999
+            });
+            
+            console.log('Dropdown should now be visible with', ul.find('li').length, 'items');
+            
+            // Add click handlers for the manually created items
+            ul.find('li').on('click', function() {
+                var item = $(this).data('ui-autocomplete-item');
+                console.log('Manually selected item:', item);
+                addModel(item);
+                $searchInput.val('');
+                widget.hide();
+            });
         });
         
         // Also try click event as alternative to focus
         $searchInput.on('click', function() {
-            console.log('Input clicked, triggering autocomplete');
-            $searchInput.autocomplete('search', '');
+            console.log('Input clicked, manually creating dropdown');
+            
+            // Get the widget
+            var widget = $searchInput.autocomplete('widget');
+            var ul = widget.find('ul');
+            
+            // Clear existing items
+            ul.empty();
+            
+            // Manually add all models to the dropdown
+            console.log('Manually adding', allModels.length, 'models to dropdown');
+            
+            $.each(allModels, function(index, model) {
+                var item = {
+                    label: model.name + ' (' + model.id + ')',
+                    value: model.id,
+                    id: model.id,
+                    name: model.name
+                };
+                
+                var $li = $('<li>')
+                    .append('<div>' + item.label + '</div>')
+                    .data('ui-autocomplete-item', item)
+                    .appendTo(ul);
+            });
+            
+            // Force show the dropdown
+            widget.css({
+                'display': 'block',
+                'visibility': 'visible',
+                'position': 'absolute',
+                'top': $searchInput.offset().top + $searchInput.outerHeight(),
+                'left': $searchInput.offset().left,
+                'width': $searchInput.outerWidth(),
+                'z-index': 999999
+            });
+            
+            console.log('Dropdown should now be visible with', ul.find('li').length, 'items');
+            
+            // Add click handlers for the manually created items
+            ul.find('li').on('click', function() {
+                var item = $(this).data('ui-autocomplete-item');
+                console.log('Manually selected item:', item);
+                addModel(item);
+                $searchInput.val('');
+                widget.hide();
+            });
         });
         
         // Debug: Check if autocomplete widget was created
