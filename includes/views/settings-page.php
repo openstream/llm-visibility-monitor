@@ -34,10 +34,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
         <hr />
         
-        <h2><?php echo esc_html__( 'User Role Management', 'llm-visibility-monitor' ); ?></h2>
+        <h3><?php echo esc_html__( 'Available Roles and Capabilities', 'llm-visibility-monitor' ); ?></h3>
         <p><?php echo esc_html__( 'To grant limited admin access to other users, assign them the "LLM Manager Free" or "LLM Manager Pro" role through the WordPress Users page.', 'llm-visibility-monitor' ); ?></p>
         
-        <h3><?php echo esc_html__( 'Available Roles and Capabilities', 'llm-visibility-monitor' ); ?></h3>
         <table class="widefat">
             <thead>
                 <tr>
