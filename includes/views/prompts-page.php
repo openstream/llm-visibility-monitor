@@ -882,6 +882,30 @@ jQuery(document).ready(function($) {
             $submitButton.on('mouseup', function(e) {
                 console.log('=== SUBMIT BUTTON MOUSEUP (TEST) ===');
             });
+            
+            // Try to catch any mouse events on the button
+            $submitButton.on('mouseenter', function(e) {
+                console.log('=== SUBMIT BUTTON MOUSEENTER (TEST) ===');
+            });
+            
+            $submitButton.on('mouseleave', function(e) {
+                console.log('=== SUBMIT BUTTON MOUSELEAVE (TEST) ===');
+            });
+            
+            // Try to catch any touch events (for mobile)
+            $submitButton.on('touchstart', function(e) {
+                console.log('=== SUBMIT BUTTON TOUCHSTART (TEST) ===');
+            });
+            
+            // Try to catch any focus events
+            $submitButton.on('focus', function(e) {
+                console.log('=== SUBMIT BUTTON FOCUS (TEST) ===');
+            });
+            
+            // Try to catch any blur events
+            $submitButton.on('blur', function(e) {
+                console.log('=== SUBMIT BUTTON BLUR (TEST) ===');
+            });
         });
     }, 2000);
     } catch (error) {
