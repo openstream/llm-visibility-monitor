@@ -468,7 +468,9 @@ jQuery(document).ready(function($) {
         console.log('Initializing autocomplete for:', $searchInput.attr('id'));
         $searchInput.autocomplete({
             source: function(request, response) {
+                console.log('=== SOURCE FUNCTION CALLED ===');
                 console.log('Autocomplete search term:', request.term);
+                console.log('Request object:', request);
                 
                 if (!allModels || !Array.isArray(allModels)) {
                     console.error('Available models is not an array:', allModels);
@@ -500,6 +502,7 @@ jQuery(document).ready(function($) {
                     console.log('First match:', matches[0]);
                 }
                 console.log('Calling response with', matches.length, 'matches');
+                console.log('=== END SOURCE FUNCTION ===');
                 response(matches);
             },
             select: function(event, ui) {
@@ -516,6 +519,41 @@ jQuery(document).ready(function($) {
         // Show all models when input is focused (clicked)
         $searchInput.on('focus', function() {
             console.log('Input focused, triggering autocomplete');
+            
+            // Try different approaches to show the dropdown
+            $searchInput.autocomplete('search', '');
+            
+            // Also try opening the menu directly
+            setTimeout(function() {
+                console.log('Trying to open autocomplete menu directly');
+                $searchInput.autocomplete('search', '');
+            }, 50);
+            
+            // Debug: Check dropdown visibility after a short delay
+            setTimeout(function() {
+                var widget = $searchInput.autocomplete('widget');
+                console.log('Dropdown widget after focus:', widget);
+                console.log('Dropdown is visible:', widget.is(':visible'));
+                console.log('Dropdown position:', widget.position());
+                console.log('Dropdown CSS display:', widget.css('display'));
+                console.log('Dropdown CSS visibility:', widget.css('visibility'));
+                console.log('Dropdown CSS z-index:', widget.css('z-index'));
+                console.log('Dropdown height:', widget.height());
+                console.log('Dropdown children count:', widget.children().length);
+                
+                // Try to force show the dropdown
+                if (!widget.is(':visible')) {
+                    console.log('Dropdown not visible, trying to force show');
+                    widget.show();
+                    widget.css('display', 'block');
+                    widget.css('visibility', 'visible');
+                }
+            }, 100);
+        });
+        
+        // Also try click event as alternative to focus
+        $searchInput.on('click', function() {
+            console.log('Input clicked, triggering autocomplete');
             $searchInput.autocomplete('search', '');
         });
         
