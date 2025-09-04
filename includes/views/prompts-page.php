@@ -834,7 +834,20 @@ jQuery(document).ready(function($) {
     console.log('Submit buttons found:', $('input[type="submit"]').length);
     $('input[type="submit"]').each(function(index) {
         console.log('Submit button', index, ':', $(this).val(), 'in form:', $(this).closest('form').attr('action'));
+        console.log('Button HTML:', this.outerHTML);
+        console.log('Form HTML:', $(this).closest('form')[0].outerHTML);
     });
+    
+    // Try to manually trigger form submission for testing
+    setTimeout(function() {
+        console.log('=== TESTING MANUAL FORM SUBMISSION ===');
+        var $saveForms = $('form[action*="admin-post.php"]').has('input[type="submit"][value*="Speichern"]');
+        console.log('Found save forms:', $saveForms.length);
+        $saveForms.each(function(index) {
+            console.log('Save form', index, ':', $(this).attr('action'));
+            console.log('Form has prompt_id:', $(this).find('input[name="prompt_id"]').length > 0);
+        });
+    }, 2000);
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
         console.error('Error stack:', error.stack);
