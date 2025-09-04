@@ -775,16 +775,26 @@ jQuery(document).ready(function($) {
             
             // Get current models from the model selector
             var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
-            var $modelInput = $modelContainer.find('input[type="hidden"]');
-            var selectedModels = $modelInput.val();
-            console.log('Selected models:', selectedModels);
+            var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
+            var selectedModels = [];
             
-            // Update hidden models field
-            var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-            $hiddenModelInput.val(selectedModels);
+            if (typeof getSelectedModelsFunction === 'function') {
+                selectedModels = getSelectedModelsFunction();
+                console.log('Selected models from function:', selectedModels);
+            } else {
+                console.log('getSelectedModels function not found');
+            }
+            
+            // Clear existing hidden model inputs in the form
+            $form.find('input[name="prompt_models[]"]').remove();
+            
+            // Create new hidden inputs for each selected model
+            selectedModels.forEach(function(modelId) {
+                $form.append('<input type="hidden" name="prompt_models[]" value="' + modelId + '" />');
+            });
             
             console.log('Updated hidden text:', $form.find('input[name="prompt_text"]').val());
-            console.log('Updated hidden models:', $hiddenModelInput.val());
+            console.log('Updated hidden models count:', selectedModels.length);
         }
     });
     
