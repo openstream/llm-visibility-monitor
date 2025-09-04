@@ -566,62 +566,49 @@ jQuery(document).ready(function($) {
             }
         });
         
+        // Create a simple custom dropdown for testing
+        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:999999;"></div>');
+        $searchInput.after($customDropdown);
+        
         // Show all models when input is focused (clicked)
         $searchInput.on('focus', function() {
-            console.log('Input focused, manually creating dropdown');
+            console.log('Input focused, creating custom dropdown');
             
-            // Get the widget
-            var widget = $searchInput.autocomplete('widget');
-            console.log('Widget found:', widget);
-            console.log('Widget length:', widget.length);
-            
-            var ul = widget.find('ul');
-            console.log('UL found:', ul);
-            console.log('UL length:', ul.length);
-            console.log('UL HTML before:', ul.html());
-            
-            // Clear existing items
-            ul.empty();
-            console.log('UL HTML after empty:', ul.html());
-            
-            // Manually add all models to the dropdown
-            console.log('Manually adding', allModels.length, 'models to dropdown');
+            // Clear and populate custom dropdown
+            $customDropdown.empty();
             
             $.each(allModels, function(index, model) {
-                var item = {
-                    label: model.name + ' (' + model.id + ')',
-                    value: model.id,
-                    id: model.id,
-                    name: model.name
-                };
-                
-                var $li = $('<li>')
-                    .append('<div>' + item.label + '</div>')
-                    .data('ui-autocomplete-item', item)
-                    .appendTo(ul);
+                var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
+                $item.data('model', model);
+                $customDropdown.append($item);
             });
             
-            // Force show the dropdown
-            widget.css({
-                'display': 'block',
-                'visibility': 'visible',
-                'position': 'absolute',
-                'top': $searchInput.offset().top + $searchInput.outerHeight(),
-                'left': $searchInput.offset().left,
+            // Position and show dropdown
+            var inputOffset = $searchInput.offset();
+            $customDropdown.css({
+                'top': inputOffset.top + $searchInput.outerHeight(),
+                'left': inputOffset.left,
                 'width': $searchInput.outerWidth(),
-                'z-index': 999999
+                'display': 'block'
             });
             
-            console.log('Dropdown should now be visible with', ul.find('li').length, 'items');
-            
-            // Add click handlers for the manually created items
-            ul.find('li').on('click', function() {
-                var item = $(this).data('ui-autocomplete-item');
-                console.log('Manually selected item:', item);
-                addModel(item);
-                $searchInput.val('');
-                widget.hide();
-            });
+            console.log('Custom dropdown created with', $customDropdown.children().length, 'items');
+        });
+        
+        // Handle clicks on custom dropdown items
+        $customDropdown.on('click', 'div', function() {
+            var model = $(this).data('model');
+            console.log('Custom dropdown item selected:', model);
+            addModel(model);
+            $searchInput.val('');
+            $customDropdown.hide();
+        });
+        
+        // Hide dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.llmvm-multi-model-container').length) {
+                $customDropdown.hide();
+            }
         });
         
         // Also try click event as alternative to focus
