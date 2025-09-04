@@ -387,10 +387,16 @@ class LLMVM_Email_Reporter {
             line-height: 1.6;
         }
         
-        .answer-content h1, .answer-content h2, .answer-content h3 {
+        .answer-content h1, .answer-content h2, .answer-content h3, .answer-content h4 {
             color: #495057;
             margin: 15px 0 10px 0;
             font-weight: 600;
+        }
+        
+        .answer-content h1 {
+            font-size: 20px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 8px;
         }
         
         .answer-content h2 {
@@ -401,6 +407,10 @@ class LLMVM_Email_Reporter {
         
         .answer-content h3 {
             font-size: 16px;
+        }
+        
+        .answer-content h4 {
+            font-size: 14px;
         }
         
         .answer-content ul, .answer-content ol {
@@ -643,11 +653,15 @@ class LLMVM_Email_Reporter {
         // Convert `code` to <code> (non-greedy match)
         $formatted = preg_replace( '/`([^`]+)`/', '<code>$1</code>', $formatted );
         
-        // Convert ## headings to <h2> (must be before wpautop)
-        $formatted = preg_replace( '/^## (.+)$/m', '<h2>$1</h2>', $formatted );
-        
-        // Convert ### headings to <h3> (must be before wpautop)
+        // Convert headings (must be before wpautop)
+        $formatted = preg_replace( '/^#### (.+)$/m', '<h4>$1</h4>', $formatted );
         $formatted = preg_replace( '/^### (.+)$/m', '<h3>$1</h3>', $formatted );
+        $formatted = preg_replace( '/^## (.+)$/m', '<h2>$1</h2>', $formatted );
+        $formatted = preg_replace( '/^# (.+)$/m', '<h1>$1</h1>', $formatted );
+        
+        // Handle alternative heading formats (some LLMs use different styles)
+        $formatted = preg_replace( '/^(.+)\n={3,}$/m', '<h1>$1</h1>', $formatted );
+        $formatted = preg_replace( '/^(.+)\n-{3,}$/m', '<h2>$1</h2>', $formatted );
         
         // Convert URLs to clickable links first
         $formatted = make_clickable( $formatted );
@@ -662,7 +676,7 @@ class LLMVM_Email_Reporter {
     }
 
     /**
-     * Convert markdown lists to HTML lists.
+     * Convert markdown lists to HTML lists with robust handling for different LLM formats.
      */
     private function convert_markdown_lists( string $text ): string {
         // Split into lines
@@ -670,12 +684,13 @@ class LLMVM_Email_Reporter {
         $in_list = false;
         $list_type = '';
         $result = [];
+        $list_counter = 1; // For manual numbering if needed
         
         foreach ( $lines as $line ) {
             $trimmed = trim( $line );
             
-            // Check for unordered list items (starting with - or *)
-            if ( preg_match( '/^[\s]*[-*][\s]+(.+)$/', $trimmed, $matches ) ) {
+            // Check for unordered list items (starting with - or * or +)
+            if ( preg_match( '/^[\s]*[-*+][\s]+(.+)$/', $trimmed, $matches ) ) {
                 if ( ! $in_list || $list_type !== 'ul' ) {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
@@ -686,8 +701,8 @@ class LLMVM_Email_Reporter {
                 }
                 $result[] = '<li>' . trim( $matches[1] ) . '</li>';
             }
-            // Check for ordered list items (starting with any number followed by a dot)
-            elseif ( preg_match( '/^[\s]*\d+\.\s+(.+)$/', $trimmed, $matches ) ) {
+            // Check for ordered list items (starting with any number followed by a dot, parenthesis, or colon)
+            elseif ( preg_match( '/^[\s]*\d+[\.\):]\s*(.+)$/', $trimmed, $matches ) ) {
                 if ( ! $in_list || $list_type !== 'ol' ) {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
@@ -695,15 +710,32 @@ class LLMVM_Email_Reporter {
                     $result[] = '<ol>';
                     $in_list = true;
                     $list_type = 'ol';
+                    $list_counter = 1; // Reset counter for new list
                 }
-                // Always use <li> without the number, let CSS handle the numbering
-                $result[] = '<li>' . trim( $matches[1] ) . '</li>';
+                // Use manual numbering to ensure proper sequence
+                $result[] = '<li value="' . $list_counter . '">' . trim( $matches[1] ) . '</li>';
+                $list_counter++;
+            }
+            // Check for list items that might be missing proper formatting (fallback)
+            elseif ( preg_match( '/^[\s]*(\d+)[\s]+(.+)$/', $trimmed, $matches ) && strlen( $trimmed ) > 10 ) {
+                if ( ! $in_list || $list_type !== 'ol' ) {
+                    if ( $in_list ) {
+                        $result[] = '</' . $list_type . '>';
+                    }
+                    $result[] = '<ol>';
+                    $in_list = true;
+                    $list_type = 'ol';
+                    $list_counter = 1;
+                }
+                $result[] = '<li value="' . $list_counter . '">' . trim( $matches[2] ) . '</li>';
+                $list_counter++;
             }
             // Empty line or non-list content
             else {
                 if ( $in_list ) {
                     $result[] = '</' . $list_type . '>';
                     $in_list = false;
+                    $list_counter = 1; // Reset counter
                 }
                 $result[] = $line;
             }
