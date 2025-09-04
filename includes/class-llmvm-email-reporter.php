@@ -343,8 +343,8 @@ class LLMVM_Email_Reporter {
                 .results-table tr {
                     border: 1px solid #e9ecef;
                     border-radius: 8px;
-                    margin-bottom: 15px;
-                    padding: 15px;
+                    margin-bottom: 12px;
+                    padding: 12px;
                     background: #ffffff;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }
@@ -352,8 +352,8 @@ class LLMVM_Email_Reporter {
                 .results-table td {
                     border: none;
                     position: relative;
-                    padding: 8px 0;
-                    padding-left: 35%;
+                    padding: 4px 0;
+                    padding-left: 30%;
                     font-size: 14px;
                 }
                 
@@ -361,8 +361,8 @@ class LLMVM_Email_Reporter {
                     content: attr(data-label) ": ";
                     position: absolute;
                     left: 6px;
-                    width: 30%;
-                    padding-right: 10px;
+                    width: 25%;
+                    padding-right: 8px;
                     white-space: nowrap;
                     font-weight: 600;
                     color: #495057;
@@ -539,7 +539,7 @@ class LLMVM_Email_Reporter {
             $html .= '
             <div class="results-section">
                 <h2>📋 Latest Results</h2>
-                <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 On mobile devices, you can scroll horizontally to view the full table.</p>
+                <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 On mobile devices, you can scroll vertically to view the full content.</p>
                 <table class="results-table">
                     <thead>
                         <tr>';
