@@ -854,8 +854,15 @@ jQuery(document).ready(function($) {
             var $form = $(this);
             console.log('Adding test handler to form', index);
             
+            var $submitButton = $form.find('input[type="submit"]');
+            console.log('Submit button found:', $submitButton.length);
+            console.log('Submit button is visible:', $submitButton.is(':visible'));
+            console.log('Submit button is enabled:', !$submitButton.prop('disabled'));
+            console.log('Submit button CSS display:', $submitButton.css('display'));
+            console.log('Submit button CSS pointer-events:', $submitButton.css('pointer-events'));
+            
             // Add a simple click handler to the submit button
-            $form.find('input[type="submit"]').on('click', function(e) {
+            $submitButton.on('click', function(e) {
                 console.log('=== SUBMIT BUTTON CLICKED (TEST) ===');
                 console.log('Button value:', $(this).val());
                 console.log('Form action:', $form.attr('action'));
@@ -865,6 +872,15 @@ jQuery(document).ready(function($) {
                 setTimeout(function() {
                     console.log('=== FORM SHOULD HAVE SUBMITTED BY NOW ===');
                 }, 100);
+            });
+            
+            // Also try mousedown and mouseup events
+            $submitButton.on('mousedown', function(e) {
+                console.log('=== SUBMIT BUTTON MOUSEDOWN (TEST) ===');
+            });
+            
+            $submitButton.on('mouseup', function(e) {
+                console.log('=== SUBMIT BUTTON MOUSEUP (TEST) ===');
             });
         });
     }, 2000);
