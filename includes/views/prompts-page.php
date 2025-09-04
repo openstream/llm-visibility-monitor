@@ -698,13 +698,19 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Debug: Check submit buttons
-    $('input[type="submit"]').on('click', function(e) {
+    // Debug: Check submit buttons using event delegation
+    $(document).on('click', 'input[type="submit"]', function(e) {
         console.log('=== SUBMIT BUTTON CLICKED ===');
         console.log('Button value:', $(this).val());
         console.log('Button name:', $(this).attr('name'));
         console.log('Button form:', $(this).closest('form').attr('action'));
         console.log('Form has admin-post.php action:', $(this).closest('form').attr('action').indexOf('admin-post.php') !== -1);
+    });
+    
+    // Debug: Check if submit buttons exist
+    console.log('Submit buttons found:', $('input[type="submit"]').length);
+    $('input[type="submit"]').each(function(index) {
+        console.log('Submit button', index, ':', $(this).val(), 'in form:', $(this).closest('form').attr('action'));
     });
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
