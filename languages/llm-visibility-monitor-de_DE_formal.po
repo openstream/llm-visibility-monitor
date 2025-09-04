@@ -211,4 +211,344 @@ msgid_plural "%d results"
 msgstr[0] "%d Ergebnis"
 msgstr[1] "%d Ergebnisse"
 
+#: includes/views/prompts-page.php
+msgid "As an administrator, you can see all prompts but can only delete your own."
+msgstr "Als Administrator können Sie alle Prompts sehen, aber nur Ihre eigenen löschen."
+
+#: includes/views/prompts-page.php
+msgid "All Prompts (Admin View)"
+msgstr "Alle Prompts (Admin-Ansicht)"
+
+#: includes/views/prompts-page.php
+msgid "Owner"
+msgstr "Besitzer"
+
+#: includes/views/prompts-page.php
+msgid "Unknown User"
+msgstr "Unbekannter Benutzer"
+
+#: includes/views/prompts-page.php
+msgid "Read-only"
+msgstr "Nur lesen"
+
+#: includes/views/prompts-page.php
+msgid "You can only see and manage your own prompts."
+msgstr "Sie können nur Ihre eigenen Prompts sehen und verwalten."
+
+#: includes/views/prompts-page.php
+msgid "Your Prompts"
+msgstr "Ihre Prompts"
+
+#: includes/views/prompts-page.php
+msgid "LLM Prompts Management"
+msgstr "LLM Prompts Verwaltung"
+
+#: includes/views/prompts-page.php
+msgid "Add New Prompt"
+msgstr "Neuen Prompt hinzufügen"
+
+#: includes/views/prompts-page.php
+msgid "Model (optional, uses default if empty):"
+msgstr "Modell (optional, verwendet Standard wenn leer):"
+
+#: includes/views/prompts-page.php
+msgid "Use default model"
+msgstr "Standardmodell verwenden"
+
+#: includes/views/prompts-page.php
+msgid "Default model"
+msgstr "Standardmodell"
+
+#: includes/views/prompts-page.php
+msgid "Model:"
+msgstr "Modell:"
+
+#: includes/class-llmvm-exporter.php
+msgid "CSV export requested"
+msgstr "CSV-Export angefordert"
+
+#: includes/class-llmvm-exporter.php
+msgid "CSV export completed"
+msgstr "CSV-Export abgeschlossen"
+
+#: includes/class-llmvm-exporter.php
+msgid "User ID"
+msgstr "Benutzer-ID"
+
+#: includes/class-llmvm-exporter.php
+msgid "User Name"
+msgstr "Benutzername"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "Report for:"
+msgstr "Bericht für:"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "Administrator Report (All Users)"
+msgstr "Administrator-Bericht (Alle Benutzer)"
+
+#: includes/class-llmvm-email-reporter.php
+msgid "User:"
+msgstr "Benutzer:"
+
+#: includes/views/prompts-page.php
+msgid "Run All Prompts Now"
+msgstr "Alle Prompts jetzt ausführen"
+
+#: includes/views/prompts-page.php
+msgid "View Dashboard"
+msgstr "Dashboard anzeigen"
+
+#: includes/views/prompts-page.php
+msgid "Your Usage Summary"
+msgstr "Ihre Nutzungsübersicht"
+
+#: includes/views/prompts-page.php
+msgid "Free Plan"
+msgstr "Kostenloser Plan"
+
+#: includes/views/prompts-page.php
+msgid "Pro Plan"
+msgstr "Pro-Plan"
+
+#: includes/views/prompts-page.php
+msgid "Prompts:"
+msgstr "Prompts:"
+
+#: includes/views/prompts-page.php
+msgid "Runs this month:"
+msgstr "Läufe diesen Monat:"
+
+#: includes/views/prompts-page.php
+msgid "Max models per prompt:"
+msgstr "Max. Modelle pro Prompt:"
+
+#: includes/views/prompts-page.php
+msgid "remaining"
+msgstr "verbleibend"
+
+#: includes/views/prompts-page.php
+msgid "You have reached your prompt limit. Delete some prompts to create new ones."
+msgstr "Sie haben Ihr Prompt-Limit erreicht. Löschen Sie einige Prompts, um neue zu erstellen."
+
+#: includes/views/prompts-page.php
+msgid "You have reached your monthly run limit. Your limit will reset next month."
+msgstr "Sie haben Ihr monatliches Lauf-Limit erreicht. Ihr Limit wird nächsten Monat zurückgesetzt."
+
+#: includes/views/prompts-page.php
+msgid "Models (optional, uses default if empty):"
+msgstr "Modelle (optional, verwendet Standard wenn leer):"
+
+#: includes/views/prompts-page.php
+msgid "Click to see all models or type to filter..."
+msgstr "Klicken Sie, um alle Modelle zu sehen oder tippen Sie zum Filtern..."
+
+#: includes/views/prompts-page.php
+msgid "Model & Actions"
+msgstr "Modell & Aktionen"
+
+#: includes/views/prompts-page.php
+msgid "Models:"
+msgstr "Modelle:"
+
+#: includes/views/prompts-page.php
+msgid "Search and select models..."
+msgstr "Modelle suchen und auswählen..."
+
+#: includes/class-llmvm-admin.php
+msgid "Usage Limits"
+msgstr "Nutzungslimits"
+
+#: includes/class-llmvm-admin.php
+msgid "Configure usage limits for Free and Pro user plans. These limits control how many prompts users can create, how many models they can select per prompt, and how many runs they can execute per month."
+msgstr "Konfigurieren Sie Nutzungslimits für kostenlose und Pro-Benutzerpläne. Diese Limits steuern, wie viele Prompts Benutzer erstellen können, wie viele Modelle sie pro Prompt auswählen können und wie viele Läufe sie pro Monat ausführen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Free Plan - Max Prompts"
+msgstr "Kostenloser Plan - Max. Prompts"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of prompts Free plan users can create."
+msgstr "Maximale Anzahl von Prompts, die Benutzer des kostenlosen Plans erstellen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Free Plan - Max Models per Prompt"
+msgstr "Kostenloser Plan - Max. Modelle pro Prompt"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of models Free plan users can select per prompt."
+msgstr "Maximale Anzahl von Modellen, die Benutzer des kostenlosen Plans pro Prompt auswählen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Free Plan - Max Runs per Month"
+msgstr "Kostenloser Plan - Max. Läufe pro Monat"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of runs Free plan users can execute per month."
+msgstr "Maximale Anzahl von Läufen, die Benutzer des kostenlosen Plans pro Monat ausführen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Pro Plan - Max Prompts"
+msgstr "Pro-Plan - Max. Prompts"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of prompts Pro plan users can create."
+msgstr "Maximale Anzahl von Prompts, die Benutzer des Pro-Plans erstellen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Pro Plan - Max Models per Prompt"
+msgstr "Pro-Plan - Max. Modelle pro Prompt"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of models Pro plan users can select per prompt."
+msgstr "Maximale Anzahl von Modellen, die Benutzer des Pro-Plans pro Prompt auswählen können."
+
+#: includes/class-llmvm-admin.php
+msgid "Pro Plan - Max Runs per Month"
+msgstr "Pro-Plan - Max. Läufe pro Monat"
+
+#: includes/class-llmvm-admin.php
+msgid "Maximum number of runs Pro plan users can execute per month."
+msgstr "Maximale Anzahl von Läufen, die Benutzer des Pro-Plans pro Monat ausführen können."
+
+#: includes/class-llmvm-admin.php
+msgid "User Role Management"
+msgstr "Benutzerrollen-Verwaltung"
+
+#: includes/class-llmvm-admin.php
+msgid "Manage users with LLM Manager roles. You can assign users to Free or Pro plans, or remove their LLM Manager access."
+msgstr "Verwalten Sie Benutzer mit LLM Manager-Rollen. Sie können Benutzer kostenlosen oder Pro-Plänen zuweisen oder ihren LLM Manager-Zugang entfernen."
+
+#: includes/class-llmvm-admin.php
+msgid "No users currently have LLM Manager roles assigned."
+msgstr "Derzeit haben keine Benutzer LLM Manager-Rollen zugewiesen."
+
+#: includes/class-llmvm-admin.php
+msgid "LLM Manager Free Users"
+msgstr "LLM Manager Kostenlose Benutzer"
+
+#: includes/class-llmvm-admin.php
+msgid "LLM Manager Pro Users"
+msgstr "LLM Manager Pro-Benutzer"
+
+#: includes/class-llmvm-admin.php
+msgid "User"
+msgstr "Benutzer"
+
+#: includes/class-llmvm-admin.php
+msgid "Email"
+msgstr "E-Mail"
+
+#: includes/class-llmvm-admin.php
+msgid "Edit User"
+msgstr "Benutzer bearbeiten"
+
+#: includes/class-llmvm-admin.php
+msgid "Upgrade to Pro"
+msgstr "Auf Pro upgraden"
+
+#: includes/class-llmvm-admin.php
+msgid "Remove Access"
+msgstr "Zugang entfernen"
+
+#: includes/class-llmvm-admin.php
+msgid "Downgrade to Free"
+msgstr "Auf kostenlos downgraden"
+
+#: includes/class-llmvm-admin.php
+msgid "Are you sure you want to remove LLM Manager access from this user?"
+msgstr "Sind Sie sicher, dass Sie den LLM Manager-Zugang von diesem Benutzer entfernen möchten?"
+
+#: includes/class-llmvm-admin.php
+msgid "Available Roles and Capabilities"
+msgstr "Verfügbare Rollen und Fähigkeiten"
+
+#: includes/class-llmvm-admin.php
+msgid "To grant limited admin access to other users, assign them the \"LLM Manager Free\" or \"LLM Manager Pro\" role through the WordPress Users page."
+msgstr "Um anderen Benutzern eingeschränkten Admin-Zugang zu gewähren, weisen Sie ihnen die Rolle \"LLM Manager Kostenlos\" oder \"LLM Manager Pro\" über die WordPress-Benutzerseite zu."
+
+#: includes/class-llmvm-admin.php
+msgid "Administrator"
+msgstr "Administrator"
+
+#: includes/class-llmvm-admin.php
+msgid "Full access: Settings, Prompts, Dashboard, Results (Unlimited usage)"
+msgstr "Vollzugriff: Einstellungen, Prompts, Dashboard, Ergebnisse (Unbegrenzte Nutzung)"
+
+#: includes/class-llmvm-admin.php
+msgid "LLM Manager Pro"
+msgstr "LLM Manager Pro"
+
+#: includes/class-llmvm-admin.php
+msgid "Limited access: Prompts, Dashboard, Results (no Settings) - Pro plan with higher usage limits"
+msgstr "Eingeschränkter Zugriff: Prompts, Dashboard, Ergebnisse (keine Einstellungen) - Pro-Plan mit höheren Nutzungslimits"
+
+#: includes/class-llmvm-admin.php
+msgid "LLM Manager Free"
+msgstr "LLM Manager Kostenlos"
+
+#: includes/class-llmvm-admin.php
+msgid "Limited access: Prompts, Dashboard, Results (no Settings) - Free plan with basic usage limits"
+msgstr "Eingeschränkter Zugriff: Prompts, Dashboard, Ergebnisse (keine Einstellungen) - Kostenloser Plan mit grundlegenden Nutzungslimits"
+
+#: includes/class-llmvm-admin.php
+msgid "Other Roles"
+msgstr "Andere Rollen"
+
+#: includes/class-llmvm-admin.php
+msgid "No LLM access"
+msgstr "Kein LLM-Zugriff"
+
+#: includes/class-llmvm-admin.php
+msgid "Manage Users and Roles"
+msgstr "Benutzer und Rollen verwalten"
+
+#: includes/class-llmvm-admin.php
+msgid "Role"
+msgstr "Rolle"
+
+#: includes/class-llmvm-admin.php
+msgid "Capabilities"
+msgstr "Fähigkeiten"
+
+#: includes/class-llmvm-admin.php
+msgid "You have reached your prompt limit (%d prompts). Please delete some prompts or upgrade your plan."
+msgstr "Sie haben Ihr Prompt-Limit (%d Prompts) erreicht. Bitte löschen Sie einige Prompts oder upgraden Sie Ihren Plan."
+
+#: includes/class-llmvm-admin.php
+msgid "You have selected too many models (%d). Your plan allows a maximum of %d models per prompt."
+msgstr "Sie haben zu viele Modelle (%d) ausgewählt. Ihr Plan erlaubt maximal %d Modelle pro Prompt."
+
+#: includes/class-llmvm-admin.php
+msgid "Prompt added successfully."
+msgstr "Prompt erfolgreich hinzugefügt."
+
+#: includes/class-llmvm-admin.php
+msgid "This prompt with the same models already exists."
+msgstr "Dieser Prompt mit denselben Modellen existiert bereits."
+
+#: includes/class-llmvm-admin.php
+msgid "User downgraded to Free plan successfully."
+msgstr "Benutzer erfolgreich auf kostenlosen Plan downgradet."
+
+#: includes/class-llmvm-admin.php
+msgid "User upgraded to Pro plan successfully."
+msgstr "Benutzer erfolgreich auf Pro-Plan upgraded."
+
+#: includes/class-llmvm-admin.php
+msgid "LLM Manager access removed from user successfully."
+msgstr "LLM Manager-Zugang vom Benutzer erfolgreich entfernt."
+
+#: includes/class-llmvm-admin.php
+msgid "Invalid parameters"
+msgstr "Ungültige Parameter"
+
+#: includes/class-llmvm-admin.php
+msgid "User not found"
+msgstr "Benutzer nicht gefunden"
+
+#: includes/class-llmvm-admin.php
+msgid "Invalid user ID"
+msgstr "Ungültige Benutzer-ID"
+
 
