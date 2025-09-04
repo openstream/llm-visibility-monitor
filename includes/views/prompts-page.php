@@ -572,10 +572,17 @@ jQuery(document).ready(function($) {
             
             // Get the widget
             var widget = $searchInput.autocomplete('widget');
+            console.log('Widget found:', widget);
+            console.log('Widget length:', widget.length);
+            
             var ul = widget.find('ul');
+            console.log('UL found:', ul);
+            console.log('UL length:', ul.length);
+            console.log('UL HTML before:', ul.html());
             
             // Clear existing items
             ul.empty();
+            console.log('UL HTML after empty:', ul.html());
             
             // Manually add all models to the dropdown
             console.log('Manually adding', allModels.length, 'models to dropdown');

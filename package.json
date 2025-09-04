@@ -1,0 +1,12 @@
+{
+  "name": "llm-visibility-monitor-debug",
+  "version": "1.0.0",
+  "description": "Debug script for LLM Visibility Monitor dropdown issue",
+  "main": "debug-playwright.js",
+  "scripts": {
+    "debug": "node debug-playwright.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}
