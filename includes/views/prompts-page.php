@@ -834,6 +834,45 @@ jQuery(document).ready(function($) {
             console.log('Target value:', e.target.value);
         });
         
+        // Add custom test buttons next to save buttons
+        $('input[type="submit"][value="Speichern"]').each(function() {
+            var $saveButton = $(this);
+            var $form = $saveButton.closest('form');
+            
+            // Create a test button
+            var $testButton = $('<button type="button" style="background: red; color: white; margin-left: 10px;">TEST SAVE</button>');
+            $testButton.insertAfter($saveButton);
+            
+            // Add click handler to test button
+            $testButton.on('click', function() {
+                console.log('=== TEST BUTTON CLICKED ===');
+                
+                // Sync the model data first
+                var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
+                if ($modelContainer.length === 0) {
+                    $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+                }
+                var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+                
+                console.log('Model container found:', $modelContainer.length);
+                console.log('Hidden model input found:', $hiddenModelInput.length);
+                
+                if ($modelContainer.length && $hiddenModelInput.length) {
+                    var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
+                    if (typeof getSelectedModelsFunction === 'function') {
+                        var selectedModels = getSelectedModelsFunction();
+                        console.log('Selected models:', selectedModels);
+                        $hiddenModelInput.val(selectedModels.join(','));
+                        console.log('Hidden input value set to:', $hiddenModelInput.val());
+                    }
+                }
+                
+                // Submit the form
+                console.log('=== SUBMITTING FORM VIA TEST BUTTON ===');
+                $form[0].submit();
+            });
+        });
+        
         // Removed programmatic click test to prevent page reloads
     }, 1000);
     
