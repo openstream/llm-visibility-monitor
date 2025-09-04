@@ -872,6 +872,13 @@ jQuery(document).ready(function($) {
                     }
                 }
                 
+                // Log the form data before submitting
+                console.log('=== FORM DATA BEFORE SUBMISSION ===');
+                var formData = new FormData($form[0]);
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+                
                 // Submit the form
                 console.log('=== SUBMITTING FORM VIA NEW BUTTON ===');
                 $form[0].submit();
