@@ -471,37 +471,33 @@ jQuery(document).ready(function($) {
         var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:2px solid red; max-height:400px; overflow-y:scroll; z-index:999999; margin-top:5px; width:100%;"></div>');
         $searchInput.after($customDropdown);
         
-        // Show all models when input is focused (clicked)
-        $searchInput.on('focus', function() {
-            console.log('Input focused, creating custom dropdown');
-            console.log('Input element:', $searchInput);
-            console.log('Custom dropdown element:', $customDropdown);
-            
-            // Clear and populate custom dropdown
+        // Helper function to populate dropdown with models
+        function populateDropdown(models) {
             $customDropdown.empty();
-            console.log('Dropdown cleared');
             
-            $.each(allModels, function(index, model) {
+            $.each(models, function(index, model) {
                 var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
                 $item.data('model', model);
                 $customDropdown.append($item);
             });
             
-            console.log('Added', $customDropdown.children().length, 'items to dropdown');
-            console.log('Total models available:', allModels.length);
-            console.log('First few items:', $customDropdown.children().slice(0, 5).map(function() { return $(this).text(); }).get());
-            console.log('Last few items:', $customDropdown.children().slice(-5).map(function() { return $(this).text(); }).get());
+            console.log('Populated dropdown with', models.length, 'items');
             
-            // Show dropdown (no complex positioning needed with relative positioning)
-            $customDropdown.css({
-                'display': 'block',
-                'width': '100%'
-            });
-            
-            console.log('Dropdown shown');
-            console.log('Dropdown is visible:', $customDropdown.is(':visible'));
-            console.log('Dropdown display:', $customDropdown.css('display'));
-            console.log('Custom dropdown created with', $customDropdown.children().length, 'items');
+            // Show dropdown if it has items
+            if (models.length > 0) {
+                $customDropdown.css({
+                    'display': 'block',
+                    'width': '100%'
+                });
+            } else {
+                $customDropdown.hide();
+            }
+        }
+        
+        // Show all models when input is focused (clicked)
+        $searchInput.on('focus', function() {
+            console.log('Input focused, showing all models');
+            populateDropdown(allModels);
         });
         
         // Handle clicks on custom dropdown items
@@ -513,6 +509,26 @@ jQuery(document).ready(function($) {
             $customDropdown.hide();
         });
         
+        // Filter dropdown when user types
+        $searchInput.on('keyup', function() {
+            var searchTerm = $(this).val().toLowerCase();
+            console.log('Filtering dropdown with search term:', searchTerm);
+            
+            if (searchTerm === '') {
+                // Show all models if search is empty
+                populateDropdown(allModels);
+            } else {
+                // Filter models based on search term
+                var filteredModels = allModels.filter(function(model) {
+                    return model.name.toLowerCase().indexOf(searchTerm) !== -1 || 
+                           model.id.toLowerCase().indexOf(searchTerm) !== -1;
+                });
+                
+                console.log('Filtered to', filteredModels.length, 'models');
+                populateDropdown(filteredModels);
+            }
+        });
+        
         // Hide dropdown when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.llmvm-multi-model-container').length) {
@@ -522,35 +538,8 @@ jQuery(document).ready(function($) {
         
         // Also handle click event for custom dropdown
         $searchInput.on('click', function() {
-            console.log('Input clicked, showing custom dropdown');
-            console.log('Input element:', $searchInput);
-            console.log('Custom dropdown element:', $customDropdown);
-            
-            // Clear and populate custom dropdown
-            $customDropdown.empty();
-            console.log('Dropdown cleared');
-            
-            $.each(allModels, function(index, model) {
-                var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
-                $item.data('model', model);
-                $customDropdown.append($item);
-            });
-            
-            console.log('Added', $customDropdown.children().length, 'items to dropdown');
-            console.log('Total models available:', allModels.length);
-            console.log('First few items:', $customDropdown.children().slice(0, 5).map(function() { return $(this).text(); }).get());
-            console.log('Last few items:', $customDropdown.children().slice(-5).map(function() { return $(this).text(); }).get());
-            
-            // Show dropdown (no complex positioning needed with relative positioning)
-            $customDropdown.css({
-                'display': 'block',
-                'width': '100%'
-            });
-            
-            console.log('Dropdown shown');
-            console.log('Dropdown is visible:', $customDropdown.is(':visible'));
-            console.log('Dropdown display:', $customDropdown.css('display'));
-            console.log('Custom dropdown shown with', $customDropdown.children().length, 'items');
+            console.log('Input clicked, showing all models');
+            populateDropdown(allModels);
         });
         
         // Debug: Check custom dropdown
