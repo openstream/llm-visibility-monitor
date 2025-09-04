@@ -427,11 +427,29 @@ class LLMVM_Admin {
         
         $this->verify_permissions_and_nonce( 'llmvm_add_prompt' );
 
-        // Sanitize the prompt text input.
+        // Sanitize the prompt text and models inputs.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
-        $model = isset( $_POST['prompt_model'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_model'] ) ) : '';
+        $models_input = isset( $_POST['prompt_models'] ) ? wp_unslash( $_POST['prompt_models'] ) : '';
+        
+        // Handle both single model (backward compatibility) and multiple models
+        $models = array();
+        if ( is_array( $models_input ) ) {
+            // Multiple models selected
+            foreach ( $models_input as $model ) {
+                $model = sanitize_text_field( $model );
+                if ( ! empty( $model ) ) {
+                    $models[] = $model;
+                }
+            }
+        } else {
+            // Single model (backward compatibility)
+            $model = sanitize_text_field( $models_input );
+            if ( ! empty( $model ) ) {
+                $models[] = $model;
+            }
+        }
         
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
@@ -444,37 +462,48 @@ class LLMVM_Admin {
             // Get current user ID
             $current_user_id = get_current_user_id();
             
-            // Check for duplicate prompts (same text, model, and user)
+            // Check for duplicate prompts (same text, models, and user)
             $is_duplicate = false;
             foreach ( $prompts as $existing_prompt ) {
                 if ( isset( $existing_prompt['text'] ) && 
                      trim( $existing_prompt['text'] ) === trim( $text ) &&
-                     isset( $existing_prompt['model'] ) && 
-                     $existing_prompt['model'] === $model &&
                      isset( $existing_prompt['user_id'] ) && 
                      $existing_prompt['user_id'] === $current_user_id ) {
-                    $is_duplicate = true;
-                    break;
+                    
+                    // Get existing models (handle both old 'model' and new 'models' format)
+                    $existing_models = array();
+                    if ( isset( $existing_prompt['models'] ) && is_array( $existing_prompt['models'] ) ) {
+                        $existing_models = $existing_prompt['models'];
+                    } elseif ( isset( $existing_prompt['model'] ) ) {
+                        $existing_models = array( $existing_prompt['model'] );
+                    }
+                    
+                    // Check if models are the same
+                    if ( $existing_models === $models ) {
+                        $is_duplicate = true;
+                        break;
+                    }
                 }
             }
             
             if ( ! $is_duplicate ) {
-                // Use specified model or fall back to default
-                if ( '' === trim( $model ) ) {
+                // Use specified models or fall back to default
+                if ( empty( $models ) ) {
                     $options = get_option( 'llmvm_options', [] );
-                    $model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+                    $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+                    $models = array( $default_model );
                 }
                 
                 $prompts[] = [ 
                     'id' => uniqid( 'p_', true ), 
                     'text' => $text,
-                    'model' => $model,
+                    'models' => $models,
                     'user_id' => $current_user_id
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt added successfully.', 'llm-visibility-monitor' ) ], 60 );
             } else {
-                set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same model already exists.', 'llm-visibility-monitor' ) ], 60 );
+                set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same models already exists.', 'llm-visibility-monitor' ) ], 60 );
             }
         }
 
@@ -491,13 +520,31 @@ class LLMVM_Admin {
         
         $this->verify_permissions_and_nonce( 'llmvm_edit_prompt' );
 
-        // Sanitize the prompt ID, text, and model inputs.
+        // Sanitize the prompt ID, text, and models inputs.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $id   = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
-        $model = isset( $_POST['prompt_model'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_model'] ) ) : '';
+        $models_input = isset( $_POST['prompt_models'] ) ? wp_unslash( $_POST['prompt_models'] ) : '';
+        
+        // Handle both single model (backward compatibility) and multiple models
+        $models = array();
+        if ( is_array( $models_input ) ) {
+            // Multiple models selected
+            foreach ( $models_input as $model ) {
+                $model = sanitize_text_field( $model );
+                if ( ! empty( $model ) ) {
+                    $models[] = $model;
+                }
+            }
+        } else {
+            // Single model (backward compatibility)
+            $model = sanitize_text_field( $models_input );
+            if ( ! empty( $model ) ) {
+                $models[] = $model;
+            }
+        }
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -517,30 +564,42 @@ class LLMVM_Admin {
                     wp_die( esc_html__( 'You can only edit your own prompts.', 'llm-visibility-monitor' ) );
                 }
                 
-                // Check if this would create a duplicate (same text, model, and user)
+                // Check if this would create a duplicate (same text, models, and user)
                 $is_duplicate = false;
                 foreach ( $prompts as $other_prompt ) {
                     if ( $other_prompt['id'] !== $id && 
                          isset( $other_prompt['text'] ) && 
                          trim( $other_prompt['text'] ) === trim( $text ) &&
-                         isset( $other_prompt['model'] ) && 
-                         $other_prompt['model'] === $model &&
                          isset( $other_prompt['user_id'] ) && 
                          $other_prompt['user_id'] === $current_user_id ) {
-                        $is_duplicate = true;
-                        break;
+                        
+                        // Get existing models (handle both old 'model' and new 'models' format)
+                        $existing_models = array();
+                        if ( isset( $other_prompt['models'] ) && is_array( $other_prompt['models'] ) ) {
+                            $existing_models = $other_prompt['models'];
+                        } elseif ( isset( $other_prompt['model'] ) ) {
+                            $existing_models = array( $other_prompt['model'] );
+                        }
+                        
+                        // Check if models are the same
+                        if ( $existing_models === $models ) {
+                            $is_duplicate = true;
+                            break;
+                        }
                     }
                 }
                 
                 if ( ! $is_duplicate ) {
                     $prompt['text'] = $text;
-                    if ( '' !== trim( $model ) ) {
-                        $prompt['model'] = $model;
+                    if ( ! empty( $models ) ) {
+                        $prompt['models'] = $models;
+                        // Remove old 'model' field if it exists
+                        unset( $prompt['model'] );
                     }
                     $prompt_updated = true;
                     set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt updated successfully.', 'llm-visibility-monitor' ) ], 60 );
                 } else {
-                    set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same model already exists.', 'llm-visibility-monitor' ) ], 60 );
+                    set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same models already exists.', 'llm-visibility-monitor' ) ], 60 );
                 }
                 break;
             }
@@ -810,7 +869,7 @@ class LLMVM_Admin {
      */
     public function enqueue_admin_assets( string $hook ): void {
         // Only load on our plugin pages
-        if ( ! in_array( $hook, [ 'settings_page_llmvm-settings', 'tools_page_llmvm-dashboard', 'tools_page_llmvm-result' ], true ) ) {
+        if ( ! in_array( $hook, [ 'settings_page_llmvm-settings', 'tools_page_llmvm-dashboard', 'tools_page_llmvm-result', 'tools_page_llmvm-prompts' ], true ) ) {
             return;
         }
 
@@ -821,6 +880,12 @@ class LLMVM_Admin {
             [],
             LLMVM_VERSION
         );
+
+        // Enqueue jQuery UI for multi-select functionality on prompts page
+        if ( 'tools_page_llmvm-prompts' === $hook ) {
+            wp_enqueue_script( 'jquery-ui-autocomplete' );
+            wp_enqueue_style( 'jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css' );
+        }
 
         // Enqueue JavaScript
         wp_enqueue_script(

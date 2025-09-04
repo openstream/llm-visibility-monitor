@@ -32,7 +32,7 @@ class LLMVM_Database {
 	/**
 	 * Current DB schema version for this plugin.
 	 */
-	private const DB_VERSION = '1.1.0';
+	private const DB_VERSION = '1.2.0';
 
 	/**
 	 * Return the fully qualified table name.
@@ -64,6 +64,9 @@ class LLMVM_Database {
 		// Migrate existing prompts to include model field.
 		self::migrate_prompts();
 
+		// Migrate prompts to support multiple models (v1.2.0).
+		self::migrate_prompts_to_multi_model();
+
 		// Clean up duplicate prompts.
 		self::cleanup_duplicate_prompts();
 	}
@@ -89,6 +92,39 @@ class LLMVM_Database {
 			if ( ! isset( $prompt['user_id'] ) ) {
 				$prompt['user_id'] = 1; // Default to admin user.
 				$migrated          = true;
+			}
+		}
+		unset( $prompt );
+
+		if ( $migrated ) {
+			update_option( 'llmvm_prompts', $prompts, false );
+		}
+	}
+
+	/**
+	 * Migrate prompts to support multiple models (v1.2.0).
+	 */
+	private static function migrate_prompts_to_multi_model(): void {
+		$prompts = get_option( 'llmvm_prompts', array() );
+		if ( ! is_array( $prompts ) ) {
+			return;
+		}
+
+		$migrated = false;
+		foreach ( $prompts as &$prompt ) {
+			// If prompt has single 'model' field, convert to 'models' array
+			if ( isset( $prompt['model'] ) && ! isset( $prompt['models'] ) ) {
+				$model = $prompt['model'];
+				$prompt['models'] = array( $model );
+				unset( $prompt['model'] );
+				$migrated = true;
+			}
+			// If prompt has neither 'model' nor 'models', add default model
+			elseif ( ! isset( $prompt['model'] ) && ! isset( $prompt['models'] ) ) {
+				$options = get_option( 'llmvm_options', array() );
+				$default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+				$prompt['models'] = array( $default_model );
+				$migrated = true;
 			}
 		}
 		unset( $prompt );

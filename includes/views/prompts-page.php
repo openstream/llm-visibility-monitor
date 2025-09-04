@@ -96,6 +96,54 @@ if ( $is_admin ) {
     position: relative;
     min-height: 120px;
 }
+
+/* Multi-model selection styles */
+.llmvm-multi-model-container {
+    position: relative;
+    width: 100%;
+}
+.llmvm-multi-model-container input[type="text"] {
+    width: 100%;
+    margin-bottom: 8px;
+}
+.llmvm-selected-models {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+    min-height: 20px;
+}
+.llmvm-model-tag {
+    background: #0073aa;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.llmvm-model-tag .remove {
+    cursor: pointer;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+}
+.llmvm-model-tag .remove:hover {
+    color: #ff6b6b;
+}
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+.ui-autocomplete .ui-menu-item {
+    padding: 4px 8px;
+    cursor: pointer;
+}
+.ui-autocomplete .ui-menu-item:hover {
+    background: #f0f0f0;
+}
 .llmvm-prompt-cell textarea {
     margin-bottom: 0;
 }
@@ -191,21 +239,12 @@ if ( $is_admin ) {
             <textarea id="llmvm-new-prompt" name="prompt_text" class="large-text" rows="3" required></textarea>
         </p>
         <p>
-            <label for="llmvm-new-prompt-model"><?php echo esc_html__( 'Model (optional, uses default if empty):', 'llm-visibility-monitor' ); ?></label>
-            <select id="llmvm-new-prompt-model" name="prompt_model" class="regular-text">
-                <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
-                <?php
-                $options = get_option( 'llmvm_options', [] );
-                $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-                $models = LLMVM_Admin::get_openrouter_models();
-                foreach ( $models as $model ) {
-                    $selected = ( $model['id'] === $default_model ) ? ' selected="selected"' : '';
-                    echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
-                    echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
-                    echo '</option>';
-                }
-                ?>
-            </select>
+            <label for="llmvm-new-prompt-models"><?php echo esc_html__( 'Models (optional, uses default if empty):', 'llm-visibility-monitor' ); ?></label>
+            <div id="llmvm-new-prompt-models-container" class="llmvm-multi-model-container">
+                <input type="text" id="llmvm-new-prompt-models-search" class="regular-text" placeholder="<?php echo esc_attr__( 'Search and select models...', 'llm-visibility-monitor' ); ?>" />
+                <div id="llmvm-new-prompt-models-selected" class="llmvm-selected-models"></div>
+                <input type="hidden" id="llmvm-new-prompt-models-input" name="prompt_models[]" value="" />
+            </div>
         </p>
         <?php submit_button( __( 'Add Prompt', 'llm-visibility-monitor' ), 'secondary' ); ?>
     </form>
@@ -239,22 +278,21 @@ if ( $is_admin ) {
                         </td>
                         <td>
                             <?php if ( $is_owner ) : ?>
-                                <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
-                                <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
-                                    <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
-                                    <?php
-                                    $options = get_option( 'llmvm_options', [] );
-                                    $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-                                    $models = LLMVM_Admin::get_openrouter_models();
-                                    $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                                    foreach ( $models as $model ) {
-                                        $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
-                                        echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
-                                        echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
-                                        echo '</option>';
-                                    }
-                                    ?>
-                                </select>
+                                <label for="llmvm-prompt-models-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Models:', 'llm-visibility-monitor' ); ?></label>
+                                <?php
+                                // Get current models for this prompt (handle both old 'model' and new 'models' format)
+                                $current_models = array();
+                                if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+                                    $current_models = $prompt['models'];
+                                } elseif ( isset( $prompt['model'] ) && ! empty( $prompt['model'] ) ) {
+                                    $current_models = array( $prompt['model'] );
+                                }
+                                ?>
+                                <div id="llmvm-prompt-models-container-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-multi-model-container" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" data-current-models="<?php echo esc_attr( json_encode( $current_models ) ); ?>">
+                                    <input type="text" id="llmvm-prompt-models-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr__( 'Search and select models...', 'llm-visibility-monitor' ); ?>" />
+                                    <div id="llmvm-prompt-models-selected-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-selected-models"></div>
+                                    <input type="hidden" id="llmvm-prompt-models-input-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_models[]" value="" />
+                                </div>
                                 <br><br>
                                 <div class="llmvm-all-buttons">
                                     <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">
@@ -262,7 +300,7 @@ if ( $is_admin ) {
                                         <input type="hidden" name="action" value="llmvm_edit_prompt" />
                                         <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
                                         <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
-                                        <input type="hidden" name="prompt_model" value="<?php echo esc_attr( (string) ( $prompt['model'] ?? '' ) ); ?>" />
+                                        <input type="hidden" name="prompt_models[]" value="" />
                                         <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                     </form>
                                     <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
@@ -308,22 +346,21 @@ if ( $is_admin ) {
                             <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
                         </td>
                         <td>
-                            <label for="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Model:', 'llm-visibility-monitor' ); ?></label>
-                            <select id="llmvm-prompt-model-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
-                                <option value=""><?php echo esc_html__( 'Use default model', 'llm-visibility-monitor' ); ?></option>
-                                <?php
-                                $options = get_option( 'llmvm_options', [] );
-                                $default_model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
-                                $models = LLMVM_Admin::get_openrouter_models();
-                                $current_model = isset( $prompt['model'] ) ? (string) $prompt['model'] : '';
-                                foreach ( $models as $model ) {
-                                    $selected = ( $model['id'] === $current_model ) ? ' selected="selected"' : '';
-                                    echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
-                                    echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
-                                    echo '</option>';
-                                }
-                                ?>
-                            </select>
+                            <label for="llmvm-prompt-models-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Models:', 'llm-visibility-monitor' ); ?></label>
+                            <?php
+                            // Get current models for this prompt (handle both old 'model' and new 'models' format)
+                            $current_models = array();
+                            if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+                                $current_models = $prompt['models'];
+                            } elseif ( isset( $prompt['model'] ) && ! empty( $prompt['model'] ) ) {
+                                $current_models = array( $prompt['model'] );
+                            }
+                            ?>
+                            <div id="llmvm-prompt-models-container-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-multi-model-container" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" data-current-models="<?php echo esc_attr( json_encode( $current_models ) ); ?>">
+                                <input type="text" id="llmvm-prompt-models-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr__( 'Search and select models...', 'llm-visibility-monitor' ); ?>" />
+                                <div id="llmvm-prompt-models-selected-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-selected-models"></div>
+                                <input type="hidden" id="llmvm-prompt-models-input-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_models[]" value="" />
+                            </div>
                             <br><br>
                             <div class="llmvm-all-buttons">
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">
@@ -331,7 +368,7 @@ if ( $is_admin ) {
                                     <input type="hidden" name="action" value="llmvm_edit_prompt" />
                                     <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
-                                    <input type="hidden" name="prompt_model" value="<?php echo esc_attr( (string) ( $prompt['model'] ?? '' ) ); ?>" />
+                                    <input type="hidden" name="prompt_models[]" value="" />
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
@@ -369,18 +406,110 @@ if ( $is_admin ) {
 
 <script>
 jQuery(document).ready(function($) {
+    // Get available models for autocomplete
+    var availableModels = <?php echo json_encode( LLMVM_Admin::get_openrouter_models() ); ?>;
+    
+    // Initialize multi-model selectors
+    function initializeMultiModelSelector(containerId) {
+        var $container = $('#' + containerId);
+        var $searchInput = $container.find('input[type="text"]');
+        var $selectedDiv = $container.find('.llmvm-selected-models');
+        var $hiddenInput = $container.find('input[type="hidden"]');
+        var selectedModels = [];
+        
+        // Load existing models if any
+        var currentModelsData = $container.data('current-models');
+        if (currentModelsData && Array.isArray(currentModelsData)) {
+            selectedModels = currentModelsData.slice(); // Copy the array
+            updateDisplay();
+            updateHiddenInput();
+        }
+        
+        // Initialize autocomplete
+        $searchInput.autocomplete({
+            source: function(request, response) {
+                var term = request.term.toLowerCase();
+                var matches = availableModels.filter(function(model) {
+                    return model.name.toLowerCase().indexOf(term) !== -1 || 
+                           model.id.toLowerCase().indexOf(term) !== -1;
+                });
+                response(matches);
+            },
+            select: function(event, ui) {
+                event.preventDefault();
+                addModel(ui.item);
+                $searchInput.val('');
+            },
+            focus: function(event, ui) {
+                event.preventDefault();
+            }
+        });
+        
+        // Add model to selection
+        function addModel(model) {
+            if (selectedModels.indexOf(model.id) === -1) {
+                selectedModels.push(model.id);
+                updateDisplay();
+                updateHiddenInput();
+            }
+        }
+        
+        // Remove model from selection
+        function removeModel(modelId) {
+            var index = selectedModels.indexOf(modelId);
+            if (index > -1) {
+                selectedModels.splice(index, 1);
+                updateDisplay();
+                updateHiddenInput();
+            }
+        }
+        
+        // Update the display of selected models
+        function updateDisplay() {
+            $selectedDiv.empty();
+            selectedModels.forEach(function(modelId) {
+                var model = availableModels.find(function(m) { return m.id === modelId; });
+                if (model) {
+                    var $tag = $('<span class="llmvm-model-tag">' + 
+                        model.name + ' (' + model.id + ')' +
+                        ' <a href="#" class="remove" data-model="' + modelId + '">&times;</a>' +
+                        '</span>');
+                    $selectedDiv.append($tag);
+                }
+            });
+        }
+        
+        // Update hidden input with selected models
+        function updateHiddenInput() {
+            $hiddenInput.val(selectedModels.join(','));
+        }
+        
+        // Handle remove button clicks
+        $selectedDiv.on('click', '.remove', function(e) {
+            e.preventDefault();
+            var modelId = $(this).data('model');
+            removeModel(modelId);
+        });
+        
+        // Expose methods for external access
+        $container.data('addModel', addModel);
+        $container.data('removeModel', removeModel);
+        $container.data('getSelectedModels', function() { return selectedModels; });
+    }
+    
+    // Initialize all multi-model selectors
+    $('.llmvm-multi-model-container').each(function() {
+        var containerId = $(this).attr('id');
+        if (containerId) {
+            initializeMultiModelSelector(containerId);
+        }
+    });
+    
     // Sync textarea content with hidden input fields
     $('.llmvm-prompt-cell textarea').on('input', function() {
         var promptId = $(this).closest('tr').find('input[name="prompt_id"]').val();
         var textareaValue = $(this).val();
         $('input[name="prompt_text"][form*="' + promptId + '"]').val(textareaValue);
-    });
-    
-    // Sync model selector with hidden input field
-    $('select[id^="llmvm-prompt-model-"]').on('change', function() {
-        var promptId = $(this).data('prompt-id');
-        var modelValue = $(this).val();
-        $('input[name="prompt_model"][form*="' + promptId + '"]').val(modelValue);
     });
     
     // Sync content before form submission to ensure latest content is saved
@@ -395,11 +524,12 @@ jQuery(document).ready(function($) {
             $hiddenTextInput.val($textarea.val());
         }
         
-        // Sync model selector content
-        var $modelSelect = $form.closest('tr').find('select[id^="llmvm-prompt-model-"]');
-        var $hiddenModelInput = $form.find('input[name="prompt_model"]');
-        if ($modelSelect.length && $hiddenModelInput.length) {
-            $hiddenModelInput.val($modelSelect.val());
+        // Sync multi-model selector content
+        var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+        var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+        if ($modelContainer.length && $hiddenModelInput.length) {
+            var selectedModels = $modelContainer.data('getSelectedModels')();
+            $hiddenModelInput.val(selectedModels.join(','));
         }
     });
     

@@ -194,23 +194,33 @@ class LLMVM_Cron {
 				continue;
 			}
 
-			// Use prompt-specific model or fall back to global default
-			$prompt_model = isset( $prompt_item['model'] ) && '' !== trim( $prompt_item['model'] ) ? (string) $prompt_item['model'] : $model;
+			// Get models for this prompt (handle both old 'model' and new 'models' format)
+			$prompt_models = array();
+			if ( isset( $prompt_item['models'] ) && is_array( $prompt_item['models'] ) ) {
+				$prompt_models = $prompt_item['models'];
+			} elseif ( isset( $prompt_item['model'] ) && '' !== trim( $prompt_item['model'] ) ) {
+				$prompt_models = array( $prompt_item['model'] );
+			} else {
+				$prompt_models = array( $model ); // Fall back to global default
+			}
 
 			// Use the current user ID who is running the job, not the prompt's stored user_id
 			$user_id = $current_user_id;
 
-			LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-			$response   = $client->query( $api_key, $prompt_text, $prompt_model );
-			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-			$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
-			$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
-			$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
+			// Process each model for this prompt
+			foreach ( $prompt_models as $prompt_model ) {
+				LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
+				$response   = $client->query( $api_key, $prompt_text, $prompt_model );
+				$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+				$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+				$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
+				$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
-			LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-			LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
-			if ( $status && $status >= 400 ) {
-				LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+				LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
+				LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+				if ( $status && $status >= 400 ) {
+					LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+				}
 			}
 		}
 		LLMVM_Logger::log( 'Run completed' );
@@ -283,23 +293,33 @@ class LLMVM_Cron {
 			return;
 		}
 
-		// Use prompt-specific model or fall back to global default
-		$prompt_model = isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ? (string) $target_prompt['model'] : $model;
+		// Get models for this prompt (handle both old 'model' and new 'models' format)
+		$prompt_models = array();
+		if ( isset( $target_prompt['models'] ) && is_array( $target_prompt['models'] ) ) {
+			$prompt_models = $target_prompt['models'];
+		} elseif ( isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ) {
+			$prompt_models = array( $target_prompt['model'] );
+		} else {
+			$prompt_models = array( $model ); // Fall back to global default
+		}
 
 		// Use the current user ID who is running the job
 		$user_id = $current_user_id;
 
-		LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-		$response   = $client->query( $api_key, $prompt_text, $prompt_model );
-		$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-		$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
-		$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
-		$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
+		// Process each model for this prompt
+		foreach ( $prompt_models as $prompt_model ) {
+			LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
+			$response   = $client->query( $api_key, $prompt_text, $prompt_model );
+			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+			$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+			$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
+			$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
-		LLMVM_Logger::log( 'Inserting single prompt result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-		LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
-		if ( $status && $status >= 400 ) {
-			LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
+			LLMVM_Logger::log( 'Inserting single prompt result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
+			LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+			if ( $status && $status >= 400 ) {
+				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
+			}
 		}
 
 		LLMVM_Logger::log( 'Single prompt run completed', [ 'prompt_id' => $prompt_id ] );
