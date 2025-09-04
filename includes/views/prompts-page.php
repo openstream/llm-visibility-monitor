@@ -650,6 +650,7 @@ jQuery(document).ready(function($) {
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
         console.log('=== FORM SUBMISSION STARTING ===');
+        console.log('Form submitted! Event triggered.');
         console.log('Form prompt ID:', promptId);
         console.log('Form action:', $form.attr('action'));
         
