@@ -834,7 +834,17 @@ jQuery(document).ready(function($) {
             console.log('Target value:', e.target.value);
         });
         
-        // Replace unresponsive save buttons with working ones
+        // Add a simple test button to see if any button works
+        console.log('=== ADDING SIMPLE TEST BUTTON ===');
+        var $testButton = $('<button type="button" style="background: green; color: white; padding: 10px; margin: 10px;">SIMPLE TEST BUTTON</button>');
+        $testButton.appendTo('body');
+        
+        $testButton.on('click', function() {
+            console.log('=== SIMPLE TEST BUTTON CLICKED ===');
+            alert('Simple test button works!');
+        });
+        
+        // Also try to replace save buttons with a different approach
         console.log('=== REPLACING SAVE BUTTONS ===');
         var $saveButtons = $('input[type="submit"][value="Speichern"]');
         console.log('Found save buttons to replace:', $saveButtons.length);
@@ -844,8 +854,8 @@ jQuery(document).ready(function($) {
             var $form = $saveButton.closest('form');
             console.log('Replacing save button', index);
             
-            // Create a new working button
-            var $newButton = $('<button type="button" class="button button-primary">Speichern</button>');
+            // Create a new working button with different styling
+            var $newButton = $('<button type="button" style="background: blue; color: white; padding: 5px 10px; margin-left: 10px;">SAVE</button>');
             $newButton.insertAfter($saveButton);
             
             // Hide the original button
