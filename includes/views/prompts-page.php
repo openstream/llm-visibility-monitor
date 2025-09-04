@@ -652,7 +652,12 @@ jQuery(document).ready(function($) {
         }
         
         // Sync multi-model selector content
-        var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+        // For "Your Prompts" section, the model container is in the same table cell as the form
+        var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
+        if ($modelContainer.length === 0) {
+            // Fallback: try to find it in the closest tr
+            $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+        }
         var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
         console.log('Form submission - Model container found:', $modelContainer.length > 0);
         console.log('Form submission - Hidden model input found:', $hiddenModelInput.length > 0);
