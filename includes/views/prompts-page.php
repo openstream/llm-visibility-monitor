@@ -848,13 +848,20 @@ jQuery(document).ready(function($) {
             console.log('Form has prompt_id:', $(this).find('input[name="prompt_id"]').length > 0);
         });
         
-        // Test manual form submission
+        // Test manual form submission (without actually submitting)
         if ($saveForms.length > 0) {
             console.log('=== TESTING MANUAL FORM SUBMIT ===');
             var $testForm = $saveForms.first();
             console.log('Testing form submission for:', $testForm.find('input[name="prompt_id"]').val());
             
-            // Try to trigger the form submission manually
+            // Try to trigger the form submission manually but prevent it from actually submitting
+            $testForm.on('submit', function(e) {
+                e.preventDefault();
+                console.log('=== MANUAL FORM SUBMIT INTERCEPTED ===');
+                console.log('Form would have submitted with prompt_id:', $(this).find('input[name="prompt_id"]').val());
+            });
+            
+            // Trigger the submit event
             $testForm.trigger('submit');
         }
     }, 2000);
