@@ -32,7 +32,7 @@ class LLMVM_Database {
 	/**
 	 * Current DB schema version for this plugin.
 	 */
-	private const DB_VERSION = '1.2.0';
+	private const DB_VERSION = '1.3.0';
 
 	/**
 	 * Return the fully qualified table name.
@@ -40,6 +40,22 @@ class LLMVM_Database {
 	public static function table_name(): string {
 		global $wpdb;
 		return $wpdb->prefix . 'llm_visibility_results';
+	}
+
+	/**
+	 * Return the fully qualified usage tracking table name.
+	 */
+	public static function usage_table_name(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'llm_visibility_usage';
+	}
+
+	/**
+	 * Return the fully qualified queue table name.
+	 */
+	public static function queue_table_name(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'llm_visibility_queue';
 	}
 
 	/**
@@ -59,6 +75,8 @@ class LLMVM_Database {
 		}
 
 		self::create_table();
+		self::create_usage_table();
+		self::create_queue_table();
 		update_option( 'llmvm_db_version', self::DB_VERSION );
 
 		// Migrate existing prompts to include model field.
@@ -193,6 +211,64 @@ class LLMVM_Database {
             PRIMARY KEY  (id),
             KEY created_at (created_at),
             KEY user_id (user_id)
+        ) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Create usage tracking table.
+	 */
+	private static function create_usage_table(): void {
+		global $wpdb;
+
+		$table_name      = self::usage_table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$sql = "CREATE TABLE {$table_name} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            month_year VARCHAR(7) NOT NULL,
+            prompts_used INT UNSIGNED NOT NULL DEFAULT 0,
+            runs_used INT UNSIGNED NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY user_month (user_id, month_year),
+            KEY user_id (user_id),
+            KEY month_year (month_year)
+        ) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Create queue table for background processing.
+	 */
+	private static function create_queue_table(): void {
+		global $wpdb;
+
+		$table_name      = self::queue_table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$sql = "CREATE TABLE {$table_name} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            prompt_id VARCHAR(191) NOT NULL,
+            models JSON NOT NULL,
+            status ENUM('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+            created_at DATETIME NOT NULL,
+            started_at DATETIME NULL,
+            completed_at DATETIME NULL,
+            error_message TEXT NULL,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY status (status),
+            KEY created_at (created_at)
         ) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -546,5 +622,194 @@ class LLMVM_Database {
 		self::create_table();
 		update_option( 'llmvm_db_version', self::DB_VERSION );
 		LLMVM_Logger::log( 'Custom table created manually.', array( 'table_name' => self::table_name() ) );
+	}
+
+	/**
+	 * Get current usage for a user for the current month.
+	 */
+	public static function get_user_usage( int $user_id ): array {
+		global $wpdb;
+		
+		$month_year = gmdate( 'Y-m' );
+		$table_name = self::usage_table_name();
+		
+		$usage = $wpdb->get_row( $wpdb->prepare( 
+			'SELECT prompts_used, runs_used FROM ' . $table_name . ' WHERE user_id = %d AND month_year = %s', 
+			$user_id, 
+			$month_year 
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::usage_table_name() returns constant string.
+		
+		if ( ! is_array( $usage ) ) {
+			return array( 'prompts_used' => 0, 'runs_used' => 0 );
+		}
+		
+		return array(
+			'prompts_used' => (int) $usage['prompts_used'],
+			'runs_used' => (int) $usage['runs_used']
+		);
+	}
+
+	/**
+	 * Increment usage for a user.
+	 */
+	public static function increment_usage( int $user_id, int $prompts_increment = 0, int $runs_increment = 0 ): void {
+		global $wpdb;
+		
+		$month_year = gmdate( 'Y-m' );
+		$table_name = self::usage_table_name();
+		$now = current_time( 'mysql' );
+		
+		// Try to update existing record
+		$updated = $wpdb->query( $wpdb->prepare( 
+			'UPDATE ' . $table_name . ' SET prompts_used = prompts_used + %d, runs_used = runs_used + %d, updated_at = %s WHERE user_id = %d AND month_year = %s',
+			$prompts_increment,
+			$runs_increment,
+			$now,
+			$user_id,
+			$month_year
+		) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::usage_table_name() returns constant string.
+		
+		// If no rows were updated, insert new record
+		if ( 0 === $updated ) {
+			$wpdb->insert(
+				$table_name,
+				array(
+					'user_id' => $user_id,
+					'month_year' => $month_year,
+					'prompts_used' => $prompts_increment,
+					'runs_used' => $runs_increment,
+					'created_at' => $now,
+					'updated_at' => $now
+				),
+				array( '%d', '%s', '%d', '%d', '%s', '%s' )
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
+		}
+	}
+
+	/**
+	 * Add job to queue.
+	 */
+	public static function add_to_queue( int $user_id, string $prompt_id, array $models ): int {
+		global $wpdb;
+		
+		$table_name = self::queue_table_name();
+		$now = current_time( 'mysql' );
+		
+		$result = $wpdb->insert(
+			$table_name,
+			array(
+				'user_id' => $user_id,
+				'prompt_id' => $prompt_id,
+				'models' => wp_json_encode( $models ),
+				'status' => 'pending',
+				'created_at' => $now
+			),
+			array( '%d', '%s', '%s', '%s', '%s' )
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
+		
+		if ( false === $result ) {
+			return 0;
+		}
+		
+		return $wpdb->insert_id;
+	}
+
+	/**
+	 * Get pending jobs from queue.
+	 */
+	public static function get_pending_jobs( int $limit = 10 ): array {
+		global $wpdb;
+		
+		$table_name = self::queue_table_name();
+		
+		$jobs = $wpdb->get_results( $wpdb->prepare( 
+			'SELECT id, user_id, prompt_id, models, created_at FROM ' . $table_name . ' WHERE status = %s ORDER BY created_at ASC LIMIT %d',
+			'pending',
+			$limit
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::queue_table_name() returns constant string.
+		
+		if ( ! is_array( $jobs ) ) {
+			return array();
+		}
+		
+		// Decode JSON models for each job
+		foreach ( $jobs as &$job ) {
+			$job['models'] = json_decode( $job['models'], true );
+		}
+		unset( $job );
+		
+		return $jobs;
+	}
+
+	/**
+	 * Update job status in queue.
+	 */
+	public static function update_job_status( int $job_id, string $status, string $error_message = null ): void {
+		global $wpdb;
+		
+		$table_name = self::queue_table_name();
+		$now = current_time( 'mysql' );
+		
+		$update_data = array( 'status' => $status );
+		$update_format = array( '%s' );
+		
+		if ( 'processing' === $status ) {
+			$update_data['started_at'] = $now;
+			$update_format[] = '%s';
+		} elseif ( in_array( $status, array( 'completed', 'failed' ), true ) ) {
+			$update_data['completed_at'] = $now;
+			$update_format[] = '%s';
+		}
+		
+		if ( null !== $error_message ) {
+			$update_data['error_message'] = $error_message;
+			$update_format[] = '%s';
+		}
+		
+		$wpdb->update(
+			$table_name,
+			$update_data,
+			array( 'id' => $job_id ),
+			$update_format,
+			array( '%d' )
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
+	}
+
+	/**
+	 * Get queue status for a user.
+	 */
+	public static function get_user_queue_status( int $user_id ): array {
+		global $wpdb;
+		
+		$table_name = self::queue_table_name();
+		
+		$status = $wpdb->get_row( $wpdb->prepare( 
+			'SELECT 
+				COUNT(*) as total_jobs,
+				SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_jobs,
+				SUM(CASE WHEN status = "processing" THEN 1 ELSE 0 END) as processing_jobs,
+				SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_jobs,
+				SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed_jobs
+			FROM ' . $table_name . ' WHERE user_id = %d',
+			$user_id
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb methods. self::queue_table_name() returns constant string.
+		
+		if ( ! is_array( $status ) ) {
+			return array(
+				'total_jobs' => 0,
+				'pending_jobs' => 0,
+				'processing_jobs' => 0,
+				'completed_jobs' => 0,
+				'failed_jobs' => 0
+			);
+		}
+		
+		return array(
+			'total_jobs' => (int) $status['total_jobs'],
+			'pending_jobs' => (int) $status['pending_jobs'],
+			'processing_jobs' => (int) $status['processing_jobs'],
+			'completed_jobs' => (int) $status['completed_jobs'],
+			'failed_jobs' => (int) $status['failed_jobs']
+		);
 	}
 }
