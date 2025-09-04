@@ -559,6 +559,22 @@ class LLMVM_Admin {
             // Get current user ID
             $current_user_id = get_current_user_id();
             
+            // Check usage limits
+            if ( ! LLMVM_Usage_Manager::can_add_prompt( $current_user_id ) ) {
+                $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => sprintf( __( 'You have reached your prompt limit (%d prompts). Please delete some prompts or upgrade your plan.', 'llm-visibility-monitor' ), $limits['max_prompts'] ) ], 60 );
+                wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
+                exit;
+            }
+            
+            // Check model limit for this prompt
+            if ( ! LLMVM_Usage_Manager::can_add_models_to_prompt( $current_user_id, count( $models ) ) ) {
+                $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+                set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => sprintf( __( 'You have selected too many models (%d). Your plan allows a maximum of %d models per prompt.', 'llm-visibility-monitor' ), count( $models ), $limits['max_models_per_prompt'] ) ], 60 );
+                wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
+                exit;
+            }
+            
             // Check for duplicate prompts (same text, models, and user)
             $is_duplicate = false;
             foreach ( $prompts as $existing_prompt ) {
@@ -598,6 +614,10 @@ class LLMVM_Admin {
                     'user_id' => $current_user_id
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
+                
+                // Track usage (increment prompts count)
+                LLMVM_Database::increment_usage( $current_user_id, 1, 0 );
+                
                 set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt added successfully.', 'llm-visibility-monitor' ) ], 60 );
             } else {
                 set_transient( 'llmvm_notice', [ 'type' => 'warning', 'msg' => __( 'This prompt with the same models already exists.', 'llm-visibility-monitor' ) ], 60 );

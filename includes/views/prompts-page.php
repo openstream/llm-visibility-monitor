@@ -792,6 +792,137 @@ jQuery(document).ready(function($) {
         var formData = $form.serialize();
         console.log('Form data:', formData);
     });
+    
+    // Add confirmation for "Run All Prompts Now" button
+    $('a[href*="llmvm_run_now"]').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var originalHref = $button.attr('href');
+        
+        // Calculate total runs needed
+        var totalRuns = 0;
+        var promptCount = 0;
+        
+        // Count prompts and models for current user
+        <?php if ( ! $is_admin ) : ?>
+        // For non-admin users, only count their own prompts
+        var userPrompts = <?php echo json_encode( $user_prompts ); ?>;
+        userPrompts.forEach(function(prompt) {
+            promptCount++;
+            if (prompt.models && Array.isArray(prompt.models)) {
+                totalRuns += prompt.models.length;
+            } else {
+                totalRuns += 1; // Fallback for single model
+            }
+        });
+        <?php else : ?>
+        // For admin users, count all prompts
+        var allPrompts = <?php echo json_encode( $all_prompts ); ?>;
+        allPrompts.forEach(function(prompt) {
+            promptCount++;
+            if (prompt.models && Array.isArray(prompt.models)) {
+                totalRuns += prompt.models.length;
+            } else {
+                totalRuns += 1; // Fallback for single model
+            }
+        });
+        <?php endif; ?>
+        
+        // Get current usage
+        var currentUsage = <?php echo json_encode( LLMVM_Usage_Manager::get_usage_summary( $current_user_id ) ); ?>;
+        var remainingRuns = currentUsage.runs.remaining;
+        
+        // Check if user has enough runs
+        if (totalRuns > remainingRuns) {
+            alert('❌ Not enough runs remaining!\n\n' +
+                  'Runs needed: ' + totalRuns + '\n' +
+                  'Runs remaining: ' + remainingRuns + '\n' +
+                  'Plan: ' + currentUsage.plan_name + '\n\n' +
+                  'Please wait for next month or upgrade your plan.');
+            return false;
+        }
+        
+        // Show confirmation
+        var confirmed = confirm('🚀 Run All Prompts Confirmation\n\n' +
+                               'Prompts to run: ' + promptCount + '\n' +
+                               'Total runs: ' + totalRuns + '\n' +
+                               'Runs remaining after: ' + (remainingRuns - totalRuns) + '\n' +
+                               'Plan: ' + currentUsage.plan_name + '\n\n' +
+                               'This may take several minutes. Continue?');
+        
+        if (confirmed) {
+            window.location.href = originalHref;
+        }
+    });
+    
+    // Add confirmation for individual "Run Now" buttons
+    $('a[href*="llmvm_run_single"]').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var originalHref = $button.attr('href');
+        
+        // Extract prompt ID from href
+        var urlParams = new URLSearchParams(originalHref.split('?')[1]);
+        var promptId = urlParams.get('prompt_id');
+        
+        // Find the prompt data
+        var promptData = null;
+        <?php if ( ! $is_admin ) : ?>
+        var userPrompts = <?php echo json_encode( $user_prompts ); ?>;
+        userPrompts.forEach(function(prompt) {
+            if (prompt.id === promptId) {
+                promptData = prompt;
+            }
+        });
+        <?php else : ?>
+        var allPrompts = <?php echo json_encode( $all_prompts ); ?>;
+        allPrompts.forEach(function(prompt) {
+            if (prompt.id === promptId) {
+                promptData = prompt;
+            }
+        });
+        <?php endif; ?>
+        
+        if (!promptData) {
+            alert('❌ Prompt not found!');
+            return false;
+        }
+        
+        // Calculate runs needed for this prompt
+        var runsNeeded = 1;
+        if (promptData.models && Array.isArray(promptData.models)) {
+            runsNeeded = promptData.models.length;
+        }
+        
+        // Get current usage
+        var currentUsage = <?php echo json_encode( LLMVM_Usage_Manager::get_usage_summary( $current_user_id ) ); ?>;
+        var remainingRuns = currentUsage.runs.remaining;
+        
+        // Check if user has enough runs
+        if (runsNeeded > remainingRuns) {
+            alert('❌ Not enough runs remaining!\n\n' +
+                  'Runs needed: ' + runsNeeded + '\n' +
+                  'Runs remaining: ' + remainingRuns + '\n' +
+                  'Plan: ' + currentUsage.plan_name + '\n\n' +
+                  'Please wait for next month or upgrade your plan.');
+            return false;
+        }
+        
+        // Show confirmation
+        var confirmed = confirm('🚀 Run Prompt Confirmation\n\n' +
+                               'Prompt: "' + (promptData.text || 'Untitled').substring(0, 50) + '..."\n' +
+                               'Models: ' + runsNeeded + '\n' +
+                               'Runs remaining after: ' + (remainingRuns - runsNeeded) + '\n' +
+                               'Plan: ' + currentUsage.plan_name + '\n\n' +
+                               'Continue?');
+        
+        if (confirmed) {
+            window.location.href = originalHref;
+        }
+    });
+    
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
         console.error('Error stack:', error.stack);
