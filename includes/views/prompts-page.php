@@ -666,37 +666,31 @@ jQuery(document).ready(function($) {
     // Simple approach: sync model data before form submission
     console.log('=== SETTING UP MODEL SYNC ===');
     
-    // Alternative approach: modify the form action to include model data
-    $('input[type="submit"][value="Speichern"]').on('click', function(e) {
-        console.log('=== SAVE BUTTON CLICKED ===');
-        
-        var $form = $(this).closest('form');
-        var promptId = $form.find('input[name="prompt_id"]').val();
-        
-        if (promptId) {
-            console.log('=== SYNCING MODELS FOR PROMPT:', promptId, '===');
+    // Alternative approach: use a timer to sync model data periodically
+    setInterval(function() {
+        $('form[action*="admin-post.php"]').each(function() {
+            var $form = $(this);
+            var promptId = $form.find('input[name="prompt_id"]').val();
             
-            // Find the model container
-            var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
-            if ($modelContainer.length === 0) {
-                $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
-            }
-            
-            var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-            
-            if ($modelContainer.length && $hiddenModelInput.length) {
-                var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
-                if (typeof getSelectedModelsFunction === 'function') {
-                    var selectedModels = getSelectedModelsFunction();
-                    console.log('Selected models:', selectedModels);
-                    $hiddenModelInput.val(selectedModels.join(','));
-                    console.log('Hidden input value set to:', $hiddenModelInput.val());
+            if (promptId) {
+                // Find the model container
+                var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
+                if ($modelContainer.length === 0) {
+                    $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+                }
+                
+                var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+                
+                if ($modelContainer.length && $hiddenModelInput.length) {
+                    var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
+                    if (typeof getSelectedModelsFunction === 'function') {
+                        var selectedModels = getSelectedModelsFunction();
+                        $hiddenModelInput.val(selectedModels.join(','));
+                    }
                 }
             }
-        }
-        
-        // Don't prevent default - let the form submit normally
-    });
+        });
+    }, 1000); // Sync every second
     
     // Try to intercept form submission at the document level
     // Removed conflicting document-level form submission handler
