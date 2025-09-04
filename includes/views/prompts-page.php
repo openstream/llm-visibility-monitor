@@ -809,6 +809,27 @@ jQuery(document).ready(function($) {
         }
     });
     
+    // Also try to catch any form submission at the window level
+    window.addEventListener('beforeunload', function(e) {
+        console.log('=== WINDOW BEFOREUNLOAD ===');
+        console.log('Page is about to unload');
+    });
+    
+    // Try to catch any navigation
+    window.addEventListener('unload', function(e) {
+        console.log('=== WINDOW UNLOAD ===');
+        console.log('Page is unloading');
+    });
+    
+    // Check if the form is actually submitting by monitoring the page
+    var originalSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function() {
+        console.log('=== NATIVE FORM SUBMIT CALLED ===');
+        console.log('Form action:', this.action);
+        console.log('Form method:', this.method);
+        return originalSubmit.call(this);
+    };
+    
     // Debug: Check if submit buttons exist
     console.log('Submit buttons found:', $('input[type="submit"]').length);
     $('input[type="submit"]').each(function(index) {
