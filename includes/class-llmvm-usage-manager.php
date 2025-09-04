@@ -113,7 +113,7 @@ class LLMVM_Usage_Manager {
 	 */
 	public static function can_add_models_to_prompt( int $user_id, int $current_model_count ): bool {
 		$limits = self::get_user_limits( $user_id );
-		return $current_model_count < $limits['max_models_per_prompt'];
+		return $current_model_count <= $limits['max_models_per_prompt'];
 	}
 
 	/**
