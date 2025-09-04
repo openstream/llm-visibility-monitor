@@ -230,12 +230,14 @@ class LLMVM_Email_Reporter {
         /* Mobile-first responsive table */
         .results-table {
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             background: #ffffff;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            table-layout: fixed;
         }
         
         .results-table th {
@@ -264,11 +266,11 @@ class LLMVM_Email_Reporter {
         }
         
         /* Column widths for desktop - optimized for content */
-        .date-col { width: 12%; min-width: 100px; }
-        .prompt-col { width: 25%; min-width: 180px; }
-        .model-col { width: 18%; min-width: 140px; }
-        .answer-col { width: 45%; }
-        .user-col { width: 10%; min-width: 80px; }
+        .date-col { width: 10%; min-width: 100px; }
+        .prompt-col { width: 20%; min-width: 150px; }
+        .model-col { width: 15%; min-width: 120px; }
+        .answer-col { width: 55%; }
+        .user-col { width: 8%; min-width: 80px; }
         
         /* Mobile responsive styles */
         @media only screen and (max-width: 600px) {
