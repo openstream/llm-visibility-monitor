@@ -430,8 +430,12 @@ class LLMVM_Admin {
         // Sanitize the prompt text and models inputs.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
-        $models_input = isset( $_POST['prompt_models'] ) ? wp_unslash( $_POST['prompt_models'] ) : '';
+        
+        // Handle both prompt_models[] (array format) and prompt_models (single format)
+        $models_input = '';
+        if ( isset( $_POST['prompt_models'] ) ) {
+            $models_input = wp_unslash( $_POST['prompt_models'] );
+        }
         
         // Handle both single model (backward compatibility) and multiple models
         $models = array();
@@ -525,8 +529,12 @@ class LLMVM_Admin {
         $id   = isset( $_POST['prompt_id'] ) ? sanitize_text_field( wp_unslash( $_POST['prompt_id'] ) ) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
         $text = isset( $_POST['prompt_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt_text'] ) ) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce().
-        $models_input = isset( $_POST['prompt_models'] ) ? wp_unslash( $_POST['prompt_models'] ) : '';
+        
+        // Handle both prompt_models[] (array format) and prompt_models (single format)
+        $models_input = '';
+        if ( isset( $_POST['prompt_models'] ) ) {
+            $models_input = wp_unslash( $_POST['prompt_models'] );
+        }
         
         // Handle both single model (backward compatibility) and multiple models
         $models = array();
