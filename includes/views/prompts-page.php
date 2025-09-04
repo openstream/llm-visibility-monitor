@@ -475,6 +475,14 @@ jQuery(document).ready(function($) {
                     }
                     return model.name.toLowerCase().indexOf(term) !== -1 || 
                            model.id.toLowerCase().indexOf(term) !== -1;
+                }).map(function(model) {
+                    // Ensure each item has label and value properties for jQuery UI
+                    return {
+                        label: model.name + ' (' + model.id + ')',
+                        value: model.id,
+                        id: model.id,
+                        name: model.name
+                    };
                 });
                 
                 console.log('Filtered matches:', matches);
@@ -493,20 +501,6 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
-            _renderMenu: function(ul, items) {
-                console.log('Rendering menu with', items.length, 'items');
-                var that = this;
-                $.each(items, function(index, item) {
-                    console.log('Rendering item:', item);
-                    that._renderItemData(ul, item);
-                });
-            },
-            _renderItemData: function(ul, item) {
-                console.log('Rendering item data:', item);
-                return $('<li>')
-                    .append('<div>' + item.name + ' (' + item.id + ')</div>')
-                    .appendTo(ul);
-            }
         });
         
         // Debug: Check if autocomplete widget was created
