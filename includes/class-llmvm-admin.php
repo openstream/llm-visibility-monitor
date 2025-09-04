@@ -587,7 +587,7 @@ class LLMVM_Admin {
         
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
-        if ( isset( $_POST['prompt_models'] ) ) {
+        if ( isset( $_POST['prompt_models'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
             $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
@@ -716,7 +716,7 @@ class LLMVM_Admin {
         
         // Handle both prompt_models[] (array format) and prompt_models (single format)
         $models_input = '';
-        if ( isset( $_POST['prompt_models'] ) ) {
+        if ( isset( $_POST['prompt_models'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
             $raw_models = wp_unslash( $_POST['prompt_models'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Will be sanitized below based on type
             // Sanitize if it's an array
             if ( is_array( $raw_models ) ) {
@@ -1087,7 +1087,7 @@ class LLMVM_Admin {
             wp_enqueue_script( 'jquery-ui-widget' );
             wp_enqueue_script( 'jquery-ui-position' );
             wp_enqueue_script( 'jquery-ui-autocomplete' );
-            wp_enqueue_style( 'jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css' );
+            wp_enqueue_style( 'jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css', array(), '1.13.2' ); // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- jQuery UI theme is required for autocomplete functionality
         }
 
         // Enqueue JavaScript

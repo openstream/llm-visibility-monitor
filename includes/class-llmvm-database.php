@@ -633,11 +633,11 @@ class LLMVM_Database {
 		$month_year = gmdate( 'Y-m' );
 		$table_name = self::usage_table_name();
 		
-		$usage = $wpdb->get_row( $wpdb->prepare( 
+		$usage = $wpdb->get_row( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_row() is the proper WordPress method for custom table queries.
 			'SELECT prompts_used, runs_used FROM ' . $table_name . ' WHERE user_id = %d AND month_year = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::usage_table_name() returns constant string
 			$user_id, 
 			$month_year 
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_row() is the proper WordPress method for custom table queries.
+		), ARRAY_A );
 		
 		if ( ! is_array( $usage ) ) {
 			return array( 'prompts_used' => 0, 'runs_used' => 0 );
@@ -660,18 +660,18 @@ class LLMVM_Database {
 		$now = current_time( 'mysql' );
 		
 		// Try to update existing record
-		$updated = $wpdb->query( $wpdb->prepare( 
+		$updated = $wpdb->query( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->query() is the proper WordPress method for custom table updates.
 			'UPDATE ' . $table_name . ' SET prompts_used = prompts_used + %d, runs_used = runs_used + %d, updated_at = %s WHERE user_id = %d AND month_year = %s', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::usage_table_name() returns constant string
 			$prompts_increment,
 			$runs_increment,
 			$now,
 			$user_id,
 			$month_year
-		) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->query() is the proper WordPress method for custom table updates.
+		) );
 		
 		// If no rows were updated, insert new record
 		if ( 0 === $updated ) {
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
 				$table_name,
 				array(
 					'user_id' => $user_id,
@@ -682,7 +682,7 @@ class LLMVM_Database {
 					'updated_at' => $now
 				),
 				array( '%d', '%s', '%d', '%d', '%s', '%s' )
-			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
+			);
 		}
 	}
 
@@ -695,7 +695,7 @@ class LLMVM_Database {
 		$table_name = self::queue_table_name();
 		$now = current_time( 'mysql' );
 		
-		$result = $wpdb->insert(
+		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
 			$table_name,
 			array(
 				'user_id' => $user_id,
@@ -705,7 +705,7 @@ class LLMVM_Database {
 				'created_at' => $now
 			),
 			array( '%d', '%s', '%s', '%s', '%s' )
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
+		);
 		
 		if ( false === $result ) {
 			return 0;
@@ -722,11 +722,11 @@ class LLMVM_Database {
 		
 		$table_name = self::queue_table_name();
 		
-		$jobs = $wpdb->get_results( $wpdb->prepare( 
+		$jobs = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_results() is the proper WordPress method for custom table queries.
 			'SELECT id, user_id, prompt_id, models, created_at FROM ' . $table_name . ' WHERE status = %s ORDER BY created_at ASC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::queue_table_name() returns constant string
 			'pending',
 			$limit
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_results() is the proper WordPress method for custom table queries.
+		), ARRAY_A );
 		
 		if ( ! is_array( $jobs ) ) {
 			return array();
@@ -766,13 +766,13 @@ class LLMVM_Database {
 			$update_format[] = '%s';
 		}
 		
-		$wpdb->update(
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
 			$table_name,
 			$update_data,
 			array( 'id' => $job_id ),
 			$update_format,
 			array( '%d' )
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
+		);
 	}
 
 	/**
@@ -783,7 +783,7 @@ class LLMVM_Database {
 		
 		$table_name = self::queue_table_name();
 		
-		$status = $wpdb->get_row( $wpdb->prepare( 
+		$status = $wpdb->get_row( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_row() is the proper WordPress method for custom table queries.
 			'SELECT 
 				COUNT(*) as total_jobs,
 				SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_jobs,
@@ -792,7 +792,7 @@ class LLMVM_Database {
 				SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed_jobs
 			FROM ' . $table_name . ' WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::queue_table_name() returns constant string
 			$user_id
-		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_row() is the proper WordPress method for custom table queries.
+		), ARRAY_A );
 		
 		if ( ! is_array( $status ) ) {
 			return array(
