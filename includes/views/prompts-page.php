@@ -721,6 +721,39 @@ jQuery(document).ready(function($) {
         console.log('Button name:', $(this).attr('name'));
         console.log('Button form:', $(this).closest('form').attr('action'));
         console.log('Form has admin-post.php action:', $(this).closest('form').attr('action').indexOf('admin-post.php') !== -1);
+        
+        // If this is a save button, prevent default and handle manually
+        if ($(this).val() === 'Speichern') {
+            console.log('=== INTERCEPTING SAVE BUTTON CLICK ===');
+            e.preventDefault();
+            
+            var $form = $(this).closest('form');
+            console.log('Form found:', $form.length);
+            
+            // Sync the model data first
+            var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
+            if ($modelContainer.length === 0) {
+                $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+            }
+            var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+            
+            console.log('Model container found:', $modelContainer.length);
+            console.log('Hidden model input found:', $hiddenModelInput.length);
+            
+            if ($modelContainer.length && $hiddenModelInput.length) {
+                var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
+                if (typeof getSelectedModelsFunction === 'function') {
+                    var selectedModels = getSelectedModelsFunction();
+                    console.log('Selected models:', selectedModels);
+                    $hiddenModelInput.val(selectedModels.join(','));
+                    console.log('Hidden input value set to:', $hiddenModelInput.val());
+                }
+            }
+            
+            // Now submit the form
+            console.log('=== MANUALLY SUBMITTING FORM ===');
+            $form[0].submit();
+        }
     });
     
     // Also try mousedown and mouseup events
