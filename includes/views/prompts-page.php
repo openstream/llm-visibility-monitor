@@ -655,8 +655,7 @@ jQuery(document).ready(function($) {
         console.log('Form prompt ID:', promptId);
         console.log('Form action:', $form.attr('action'));
         
-        // Temporary alert to test if this handler is being called
-        alert('Form submission handler called!');
+        // Removed alert to prevent popup interruptions
         
         // Sync textarea content
         var $textarea = $form.closest('tr').find('.llmvm-prompt-cell textarea');
@@ -826,16 +825,7 @@ jQuery(document).ready(function($) {
             }
         });
         
-        // Test if we can programmatically click the button
-        setTimeout(function() {
-            console.log('=== TESTING PROGRAMMATIC CLICK ===');
-            var $saveButtons = $('input[type="submit"][value="Speichern"]');
-            console.log('Found save buttons:', $saveButtons.length);
-            if ($saveButtons.length > 0) {
-                console.log('Testing click on first save button');
-                $saveButtons.first().trigger('click');
-            }
-        }, 2000);
+        // Removed programmatic click test to prevent page reloads
     }, 1000);
     
     // Try to intercept form submission at the document level
