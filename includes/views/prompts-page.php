@@ -829,7 +829,14 @@ jQuery(document).ready(function($) {
         });
         <?php endif; ?>
         
-        // Get current usage
+        <?php if ( $is_admin ) : ?>
+        // Admin users - simplified confirmation
+        var confirmed = confirm('🚀 Run All Prompts Confirmation\n\n' +
+                               'Prompts to run: ' + promptCount + '\n' +
+                               'Total runs: ' + totalRuns + '\n\n' +
+                               'This may take several minutes. Continue?');
+        <?php else : ?>
+        // Regular users - full confirmation with usage info
         var currentUsage = <?php echo json_encode( LLMVM_Usage_Manager::get_usage_summary( $current_user_id ) ); ?>;
         var remainingRuns = currentUsage.runs.remaining;
         
@@ -850,6 +857,7 @@ jQuery(document).ready(function($) {
                                'Runs remaining after: ' + (remainingRuns - totalRuns) + '\n' +
                                'Plan: ' + currentUsage.plan_name + '\n\n' +
                                'This may take several minutes. Continue?');
+        <?php endif; ?>
         
         if (confirmed) {
             window.location.href = originalHref;
@@ -896,7 +904,14 @@ jQuery(document).ready(function($) {
             runsNeeded = promptData.models.length;
         }
         
-        // Get current usage
+        <?php if ( $is_admin ) : ?>
+        // Admin users - simplified confirmation
+        var confirmed = confirm('🚀 Run Prompt Confirmation\n\n' +
+                               'Prompt: "' + (promptData.text || 'Untitled').substring(0, 50) + '..."\n' +
+                               'Models: ' + runsNeeded + '\n\n' +
+                               'Continue?');
+        <?php else : ?>
+        // Regular users - full confirmation with usage info
         var currentUsage = <?php echo json_encode( LLMVM_Usage_Manager::get_usage_summary( $current_user_id ) ); ?>;
         var remainingRuns = currentUsage.runs.remaining;
         
@@ -917,6 +932,7 @@ jQuery(document).ready(function($) {
                                'Runs remaining after: ' + (remainingRuns - runsNeeded) + '\n' +
                                'Plan: ' + currentUsage.plan_name + '\n\n' +
                                'Continue?');
+        <?php endif; ?>
         
         if (confirmed) {
             window.location.href = originalHref;
