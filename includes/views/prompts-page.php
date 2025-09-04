@@ -468,7 +468,7 @@ jQuery(document).ready(function($) {
         console.log('Skipping jQuery UI Autocomplete, using custom dropdown only');
         
         // Create a simple custom dropdown for testing
-        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:2px solid red; max-height:200px; overflow-y:auto; z-index:999999; margin-top:5px;"></div>');
+        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:2px solid red; max-height:400px; overflow-y:scroll; z-index:999999; margin-top:5px; width:100%;"></div>');
         $searchInput.after($customDropdown);
         
         // Show all models when input is focused (clicked)
@@ -488,7 +488,9 @@ jQuery(document).ready(function($) {
             });
             
             console.log('Added', $customDropdown.children().length, 'items to dropdown');
-            console.log('Dropdown HTML:', $customDropdown.html());
+            console.log('Total models available:', allModels.length);
+            console.log('First few items:', $customDropdown.children().slice(0, 5).map(function() { return $(this).text(); }).get());
+            console.log('Last few items:', $customDropdown.children().slice(-5).map(function() { return $(this).text(); }).get());
             
             // Show dropdown (no complex positioning needed with relative positioning)
             $customDropdown.css({
@@ -535,7 +537,9 @@ jQuery(document).ready(function($) {
             });
             
             console.log('Added', $customDropdown.children().length, 'items to dropdown');
-            console.log('Dropdown HTML:', $customDropdown.html());
+            console.log('Total models available:', allModels.length);
+            console.log('First few items:', $customDropdown.children().slice(0, 5).map(function() { return $(this).text(); }).get());
+            console.log('Last few items:', $customDropdown.children().slice(-5).map(function() { return $(this).text(); }).get());
             
             // Show dropdown (no complex positioning needed with relative positioning)
             $customDropdown.css({
