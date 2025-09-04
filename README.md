@@ -44,9 +44,10 @@ Monitor LLM responses on a schedule and store/export results.
 
 - The plugin uses OpenRouter to call different models via a single API.
 - Configure the API key on the Settings page (stored encrypted).
+- **Model Support**: Access to 300+ AI models from major providers including OpenAI, Anthropic, Google, Meta, and more
 - Model selection:
   - `openrouter/stub-model-v1` → local stub for fast testing (no external API call)
-  - Any real model id exposed by OpenRouter (e.g. `openai/gpt-4o-mini`, `openai/gpt-4.1`, or `openai/gpt-5` when available)
+  - Any real model id exposed by OpenRouter (e.g. `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `google/gemini-pro`, `meta-llama/llama-3.1-70b-instruct`)
 
 ### Scheduling
 
@@ -98,6 +99,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 - Your configured prompts are sent to OpenRouter each time the cron job runs (daily/weekly) or when you click "Run Now"
 - The selected model identifier (e.g., `openai/gpt-4o-mini`) is sent with each request
 - Your WordPress site URL is sent as the HTTP referer for API tracking
+- **Model Access**: With a valid API key, you have access to 300+ AI models from OpenRouter's catalog
 
 **Service provider:** OpenRouter (https://openrouter.ai)
 - [Terms of Service](https://openrouter.ai/terms)
@@ -108,7 +110,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 ## Configuration
 
 1. OpenRouter API Key: paste your key in Settings (stored encrypted; re-enter to change).
-2. Model: enter an OpenRouter model id. Start with `openrouter/stub-model-v1` for quick testing, then switch to a real model (e.g. `openai/gpt-4o-mini`, `openai/gpt-5` when available).
+2. Model: enter an OpenRouter model id. Start with `openrouter/stub-model-v1` for quick testing, then switch to any of the 300+ available models (e.g. `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `google/gemini-pro`).
 3. Cron Frequency: choose how often results should be collected.
 4. Debug Logging: enable when troubleshooting; review `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 5. Email Reports: enable to receive automatic reports after each cron run.

@@ -16,7 +16,7 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 
 **Key Features:**
 
-* **OpenRouter Integration**: Connect to multiple AI models through OpenRouter's unified API
+* **OpenRouter Integration**: Connect to 300+ AI models through OpenRouter's unified API
 * **Scheduled Monitoring**: Set up daily or weekly cron jobs to automatically send prompts
 * **Prompt Management**: Create, edit, and delete prompts with multi-model selection
 * **Results Dashboard**: View all LLM responses in a sortable, searchable table
@@ -24,7 +24,7 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * **Email Reports**: Receive email notifications with formatted results
 * **Role-Based Access Control**: Assign "LLM Manager" role for limited admin access
 * **User-Specific Data**: Secure isolation between user prompts, results, and exports
-* **Multi-Model Selection**: Select multiple AI models for each prompt to compare responses
+* **Multi-Model Selection**: Select multiple AI models from 300+ available models for each prompt to compare responses
 * **Personalized Email Reports**: Users receive emails at their own address with only their data
 * **Comprehensive Logging**: Detailed logging for debugging and monitoring
 * **German Localization**: Full support for German (de_DE, de_CH)
@@ -34,7 +34,7 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * Monitor AI model performance over time
 * Track response quality and consistency
 * Generate regular reports for stakeholders
-* Test different prompts and models simultaneously
+* Test different prompts across 300+ AI models simultaneously
 * Maintain audit trails of AI interactions
 
 **Role-Based Access:**
@@ -62,7 +62,7 @@ Yes, you'll need to create an account at [openrouter.ai](https://openrouter.ai) 
 
 = Can I use different models for different prompts? =
 
-Yes! Each prompt can be configured to use multiple AI models simultaneously, or it can fall back to your global default model. This allows you to compare responses across different models for the same prompt.
+Yes! Each prompt can be configured to use multiple AI models simultaneously from 300+ available models, or it can fall back to your global default model. This allows you to compare responses across different models for the same prompt.
 
 = How often can I run the monitoring? =
 
