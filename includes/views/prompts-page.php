@@ -245,7 +245,7 @@ if ( $is_admin ) {
         <p>
             <label for="llmvm-new-prompt-models"><?php echo esc_html__( 'Models (optional, uses default if empty):', 'llm-visibility-monitor' ); ?></label>
             <div id="llmvm-new-prompt-models-container" class="llmvm-multi-model-container">
-                <input type="text" id="llmvm-new-prompt-models-search" class="regular-text" placeholder="<?php echo esc_attr__( 'Search and select models...', 'llm-visibility-monitor' ); ?>" />
+                <input type="text" id="llmvm-new-prompt-models-search" class="regular-text" placeholder="<?php echo esc_attr__( 'Click to see all models or type to filter...', 'llm-visibility-monitor' ); ?>" />
                 <div id="llmvm-new-prompt-models-selected" class="llmvm-selected-models"></div>
                 <input type="hidden" id="llmvm-new-prompt-models-input" name="prompt_models[]" value="" />
             </div>
@@ -293,7 +293,7 @@ if ( $is_admin ) {
                                 }
                                 ?>
                                 <div id="llmvm-prompt-models-container-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-multi-model-container" data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" data-current-models="<?php echo esc_attr( json_encode( $current_models ) ); ?>">
-                                    <input type="text" id="llmvm-prompt-models-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr__( 'Search and select models...', 'llm-visibility-monitor' ); ?>" />
+                                    <input type="text" id="llmvm-prompt-models-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr__( 'Click to see all models or type to filter...', 'llm-visibility-monitor' ); ?>" />
                                     <div id="llmvm-prompt-models-selected-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-selected-models"></div>
                                     <input type="hidden" id="llmvm-prompt-models-input-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_models[]" value="" />
                                 </div>
@@ -454,40 +454,50 @@ jQuery(document).ready(function($) {
             updateHiddenInput();
         }
         
+        // Prepare all models with label/value format
+        var allModels = availableModels.map(function(model) {
+            return {
+                label: model.name + ' (' + model.id + ')',
+                value: model.id,
+                id: model.id,
+                name: model.name
+            };
+        });
+        
         // Initialize autocomplete
         console.log('Initializing autocomplete for:', $searchInput.attr('id'));
         $searchInput.autocomplete({
             source: function(request, response) {
                 console.log('Autocomplete search term:', request.term);
-                console.log('Available models for filtering:', availableModels);
                 
-                if (!availableModels || !Array.isArray(availableModels)) {
-                    console.error('Available models is not an array:', availableModels);
+                if (!allModels || !Array.isArray(allModels)) {
+                    console.error('Available models is not an array:', allModels);
                     response([]);
                     return;
                 }
                 
                 var term = request.term.toLowerCase();
-                var matches = availableModels.filter(function(model) {
-                    if (!model || !model.name || !model.id) {
-                        console.warn('Invalid model object:', model);
-                        return false;
-                    }
-                    return model.name.toLowerCase().indexOf(term) !== -1 || 
-                           model.id.toLowerCase().indexOf(term) !== -1;
-                }).map(function(model) {
-                    // Ensure each item has label and value properties for jQuery UI
-                    return {
-                        label: model.name + ' (' + model.id + ')',
-                        value: model.id,
-                        id: model.id,
-                        name: model.name
-                    };
-                });
+                var matches;
                 
-                console.log('Filtered matches:', matches);
+                if (term === '') {
+                    // Show all models when search is empty
+                    matches = allModels;
+                    console.log('Showing all models:', matches.length);
+                } else {
+                    // Filter models based on search term
+                    matches = allModels.filter(function(model) {
+                        if (!model || !model.name || !model.id) {
+                            console.warn('Invalid model object:', model);
+                            return false;
+                        }
+                        return model.name.toLowerCase().indexOf(term) !== -1 || 
+                               model.id.toLowerCase().indexOf(term) !== -1;
+                    });
+                    console.log('Filtered matches:', matches.length);
+                }
+                
                 if (matches.length > 0) {
-                    console.log('First filtered match:', matches[0]);
+                    console.log('First match:', matches[0]);
                 }
                 console.log('Calling response with', matches.length, 'matches');
                 response(matches);
@@ -501,6 +511,12 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
+        });
+        
+        // Show all models when input is focused (clicked)
+        $searchInput.on('focus', function() {
+            console.log('Input focused, triggering autocomplete');
+            $searchInput.autocomplete('search', '');
         });
         
         // Debug: Check if autocomplete widget was created
