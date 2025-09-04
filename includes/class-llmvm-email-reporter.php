@@ -722,8 +722,11 @@ class LLMVM_Email_Reporter {
                     $list_type = 'ol';
                     $list_counter = 1; // Reset counter for new list
                 }
-                // Manually insert the number into the content for email client compatibility
-                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . trim( $matches[1] ) . '</li>';
+                // Remove any existing numbers from the content and add our own
+                $content = trim( $matches[1] );
+                // Remove any leading numbers that might be in the content
+                $content = preg_replace( '/^\d+[\.\):]\s*/', '', $content );
+                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . $content . '</li>';
                 $list_counter++;
             }
             // Check for list items that might be missing proper formatting (fallback)
@@ -737,7 +740,11 @@ class LLMVM_Email_Reporter {
                     $list_type = 'ol';
                     $list_counter = 1;
                 }
-                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . trim( $matches[2] ) . '</li>';
+                // Remove any existing numbers from the content and add our own
+                $content = trim( $matches[2] );
+                // Remove any leading numbers that might be in the content
+                $content = preg_replace( '/^\d+[\.\):]\s*/', '', $content );
+                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . $content . '</li>';
                 $list_counter++;
             }
             // Empty line - don't break the list, just add the line
