@@ -85,7 +85,7 @@ class LLMVM_Email_Reporter {
     }
 
     /**
-     * Generate HTML email report.
+     * Generate HTML email report with improved mobile responsiveness and modern design.
      */
     private function generate_report_email( array $results, string $email_type, $user = null ): string {
         $total_results = count( $results );
@@ -106,71 +106,436 @@ class LLMVM_Email_Reporter {
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>LLM Visibility Monitor Report</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .header { background: #0073aa; color: white; padding: 20px; }
-        .content { padding: 20px; }
-        .summary { background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #0073aa; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
-        ul, ol { margin: 10px 0; padding-left: 20px; }
-        li { margin: 5px 0; }
-        ol { list-style-type: decimal; }
-        ol li { display: list-item; }
-        th { background: #f5f5f5; font-weight: bold; color: #333; }
-        .success { color: #333; }
-        .error { color: #dc3545; }
-        .prompt-cell { width: 15% !important; max-width: 200px !important; word-wrap: break-word; }
-        .model-cell { width: 10% !important; max-width: 150px !important; word-wrap: break-word; }
-        .answer-cell { width: 45% !important; max-width: 500px !important; word-wrap: break-word; }
-        code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+        /* Reset and base styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+        
+        /* Main styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 5px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px 20px;
+        }
+        
+        .summary-card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card h2 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            display: table-cell;
+            text-align: center;
+            padding: 10px;
+            vertical-align: top;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .success-stat { color: #28a745; }
+        .error-stat { color: #dc3545; }
+        .total-stat { color: #007bff; }
+        
+        .results-section {
+            margin: 30px 0;
+        }
+        
+        .results-section h2 {
+            color: #495057;
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+        }
+        
+        /* Mobile-first responsive table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .results-table th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .results-table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+            font-size: 14px;
+        }
+        
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .results-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Column widths for desktop */
+        .date-col { width: 15%; min-width: 120px; }
+        .prompt-col { width: 20%; min-width: 150px; }
+        .model-col { width: 15%; min-width: 120px; }
+        .answer-col { width: 50%; }
+        .user-col { width: 12%; min-width: 100px; }
+        
+        /* Mobile responsive styles */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .summary-card {
+                padding: 15px;
+            }
+            
+            .stats-grid {
+                display: block;
+            }
+            
+            .stat-item {
+                display: block;
+                text-align: left;
+                padding: 8px 0;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .stat-item:last-child {
+                border-bottom: none;
+            }
+            
+            /* Stack table columns on mobile */
+            .results-table,
+            .results-table thead,
+            .results-table tbody,
+            .results-table th,
+            .results-table td,
+            .results-table tr {
+                display: block;
+            }
+            
+            .results-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            
+            .results-table tr {
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                padding: 15px;
+                background: #ffffff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .results-table td {
+                border: none;
+                position: relative;
+                padding: 8px 0;
+                padding-left: 35%;
+                font-size: 14px;
+            }
+            
+            .results-table td:before {
+                content: attr(data-label) ": ";
+                position: absolute;
+                left: 6px;
+                width: 30%;
+                padding-right: 10px;
+                white-space: nowrap;
+                font-weight: 600;
+                color: #495057;
+                font-size: 12px;
+            }
+            
+            .answer-content {
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 10px;
+                background: #f8f9fa;
+            }
+        }
+        
+        /* Content formatting */
+        .answer-content {
+            line-height: 1.6;
+        }
+        
+        .answer-content h1, .answer-content h2, .answer-content h3 {
+            color: #495057;
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .answer-content h2 {
+            font-size: 18px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+        
+        .answer-content h3 {
+            font-size: 16px;
+        }
+        
+        .answer-content ul, .answer-content ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .answer-content li {
+            margin: 5px 0;
+        }
+        
+        .answer-content strong {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .answer-content em {
+            font-style: italic;
+            color: #6c757d;
+        }
+        
+        .answer-content code {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 13px;
+            color: #e83e8c;
+        }
+        
+        .answer-content blockquote {
+            border-left: 4px solid #007bff;
+            margin: 15px 0;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .status-success {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .status-error {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .action-buttons {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>LLM Visibility Monitor Report</h1>
-        <p>Generated on ' . current_time( 'Y-m-d H:i:s' ) . '</p>';
+    <div class="email-container">
+        <div class="header">
+            <h1>🤖 LLM Visibility Monitor</h1>
+            <p>Generated on ' . current_time( 'F j, Y \a\t g:i A T' ) . '</p>';
         
         if ( $email_type === 'user' && $user ) {
-            $html .= '<p>Report for: ' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_email ) . ')</p>';
+            $html .= '<p>Report for: ' . esc_html( $user->display_name ) . '</p>';
         } elseif ( $email_type === 'admin' ) {
             $html .= '<p>Administrator Report (All Users)</p>';
         }
         
         $html .= '</div>
     
-    <div class="content">
-        <div class="summary">
-            <h2>Summary</h2>';
+        <div class="content">
+            <div class="summary-card">
+                <h2>📊 Summary</h2>';
             
         if ( $email_type === 'user' && $user ) {
-            $html .= '<p><strong>User:</strong> ' . esc_html( $user->display_name ) . '</p>';
+            $html .= '<p><strong>User:</strong> ' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_email ) . ')</p>';
         }
         
-        $html .= '<p><strong>Total Results:</strong> ' . esc_html( (string) $total_results ) . '</p>
-            <p><strong>Successful Responses:</strong> <span class="success">' . esc_html( (string) $success_count ) . '</span></p>
-            <p><strong>Errors:</strong> <span class="error">' . esc_html( (string) $error_count ) . '</span></p>
-        </div>';
+        $html .= '<div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number total-stat">' . esc_html( (string) $total_results ) . '</span>
+                        <span class="stat-label">Total Results</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success-stat">' . esc_html( (string) $success_count ) . '</span>
+                        <span class="stat-label">Successful</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number error-stat">' . esc_html( (string) $error_count ) . '</span>
+                        <span class="stat-label">Errors</span>
+                    </div>
+                </div>
+            </div>';
 
         if ( ! empty( $results ) ) {
             $html .= '
-        <h2>Latest Results</h2>
-        <table>
-            <thead>
-                <tr>';
+            <div class="results-section">
+                <h2>📋 Latest Results</h2>
+                <table class="results-table">
+                    <thead>
+                        <tr>';
                 
             if ( $email_type === 'admin' ) {
-                $html .= '<th>User</th>';
+                $html .= '<th class="user-col">User</th>';
             }
             
-            $html .= '<th>Date (UTC)</th>
-                    <th>Prompt</th>
-                    <th>Model</th>
-                    <th>Answer</th>
-                </tr>
-            </thead>
-            <tbody>';
+            $html .= '<th class="date-col">Date (UTC)</th>
+                            <th class="prompt-col">Prompt</th>
+                            <th class="model-col">Model</th>
+                            <th class="answer-col">Answer</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
 
             foreach ( $results as $result ) {
                 $date = isset( $result['created_at'] ) ? (string) $result['created_at'] : '';
@@ -179,37 +544,44 @@ class LLMVM_Email_Reporter {
                 $answer = isset( $result['answer'] ) ? (string) $result['answer'] : '';
                 $result_user_id = isset( $result['user_id'] ) ? (int) $result['user_id'] : 0;
 
-                // Format the answer with WordPress functions
+                // Format the answer with enhanced formatting
                 $formatted_answer = $this->format_answer_for_email( $answer );
-
-                $row_class = ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false ) ? 'error' : 'success';
+                $is_error = ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false );
 
                 $html .= '
-                <tr class="' . esc_attr( $row_class ) . '">';
+                        <tr>';
                 
                 if ( $email_type === 'admin' ) {
                     $result_user = get_user_by( 'id', $result_user_id );
                     $user_display = $result_user ? $result_user->display_name : 'Unknown User';
-                    $html .= '<td>' . esc_html( $user_display ) . '</td>';
+                    $html .= '<td class="user-col" data-label="User">' . esc_html( $user_display ) . '</td>';
                 }
                 
-                $html .= '<td>' . esc_html( $date ) . '</td>
-                    <td class="prompt-cell">' . esc_html( $prompt ) . '</td>
-                    <td class="model-cell">' . esc_html( $model ) . '</td>
-                    <td class="answer-cell">' . $formatted_answer . '</td>
-                </tr>';
+                $html .= '<td class="date-col" data-label="Date">' . esc_html( $date ) . '</td>
+                            <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
+                            <td class="model-col" data-label="Model">' . esc_html( $model ) . '</td>
+                            <td class="answer-col" data-label="Answer">
+                                <div class="answer-content">' . $formatted_answer . '</div>
+                            </td>
+                        </tr>';
             }
 
             $html .= '
-            </tbody>
-        </table>';
+                    </tbody>
+                </table>
+            </div>';
         }
 
         $html .= '
+            <div class="action-buttons">
+                <a href="' . admin_url( 'tools.php?page=llmvm-dashboard' ) . '" class="btn">View Dashboard</a>
+                <a href="' . admin_url( 'tools.php?page=llmvm-prompts' ) . '" class="btn btn-secondary">Manage Prompts</a>
+            </div>
+        </div>
+        
         <div class="footer">
             <p>This report was automatically generated by the LLM Visibility Monitor plugin.</p>
-            <p>To view full results, visit: <a href="' . admin_url( 'tools.php?page=llmvm-dashboard' ) . '">Dashboard</a></p>
-            <p>To disable email reports, go to Settings → LLM Visibility Monitor.</p>
+            <p>To disable email reports, go to <a href="' . admin_url( 'options-general.php?page=llmvm-settings' ) . '">Settings → LLM Visibility Monitor</a></p>
         </div>
     </div>
 </body>
@@ -240,6 +612,12 @@ class LLMVM_Email_Reporter {
         
         // Convert `code` to <code> (non-greedy match)
         $formatted = preg_replace( '/`([^`]+)`/', '<code>$1</code>', $formatted );
+        
+        // Convert ## headings to <h2>
+        $formatted = preg_replace( '/^## (.+)$/m', '<h2>$1</h2>', $formatted );
+        
+        // Convert ### headings to <h3>
+        $formatted = preg_replace( '/^### (.+)$/m', '<h3>$1</h3>', $formatted );
         
         // Convert URLs to clickable links first
         $formatted = make_clickable( $formatted );
@@ -300,7 +678,7 @@ class LLMVM_Email_Reporter {
             }
         }
         
-        // Close any open list
+        // Close any remaining list
         if ( $in_list ) {
             $result[] = '</' . $list_type . '>';
         }
