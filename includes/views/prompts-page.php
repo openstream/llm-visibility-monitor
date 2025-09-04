@@ -609,7 +609,13 @@ jQuery(document).ready(function($) {
         
         // Update hidden input with selected models
         function updateHiddenInput() {
-            $hiddenInput.val(selectedModels.join(','));
+            // Clear existing hidden inputs
+            $container.find('input[name="prompt_models[]"]').remove();
+            
+            // Create new hidden inputs for each selected model
+            selectedModels.forEach(function(modelId) {
+                $container.append('<input type="hidden" name="prompt_models[]" value="' + modelId + '" />');
+            });
         }
         
         // Handle remove button clicks
@@ -692,7 +698,7 @@ jQuery(document).ready(function($) {
                 
                 var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
                 
-                if ($modelContainer.length && $hiddenModelInput.length) {
+                if ($modelContainer.length) {
                     var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
                     if (typeof getSelectedModelsFunction === 'function') {
                         var selectedModels = getSelectedModelsFunction();
@@ -700,9 +706,15 @@ jQuery(document).ready(function($) {
                             console.log('=== TIMER SYNC ===');
                             console.log('Prompt ID:', promptId);
                             console.log('Selected models:', selectedModels);
-                            console.log('Setting hidden input to:', selectedModels.join(','));
+                            
+                            // Clear existing hidden inputs in the form
+                            $form.find('input[name="prompt_models[]"]').remove();
+                            
+                            // Create new hidden inputs for each selected model
+                            selectedModels.forEach(function(modelId) {
+                                $form.append('<input type="hidden" name="prompt_models[]" value="' + modelId + '" />');
+                            });
                         }
-                        $hiddenModelInput.val(selectedModels.join(','));
                     }
                 }
             }
