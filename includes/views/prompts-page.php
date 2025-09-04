@@ -745,6 +745,30 @@ jQuery(document).ready(function($) {
         return false;
     };
     
+    // Try to add event listeners directly to the submit buttons
+    setTimeout(function() {
+        $('input[type="submit"]').each(function(index) {
+            var $btn = $(this);
+            console.log('Adding direct event listener to button', index, ':', $btn.val());
+            
+            // Try native addEventListener
+            if (this.addEventListener) {
+                this.addEventListener('click', function(e) {
+                    console.log('=== NATIVE CLICK EVENT ===');
+                    console.log('Button value:', this.value);
+                    console.log('Button form:', this.form.action);
+                });
+            }
+            
+            // Try jQuery on
+            $btn.on('click', function(e) {
+                console.log('=== JQUERY CLICK EVENT ===');
+                console.log('Button value:', $(this).val());
+                console.log('Button form:', $(this).closest('form').attr('action'));
+            });
+        });
+    }, 1000);
+    
     // Debug: Check if submit buttons exist
     console.log('Submit buttons found:', $('input[type="submit"]').length);
     $('input[type="submit"]').each(function(index) {
