@@ -670,6 +670,18 @@ jQuery(document).ready(function($) {
             $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
             console.log('Form submission - Looking in tr, found containers:', $modelContainer.length);
         }
+        
+        // Additional debugging: check if we can find the container by ID
+        if ($modelContainer.length === 0) {
+            console.log('Form submission - Trying to find container by ID pattern');
+            var promptId = $form.find('input[name="prompt_id"]').val();
+            if (promptId) {
+                var containerId = 'llmvm-prompt-models-container-' + promptId;
+                $modelContainer = $('#' + containerId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&'));
+                console.log('Form submission - Looking for container ID:', containerId);
+                console.log('Form submission - Found by ID:', $modelContainer.length);
+            }
+        }
         var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
         console.log('Form submission - Model container found:', $modelContainer.length > 0);
         console.log('Form submission - Hidden model input found:', $hiddenModelInput.length > 0);
