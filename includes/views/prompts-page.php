@@ -514,6 +514,20 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
+            _renderMenu: function(ul, items) {
+                console.log('_renderMenu called with', items.length, 'items');
+                var that = this;
+                $.each(items, function(index, item) {
+                    console.log('Rendering item in _renderMenu:', item);
+                    that._renderItemData(ul, item);
+                });
+            },
+            _renderItemData: function(ul, item) {
+                console.log('_renderItemData called with:', item);
+                return $('<li>')
+                    .append('<div>' + item.label + '</div>')
+                    .appendTo(ul);
+            }
         });
         
         // Show all models when input is focused (clicked)
