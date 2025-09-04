@@ -408,8 +408,17 @@ class LLMVM_Email_Reporter {
             padding-left: 20px;
         }
         
+        .answer-content ol {
+            list-style-type: decimal;
+        }
+        
+        .answer-content ul {
+            list-style-type: disc;
+        }
+        
         .answer-content li {
             margin: 5px 0;
+            display: list-item;
         }
         
         .answer-content strong {
