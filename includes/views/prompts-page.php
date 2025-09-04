@@ -838,32 +838,15 @@ jQuery(document).ready(function($) {
         console.log('Form HTML:', $(this).closest('form')[0].outerHTML);
     });
     
-    // Try to manually trigger form submission for testing
+    // Debug: Check save forms without triggering submission
     setTimeout(function() {
-        console.log('=== TESTING MANUAL FORM SUBMISSION ===');
+        console.log('=== CHECKING SAVE FORMS ===');
         var $saveForms = $('form[action*="admin-post.php"]').has('input[type="submit"][value*="Speichern"]');
         console.log('Found save forms:', $saveForms.length);
         $saveForms.each(function(index) {
             console.log('Save form', index, ':', $(this).attr('action'));
             console.log('Form has prompt_id:', $(this).find('input[name="prompt_id"]').length > 0);
         });
-        
-        // Test manual form submission (without actually submitting)
-        if ($saveForms.length > 0) {
-            console.log('=== TESTING MANUAL FORM SUBMIT ===');
-            var $testForm = $saveForms.first();
-            console.log('Testing form submission for:', $testForm.find('input[name="prompt_id"]').val());
-            
-            // Try to trigger the form submission manually but prevent it from actually submitting
-            $testForm.on('submit', function(e) {
-                e.preventDefault();
-                console.log('=== MANUAL FORM SUBMIT INTERCEPTED ===');
-                console.log('Form would have submitted with prompt_id:', $(this).find('input[name="prompt_id"]').val());
-            });
-            
-            // Trigger the submit event
-            $testForm.trigger('submit');
-        }
     }, 2000);
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
