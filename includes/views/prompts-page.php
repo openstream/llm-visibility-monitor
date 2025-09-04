@@ -697,6 +697,15 @@ jQuery(document).ready(function($) {
             return false;
         }
     });
+    
+    // Debug: Check submit buttons
+    $('input[type="submit"]').on('click', function(e) {
+        console.log('=== SUBMIT BUTTON CLICKED ===');
+        console.log('Button value:', $(this).val());
+        console.log('Button name:', $(this).attr('name'));
+        console.log('Button form:', $(this).closest('form').attr('action'));
+        console.log('Form has admin-post.php action:', $(this).closest('form').attr('action').indexOf('admin-post.php') !== -1);
+    });
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
         console.error('Error stack:', error.stack);
