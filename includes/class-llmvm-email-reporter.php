@@ -730,7 +730,11 @@ class LLMVM_Email_Reporter {
                 $result[] = '<li value="' . $list_counter . '">' . trim( $matches[2] ) . '</li>';
                 $list_counter++;
             }
-            // Empty line or non-list content
+            // Empty line - don't break the list, just add the line
+            elseif ( $trimmed === '' ) {
+                $result[] = $line;
+            }
+            // Non-list content - break the list
             else {
                 if ( $in_list ) {
                     $result[] = '</' . $list_type . '>';
