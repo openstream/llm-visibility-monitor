@@ -493,12 +493,19 @@ jQuery(document).ready(function($) {
             focus: function(event, ui) {
                 event.preventDefault();
             },
-            renderItem: function(ul, item) {
-                console.log('Rendering item:', item);
-                var $li = $('<li>')
-                    .append('<div>' + item.name + ' (' + item.id + ')</div>');
-                console.log('Created list item:', $li);
-                return $li.appendTo(ul);
+            _renderMenu: function(ul, items) {
+                console.log('Rendering menu with', items.length, 'items');
+                var that = this;
+                $.each(items, function(index, item) {
+                    console.log('Rendering item:', item);
+                    that._renderItemData(ul, item);
+                });
+            },
+            _renderItemData: function(ul, item) {
+                console.log('Rendering item data:', item);
+                return $('<li>')
+                    .append('<div>' + item.name + ' (' + item.id + ')</div>')
+                    .appendTo(ul);
             }
         });
         
