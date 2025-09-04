@@ -440,10 +440,15 @@ jQuery(document).ready(function($) {
     
     // Initialize multi-model selectors
     function initializeMultiModelSelector(containerId) {
+        console.log('=== initializeMultiModelSelector called for:', containerId, '===');
         var $container = $('#' + containerId);
+        console.log('Container found:', $container.length > 0);
         var $searchInput = $container.find('input[type="text"]');
+        console.log('Search input found:', $searchInput.length > 0, $searchInput.attr('id'));
         var $selectedDiv = $container.find('.llmvm-selected-models');
+        console.log('Selected div found:', $selectedDiv.length > 0);
         var $hiddenInput = $container.find('input[type="hidden"]');
+        console.log('Hidden input found:', $hiddenInput.length > 0);
         var selectedModels = [];
         
         // Load existing models if any
@@ -601,8 +606,13 @@ jQuery(document).ready(function($) {
     }
     
     // Initialize all multi-model selectors
-    $('.llmvm-multi-model-container').each(function() {
+    console.log('Looking for .llmvm-multi-model-container elements...');
+    var containers = $('.llmvm-multi-model-container');
+    console.log('Found', containers.length, 'containers');
+    
+    containers.each(function() {
         var containerId = $(this).attr('id');
+        console.log('Processing container:', containerId);
         if (containerId) {
             initializeMultiModelSelector(containerId);
         }
