@@ -311,6 +311,16 @@ class LLMVM_Cron {
 			return;
 		}
 
+		// Get models for this prompt (handle both old 'model' and new 'models' format)
+		$prompt_models = array();
+		if ( isset( $target_prompt['models'] ) && is_array( $target_prompt['models'] ) ) {
+			$prompt_models = $target_prompt['models'];
+		} elseif ( isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ) {
+			$prompt_models = array( $target_prompt['model'] );
+		} else {
+			$prompt_models = array( $model ); // Fall back to global default
+		}
+
 		// Check usage limits for non-admin users
 		if ( ! $is_admin ) {
 			$runs_needed = count( $prompt_models );
@@ -337,16 +347,6 @@ class LLMVM_Cron {
 		if ( '' === trim( $prompt_text ) ) {
 			LLMVM_Logger::log( 'Single prompt run failed: empty prompt text', [ 'prompt_id' => $prompt_id ] );
 			return;
-		}
-
-		// Get models for this prompt (handle both old 'model' and new 'models' format)
-		$prompt_models = array();
-		if ( isset( $target_prompt['models'] ) && is_array( $target_prompt['models'] ) ) {
-			$prompt_models = $target_prompt['models'];
-		} elseif ( isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ) {
-			$prompt_models = array( $target_prompt['model'] );
-		} else {
-			$prompt_models = array( $model ); // Fall back to global default
 		}
 
 		// Use the current user ID who is running the job
