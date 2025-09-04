@@ -772,7 +772,7 @@ class LLMVM_Database {
 			array( 'id' => $job_id ),
 			$update_format,
 			array( '%d' )
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->update() is the proper WordPress method for custom table updates.
 	}
 
 	/**
