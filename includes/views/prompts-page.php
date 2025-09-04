@@ -816,6 +816,26 @@ jQuery(document).ready(function($) {
                 console.log('Button form:', $(this).closest('form').attr('action'));
             });
         });
+        
+        // Add a very simple test - click on any element
+        $(document).on('click', '*', function(e) {
+            if ($(this).is('input[type="submit"]')) {
+                console.log('=== ANY ELEMENT CLICK ON SUBMIT BUTTON ===');
+                console.log('Button value:', $(this).val());
+                console.log('Button form:', $(this).closest('form').attr('action'));
+            }
+        });
+        
+        // Test if we can programmatically click the button
+        setTimeout(function() {
+            console.log('=== TESTING PROGRAMMATIC CLICK ===');
+            var $saveButtons = $('input[type="submit"][value="Speichern"]');
+            console.log('Found save buttons:', $saveButtons.length);
+            if ($saveButtons.length > 0) {
+                console.log('Testing click on first save button');
+                $saveButtons.first().trigger('click');
+            }
+        }, 2000);
     }, 1000);
     
     // Try to intercept form submission at the document level
