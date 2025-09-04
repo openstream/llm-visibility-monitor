@@ -165,6 +165,25 @@ class LLMVM_Cron {
 			$current_user_id = 1; // Default to admin
 		}
 
+		// Check usage limits for non-admin users
+		if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+			// Calculate total runs needed
+			$total_runs = 0;
+			foreach ( $prompts as $prompt_item ) {
+				if ( isset( $prompt_item['models'] ) && is_array( $prompt_item['models'] ) ) {
+					$total_runs += count( $prompt_item['models'] );
+				} else {
+					$total_runs += 1; // Fallback for single model
+				}
+			}
+			
+			// Check if user has enough runs
+			if ( ! LLMVM_Usage_Manager::can_execute_runs( $current_user_id, $total_runs ) ) {
+				LLMVM_Logger::log( 'Run aborted: insufficient runs remaining', [ 'user_id' => $current_user_id, 'runs_needed' => $total_runs ] );
+				return;
+			}
+		}
+
 		// Filter prompts to only include those belonging to the current user
 		$user_prompts = [];
 		foreach ( $prompts as $prompt_item ) {
@@ -225,6 +244,20 @@ class LLMVM_Cron {
 		}
 		LLMVM_Logger::log( 'Run completed' );
 
+		// Track usage for non-admin users
+		if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+			$total_runs = 0;
+			foreach ( $prompts as $prompt_item ) {
+				if ( isset( $prompt_item['models'] ) && is_array( $prompt_item['models'] ) ) {
+					$total_runs += count( $prompt_item['models'] );
+				} else {
+					$total_runs += 1; // Fallback for single model
+				}
+			}
+			LLMVM_Database::increment_usage( $current_user_id, 0, $total_runs );
+			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $current_user_id, 'runs' => $total_runs ] );
+		}
+
 		// Get the results that were just created for this user
 		$user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $current_user_id );
 
@@ -278,6 +311,19 @@ class LLMVM_Cron {
 			return;
 		}
 
+		// Check usage limits for non-admin users
+		if ( ! $is_admin ) {
+			$runs_needed = count( $prompt_models );
+			if ( ! LLMVM_Usage_Manager::can_execute_runs( $current_user_id, $runs_needed ) ) {
+				LLMVM_Logger::log( 'Single prompt run aborted: insufficient runs remaining', [
+					'user_id' => $current_user_id,
+					'runs_needed' => $runs_needed,
+					'prompt_id' => $prompt_id
+				] );
+				return;
+			}
+		}
+
 		LLMVM_Logger::log( 'Single prompt run start', [
 			'prompt_id' => $prompt_id,
 			'prompt_text' => $target_prompt['text'] ?? '',
@@ -323,6 +369,13 @@ class LLMVM_Cron {
 		}
 
 		LLMVM_Logger::log( 'Single prompt run completed', [ 'prompt_id' => $prompt_id ] );
+
+		// Track usage for non-admin users
+		if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+			$runs_count = count( $prompt_models );
+			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
+			LLMVM_Logger::log( 'Usage tracked for single prompt run', [ 'user_id' => $current_user_id, 'runs' => $runs_count ] );
+		}
 
 		// Get the result that was just created
 		$user_results = LLMVM_Database::get_latest_results( 1, 'created_at', 'DESC', 0, $current_user_id );
