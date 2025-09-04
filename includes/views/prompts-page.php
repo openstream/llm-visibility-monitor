@@ -468,7 +468,7 @@ jQuery(document).ready(function($) {
         console.log('Skipping jQuery UI Autocomplete, using custom dropdown only');
         
         // Create a simple custom dropdown for testing
-        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:999999;"></div>');
+        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:2px solid red; max-height:200px; overflow-y:auto; z-index:999999; margin-top:5px;"></div>');
         $searchInput.after($customDropdown);
         
         // Show all models when input is focused (clicked)
@@ -490,25 +490,13 @@ jQuery(document).ready(function($) {
             console.log('Added', $customDropdown.children().length, 'items to dropdown');
             console.log('Dropdown HTML:', $customDropdown.html());
             
-            // Position and show dropdown
-            var inputOffset = $searchInput.offset();
-            console.log('Input offset:', inputOffset);
-            console.log('Input outer height:', $searchInput.outerHeight());
-            console.log('Input outer width:', $searchInput.outerWidth());
-            
+            // Show dropdown (no complex positioning needed with relative positioning)
             $customDropdown.css({
-                'top': inputOffset.top + $searchInput.outerHeight(),
-                'left': inputOffset.left,
-                'width': $searchInput.outerWidth(),
                 'display': 'block',
-                'position': 'absolute',
-                'background': 'white',
-                'border': '2px solid red', // Make it very visible
-                'z-index': '999999'
+                'width': '100%'
             });
             
-            console.log('Dropdown CSS applied');
-            console.log('Dropdown position:', $customDropdown.offset());
+            console.log('Dropdown shown');
             console.log('Dropdown is visible:', $customDropdown.is(':visible'));
             console.log('Dropdown display:', $customDropdown.css('display'));
             console.log('Custom dropdown created with', $customDropdown.children().length, 'items');
@@ -549,25 +537,13 @@ jQuery(document).ready(function($) {
             console.log('Added', $customDropdown.children().length, 'items to dropdown');
             console.log('Dropdown HTML:', $customDropdown.html());
             
-            // Position and show dropdown
-            var inputOffset = $searchInput.offset();
-            console.log('Input offset:', inputOffset);
-            console.log('Input outer height:', $searchInput.outerHeight());
-            console.log('Input outer width:', $searchInput.outerWidth());
-            
+            // Show dropdown (no complex positioning needed with relative positioning)
             $customDropdown.css({
-                'top': inputOffset.top + $searchInput.outerHeight(),
-                'left': inputOffset.left,
-                'width': $searchInput.outerWidth(),
                 'display': 'block',
-                'position': 'absolute',
-                'background': 'white',
-                'border': '2px solid red', // Make it very visible
-                'z-index': '999999'
+                'width': '100%'
             });
             
-            console.log('Dropdown CSS applied');
-            console.log('Dropdown position:', $customDropdown.offset());
+            console.log('Dropdown shown');
             console.log('Dropdown is visible:', $customDropdown.is(':visible'));
             console.log('Dropdown display:', $customDropdown.css('display'));
             console.log('Custom dropdown shown with', $customDropdown.children().length, 'items');
