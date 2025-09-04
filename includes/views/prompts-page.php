@@ -481,7 +481,7 @@ jQuery(document).ready(function($) {
                 $customDropdown.append($item);
             });
             
-            console.log('Populated dropdown with', models.length, 'items');
+            console.log('Populated dropdown for', containerId, 'with', models.length, 'items');
             
             // Show dropdown if it has items
             if (models.length > 0) {
@@ -496,8 +496,8 @@ jQuery(document).ready(function($) {
         
         // Show all models when input is focused (clicked)
         $searchInput.on('focus', function() {
-            console.log('Input focused, showing all models');
-            populateDropdown(allModels);
+            console.log('Input focused for', containerId, ', showing all models');
+            populateDropdown(availableModels);
         });
         
         // Handle clicks on custom dropdown items
@@ -516,30 +516,30 @@ jQuery(document).ready(function($) {
             
             if (searchTerm === '') {
                 // Show all models if search is empty
-                populateDropdown(allModels);
+                populateDropdown(availableModels);
             } else {
                 // Filter models based on search term
-                var filteredModels = allModels.filter(function(model) {
+                var filteredModels = availableModels.filter(function(model) {
                     return model.name.toLowerCase().indexOf(searchTerm) !== -1 || 
                            model.id.toLowerCase().indexOf(searchTerm) !== -1;
                 });
                 
-                console.log('Filtered to', filteredModels.length, 'models');
+                console.log('Filtered to', filteredModels.length, 'models for', containerId);
                 populateDropdown(filteredModels);
             }
         });
         
         // Hide dropdown when clicking outside
         $(document).on('click', function(e) {
-            if (!$(e.target).closest('.llmvm-multi-model-container').length) {
+            if (!$(e.target).closest($container).length) {
                 $customDropdown.hide();
             }
         });
         
         // Also handle click event for custom dropdown
         $searchInput.on('click', function() {
-            console.log('Input clicked, showing all models');
-            populateDropdown(allModels);
+            console.log('Input clicked for', containerId, ', showing all models');
+            populateDropdown(availableModels);
         });
         
         // Debug: Check custom dropdown
