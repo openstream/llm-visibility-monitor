@@ -449,7 +449,10 @@ jQuery(document).ready(function($) {
     // Initialize multi-model selectors
     function initializeMultiModelSelector(containerId) {
         console.log('=== initializeMultiModelSelector called for:', containerId, '===');
-        var $container = $('#' + containerId);
+        // Escape special characters in the ID for jQuery selector
+        var escapedId = containerId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
+        var $container = $('#' + escapedId);
+        console.log('Escaped ID:', escapedId);
         console.log('Container found:', $container.length > 0);
         var $searchInput = $container.find('input[type="text"]');
         console.log('Search input found:', $searchInput.length > 0, $searchInput.attr('id'));
