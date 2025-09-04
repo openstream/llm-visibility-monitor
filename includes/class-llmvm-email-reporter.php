@@ -141,7 +141,7 @@ class LLMVM_Email_Reporter {
         }
         
         .email-container {
-            max-width: 600px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: #ffffff;
         }
@@ -273,7 +273,7 @@ class LLMVM_Email_Reporter {
         .user-col { width: 8%; min-width: 80px; }
         
         /* Mobile responsive styles */
-        @media only screen and (max-width: 600px) {
+        @media only screen and (max-width: 768px) {
             .email-container {
                 width: 100% !important;
             }
@@ -326,7 +326,7 @@ class LLMVM_Email_Reporter {
             }
             
             /* Alternative: Stack table columns on very small screens */
-            @media only screen and (max-width: 480px) {
+            @media only screen and (max-width: 600px) {
                 .results-table,
                 .results-table thead,
                 .results-table tbody,
