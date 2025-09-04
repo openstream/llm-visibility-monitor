@@ -419,16 +419,21 @@ class LLMVM_Email_Reporter {
         }
         
         .answer-content ol {
-            list-style-type: decimal;
+            list-style-type: decimal !important;
+            counter-reset: item;
         }
         
         .answer-content ul {
-            list-style-type: disc;
+            list-style-type: disc !important;
         }
         
         .answer-content li {
             margin: 5px 0;
-            display: list-item;
+            display: list-item !important;
+        }
+        
+        .answer-content ol li {
+            list-style-type: decimal !important;
         }
         
         .answer-content strong {
@@ -644,6 +649,11 @@ class LLMVM_Email_Reporter {
         // Convert markdown lists to HTML lists (do this first to avoid conflicts)
         $formatted = $this->convert_markdown_lists( $formatted );
         
+        // Debug: Log the formatted result to see what's being generated
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'LLMVM Email Formatted: ' . substr( $formatted, 0, 500 ) );
+        }
+        
         // Convert **bold** to <strong> (non-greedy match)
         $formatted = preg_replace( '/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $formatted );
         
@@ -712,8 +722,8 @@ class LLMVM_Email_Reporter {
                     $list_type = 'ol';
                     $list_counter = 1; // Reset counter for new list
                 }
-                // Use manual numbering to ensure proper sequence
-                $result[] = '<li value="' . $list_counter . '">' . trim( $matches[1] ) . '</li>';
+                // Use simple <li> without value attribute - let CSS handle numbering
+                $result[] = '<li>' . trim( $matches[1] ) . '</li>';
                 $list_counter++;
             }
             // Check for list items that might be missing proper formatting (fallback)
@@ -727,7 +737,7 @@ class LLMVM_Email_Reporter {
                     $list_type = 'ol';
                     $list_counter = 1;
                 }
-                $result[] = '<li value="' . $list_counter . '">' . trim( $matches[2] ) . '</li>';
+                $result[] = '<li>' . trim( $matches[2] ) . '</li>';
                 $list_counter++;
             }
             // Empty line - don't break the list, just add the line
