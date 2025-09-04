@@ -883,15 +883,23 @@ class LLMVM_Admin {
 
         // Enqueue jQuery UI for multi-select functionality on prompts page
         if ( 'tools_page_llmvm-prompts' === $hook ) {
+            wp_enqueue_script( 'jquery-ui-core' );
+            wp_enqueue_script( 'jquery-ui-widget' );
+            wp_enqueue_script( 'jquery-ui-position' );
             wp_enqueue_script( 'jquery-ui-autocomplete' );
             wp_enqueue_style( 'jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css' );
         }
 
         // Enqueue JavaScript
+        $dependencies = [ 'jquery' ];
+        if ( 'tools_page_llmvm-prompts' === $hook ) {
+            $dependencies[] = 'jquery-ui-autocomplete';
+        }
+        
         wp_enqueue_script(
             'llmvm-admin',
             LLMVM_PLUGIN_URL . 'assets/js/llmvm-admin.js',
-            [ 'jquery' ],
+            $dependencies,
             LLMVM_VERSION,
             true
         );

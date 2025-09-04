@@ -407,7 +407,28 @@ if ( $is_admin ) {
 <script>
 jQuery(document).ready(function($) {
     // Get available models for autocomplete
-    var availableModels = <?php echo json_encode( LLMVM_Admin::get_openrouter_models() ); ?>;
+    var availableModels = <?php 
+        $models = LLMVM_Admin::get_openrouter_models();
+        echo json_encode( $models, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP );
+    ?>;
+    
+    // Fallback models if none are available
+    if (!availableModels || !Array.isArray(availableModels) || availableModels.length === 0) {
+        availableModels = [
+            { id: 'openrouter/stub-model-v1', name: 'Stub Model (for testing)' },
+            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
+            { id: 'openai/gpt-4o', name: 'GPT-4o' },
+            { id: 'openai/gpt-5', name: 'GPT-5' },
+            { id: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' },
+            { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
+            { id: 'google/gemini-pro', name: 'Gemini Pro' },
+            { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct' },
+            { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct' }
+        ];
+    }
+    
+    // Debug: Log models to console
+    console.log('Available models:', availableModels);
     
     // Initialize multi-model selectors
     function initializeMultiModelSelector(containerId) {
@@ -428,15 +449,31 @@ jQuery(document).ready(function($) {
         // Initialize autocomplete
         $searchInput.autocomplete({
             source: function(request, response) {
+                console.log('Autocomplete search term:', request.term);
+                console.log('Available models for filtering:', availableModels);
+                
+                if (!availableModels || !Array.isArray(availableModels)) {
+                    console.error('Available models is not an array:', availableModels);
+                    response([]);
+                    return;
+                }
+                
                 var term = request.term.toLowerCase();
                 var matches = availableModels.filter(function(model) {
+                    if (!model || !model.name || !model.id) {
+                        console.warn('Invalid model object:', model);
+                        return false;
+                    }
                     return model.name.toLowerCase().indexOf(term) !== -1 || 
                            model.id.toLowerCase().indexOf(term) !== -1;
                 });
+                
+                console.log('Filtered matches:', matches);
                 response(matches);
             },
             select: function(event, ui) {
                 event.preventDefault();
+                console.log('Model selected:', ui.item);
                 addModel(ui.item);
                 $searchInput.val('');
             },
