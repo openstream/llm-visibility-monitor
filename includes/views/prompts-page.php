@@ -464,107 +464,8 @@ jQuery(document).ready(function($) {
             };
         });
         
-        // Initialize autocomplete
-        console.log('Initializing autocomplete for:', $searchInput.attr('id'));
-        $searchInput.autocomplete({
-            source: function(request, response) {
-                console.log('=== SOURCE FUNCTION CALLED ===');
-                console.log('Autocomplete search term:', request.term);
-                console.log('Request object:', request);
-                
-                if (!allModels || !Array.isArray(allModels)) {
-                    console.error('Available models is not an array:', allModels);
-                    response([]);
-                    return;
-                }
-                
-                var term = request.term.toLowerCase();
-                var matches;
-                
-                if (term === '') {
-                    // Show all models when search is empty
-                    matches = allModels;
-                    console.log('Showing all models:', matches.length);
-                } else {
-                    // Filter models based on search term
-                    matches = allModels.filter(function(model) {
-                        if (!model || !model.name || !model.id) {
-                            console.warn('Invalid model object:', model);
-                            return false;
-                        }
-                        return model.name.toLowerCase().indexOf(term) !== -1 || 
-                               model.id.toLowerCase().indexOf(term) !== -1;
-                    });
-                    console.log('Filtered matches:', matches.length);
-                }
-                
-                if (matches.length > 0) {
-                    console.log('First match:', matches[0]);
-                }
-                console.log('Calling response with', matches.length, 'matches');
-                console.log('=== END SOURCE FUNCTION ===');
-                response(matches);
-            },
-            select: function(event, ui) {
-                event.preventDefault();
-                console.log('Model selected:', ui.item);
-                addModel(ui.item);
-                $searchInput.val('');
-            },
-            focus: function(event, ui) {
-                event.preventDefault();
-            },
-            open: function(event, ui) {
-                console.log('Autocomplete opened, manually populating dropdown');
-                var widget = $searchInput.autocomplete('widget');
-                var ul = widget.find('ul');
-                
-                // Clear existing items
-                ul.empty();
-                
-                // Get current matches from the source
-                var term = $searchInput.val().toLowerCase();
-                var matches;
-                
-                if (term === '') {
-                    matches = allModels;
-                } else {
-                    matches = allModels.filter(function(model) {
-                        return model.name.toLowerCase().indexOf(term) !== -1 || 
-                               model.id.toLowerCase().indexOf(term) !== -1;
-                    });
-                }
-                
-                console.log('Manually populating with', matches.length, 'items');
-                
-                // Manually add items to the dropdown
-                $.each(matches, function(index, model) {
-                    var item = {
-                        label: model.name + ' (' + model.id + ')',
-                        value: model.id,
-                        id: model.id,
-                        name: model.name
-                    };
-                    
-                    var $li = $('<li>')
-                        .append('<div>' + item.label + '</div>')
-                        .data('ui-autocomplete-item', item)
-                        .appendTo(ul);
-                });
-                
-                // Show the dropdown
-                widget.show();
-                
-                // Add click handlers for the manually created items
-                ul.find('li').on('click', function() {
-                    var item = $(this).data('ui-autocomplete-item');
-                    console.log('Manually selected item:', item);
-                    addModel(item);
-                    $searchInput.val('');
-                    widget.hide();
-                });
-            }
-        });
+        // Skip jQuery UI Autocomplete entirely - use only custom dropdown
+        console.log('Skipping jQuery UI Autocomplete, using custom dropdown only');
         
         // Create a simple custom dropdown for testing
         var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:999999;"></div>');
@@ -611,61 +512,35 @@ jQuery(document).ready(function($) {
             }
         });
         
-        // Also try click event as alternative to focus
+        // Also handle click event for custom dropdown
         $searchInput.on('click', function() {
-            console.log('Input clicked, manually creating dropdown');
+            console.log('Input clicked, showing custom dropdown');
             
-            // Get the widget
-            var widget = $searchInput.autocomplete('widget');
-            var ul = widget.find('ul');
-            
-            // Clear existing items
-            ul.empty();
-            
-            // Manually add all models to the dropdown
-            console.log('Manually adding', allModels.length, 'models to dropdown');
+            // Clear and populate custom dropdown
+            $customDropdown.empty();
             
             $.each(allModels, function(index, model) {
-                var item = {
-                    label: model.name + ' (' + model.id + ')',
-                    value: model.id,
-                    id: model.id,
-                    name: model.name
-                };
-                
-                var $li = $('<li>')
-                    .append('<div>' + item.label + '</div>')
-                    .data('ui-autocomplete-item', item)
-                    .appendTo(ul);
+                var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
+                $item.data('model', model);
+                $customDropdown.append($item);
             });
             
-            // Force show the dropdown
-            widget.css({
-                'display': 'block',
-                'visibility': 'visible',
-                'position': 'absolute',
-                'top': $searchInput.offset().top + $searchInput.outerHeight(),
-                'left': $searchInput.offset().left,
+            // Position and show dropdown
+            var inputOffset = $searchInput.offset();
+            $customDropdown.css({
+                'top': inputOffset.top + $searchInput.outerHeight(),
+                'left': inputOffset.left,
                 'width': $searchInput.outerWidth(),
-                'z-index': 999999
+                'display': 'block'
             });
             
-            console.log('Dropdown should now be visible with', ul.find('li').length, 'items');
-            
-            // Add click handlers for the manually created items
-            ul.find('li').on('click', function() {
-                var item = $(this).data('ui-autocomplete-item');
-                console.log('Manually selected item:', item);
-                addModel(item);
-                $searchInput.val('');
-                widget.hide();
-            });
+            console.log('Custom dropdown shown with', $customDropdown.children().length, 'items');
         });
         
-        // Debug: Check if autocomplete widget was created
+        // Debug: Check custom dropdown
         setTimeout(function() {
-            console.log('Autocomplete widget data:', $searchInput.data('ui-autocomplete'));
-            console.log('Autocomplete widget element:', $searchInput.autocomplete('widget'));
+            console.log('Custom dropdown element:', $customDropdown);
+            console.log('Custom dropdown is visible:', $customDropdown.is(':visible'));
         }, 1000);
         
         // Add model to selection
