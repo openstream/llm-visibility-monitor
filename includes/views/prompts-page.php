@@ -432,7 +432,10 @@ jQuery(document).ready(function($) {
     }
     
     // Debug: Log models to console
+    console.log('=== SCRIPT STARTING ===');
     console.log('Available models:', availableModels);
+    console.log('jQuery version:', $.fn.jquery);
+    console.log('Document ready state:', document.readyState);
     if (availableModels && availableModels.length > 0) {
         console.log('First model example:', availableModels[0]);
         console.log('Model structure check - has name:', 'name' in availableModels[0], 'has id:', 'id' in availableModels[0]);
@@ -609,6 +612,11 @@ jQuery(document).ready(function($) {
     console.log('Looking for .llmvm-multi-model-container elements...');
     var containers = $('.llmvm-multi-model-container');
     console.log('Found', containers.length, 'containers');
+    
+    // Debug: Check if any elements exist at all
+    console.log('Total divs on page:', $('div').length);
+    console.log('Total inputs on page:', $('input').length);
+    console.log('Elements with llmvm in class:', $('[class*="llmvm"]').length);
     
     containers.each(function() {
         var containerId = $(this).attr('id');
