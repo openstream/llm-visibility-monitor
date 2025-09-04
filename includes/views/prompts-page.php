@@ -663,10 +663,137 @@ jQuery(document).ready(function($) {
     // Simple approach: just sync model data on form submission
     console.log('=== SETTING UP SIMPLE MODEL SYNC ===');
     
+    // Test if save buttons are clickable at all
+    $(document).on('click', 'input[type="submit"][value="Speichern"]', function(e) {
+        console.log('=== SAVE BUTTON CLICKED ===');
+        console.log('Button:', $(this).val());
+        console.log('Form:', $(this).closest('form').attr('action'));
+    });
+    
+    // Test if ANY clicks are being detected
+    $(document).on('click', '*', function(e) {
+        if ($(this).is('input[type="submit"]')) {
+            console.log('=== ANY CLICK ON SUBMIT BUTTON ===');
+            console.log('Button value:', $(this).val());
+            console.log('Button form:', $(this).closest('form').attr('action'));
+        }
+    });
+    
+    // Test if clicks are being detected on the page at all
+    $(document).on('click', 'body', function(e) {
+        console.log('=== BODY CLICK DETECTED ===');
+        console.log('Target element:', e.target);
+        console.log('Target tag:', e.target.tagName);
+        console.log('Target type:', e.target.type);
+        console.log('Target value:', e.target.value);
+    });
+    
+    // Test if handlers are being attached
+    console.log('=== TESTING HANDLER ATTACHMENT ===');
+    console.log('Save buttons found:', $('input[type="submit"][value="Speichern"]').length);
+    console.log('All submit buttons found:', $('input[type="submit"]').length);
+    
+    // Add a simple test click handler
+    $('input[type="submit"][value="Speichern"]').on('click', function(e) {
+        console.log('=== DIRECT CLICK HANDLER TRIGGERED ===');
+        console.log('Button:', $(this).val());
+    });
+    
+    // Test with a simple alert
+    setTimeout(function() {
+        console.log('=== TESTING SIMPLE CLICK ===');
+        $('input[type="submit"][value="Speichern"]').first().on('click', function() {
+            console.log('=== SAVE BUTTON CLICKED (CONFIRMED) ===');
+            console.log('Button:', $(this).val());
+            console.log('Form:', $(this).closest('form').attr('action'));
+        });
+        
+        // Also try with event delegation
+        $(document).on('click', 'input[type="submit"][value="Speichern"]', function() {
+            console.log('=== SAVE BUTTON CLICKED (DELEGATION) ===');
+            console.log('Button:', $(this).val());
+            console.log('Form:', $(this).closest('form').attr('action'));
+        });
+        
+        // Try with mousedown as well
+        $(document).on('mousedown', 'input[type="submit"][value="Speichern"]', function() {
+            console.log('=== SAVE BUTTON MOUSEDOWN ===');
+            console.log('Button:', $(this).val());
+        });
+        
+        // Test if ANY clicks are being detected
+        $(document).on('click', '*', function(e) {
+            console.log('=== ANY CLICK DETECTED ===');
+            console.log('Target:', e.target);
+            console.log('Target tag:', e.target.tagName);
+            console.log('Target type:', e.target.type);
+            console.log('Target value:', e.target.value);
+            console.log('Target class:', e.target.className);
+        });
+        
+        // Try a different approach - add onclick attribute directly
+        $('input[type="submit"][value="Speichern"]').each(function() {
+            var $btn = $(this);
+            var originalOnclick = $btn.attr('onclick') || '';
+            $btn.attr('onclick', 'console.log("=== ONCLICK ATTRIBUTE TRIGGERED ==="); ' + originalOnclick);
+        });
+        
+        // Also try with native addEventListener
+        $('input[type="submit"][value="Speichern"]').each(function() {
+            if (this.addEventListener) {
+                this.addEventListener('click', function() {
+                    console.log('=== NATIVE ADDEventListener CLICK ===');
+                });
+            }
+        });
+        
+        // Test if JavaScript is working at all
+        console.log('=== TESTING JAVASCRIPT FUNCTIONALITY ===');
+        console.log('Current time:', new Date().toISOString());
+        
+        // Removed programmatic click to prevent reload loop
+        
+        // Add visual indicator to save buttons
+        $('input[type="submit"][value="Speichern"]').css({
+            'background-color': 'red',
+            'color': 'white',
+            'border': '3px solid yellow'
+        });
+        
+        // Check if there are any overlays
+        console.log('=== CHECKING FOR OVERLAYS ===');
+        var $overlays = $('div').filter(function() {
+            var $this = $(this);
+            var position = $this.css('position');
+            var zIndex = parseInt($this.css('z-index')) || 0;
+            return (position === 'absolute' || position === 'fixed') && zIndex > 100;
+        });
+        console.log('Potential overlays found:', $overlays.length);
+        $overlays.each(function(i) {
+            console.log('Overlay', i, ':', $(this).attr('class'), 'z-index:', $(this).css('z-index'));
+        });
+        
+        // Check button properties
+        var $firstSaveButton = $('input[type="submit"][value="Speichern"]').first();
+        console.log('=== BUTTON PROPERTIES ===');
+        console.log('Button visible:', $firstSaveButton.is(':visible'));
+        console.log('Button enabled:', !$firstSaveButton.prop('disabled'));
+        console.log('Button display:', $firstSaveButton.css('display'));
+        console.log('Button pointer-events:', $firstSaveButton.css('pointer-events'));
+        console.log('Button position:', $firstSaveButton.css('position'));
+        console.log('Button z-index:', $firstSaveButton.css('z-index'));
+    }, 1000);
+    
     // Add a simple form submission handler that syncs model data
     $('form[action*="admin-post.php"]').on('submit', function(e) {
+        console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+        console.log('Form action:', $(this).attr('action'));
+        console.log('Form method:', $(this).attr('method'));
+        
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
+        
+        console.log('Prompt ID found:', promptId);
         
         // Only handle edit prompt forms
         if (promptId) {
