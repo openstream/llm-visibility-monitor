@@ -474,9 +474,12 @@ jQuery(document).ready(function($) {
         // Show all models when input is focused (clicked)
         $searchInput.on('focus', function() {
             console.log('Input focused, creating custom dropdown');
+            console.log('Input element:', $searchInput);
+            console.log('Custom dropdown element:', $customDropdown);
             
             // Clear and populate custom dropdown
             $customDropdown.empty();
+            console.log('Dropdown cleared');
             
             $.each(allModels, function(index, model) {
                 var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
@@ -484,15 +487,30 @@ jQuery(document).ready(function($) {
                 $customDropdown.append($item);
             });
             
+            console.log('Added', $customDropdown.children().length, 'items to dropdown');
+            console.log('Dropdown HTML:', $customDropdown.html());
+            
             // Position and show dropdown
             var inputOffset = $searchInput.offset();
+            console.log('Input offset:', inputOffset);
+            console.log('Input outer height:', $searchInput.outerHeight());
+            console.log('Input outer width:', $searchInput.outerWidth());
+            
             $customDropdown.css({
                 'top': inputOffset.top + $searchInput.outerHeight(),
                 'left': inputOffset.left,
                 'width': $searchInput.outerWidth(),
-                'display': 'block'
+                'display': 'block',
+                'position': 'absolute',
+                'background': 'white',
+                'border': '2px solid red', // Make it very visible
+                'z-index': '999999'
             });
             
+            console.log('Dropdown CSS applied');
+            console.log('Dropdown position:', $customDropdown.offset());
+            console.log('Dropdown is visible:', $customDropdown.is(':visible'));
+            console.log('Dropdown display:', $customDropdown.css('display'));
             console.log('Custom dropdown created with', $customDropdown.children().length, 'items');
         });
         
@@ -515,9 +533,12 @@ jQuery(document).ready(function($) {
         // Also handle click event for custom dropdown
         $searchInput.on('click', function() {
             console.log('Input clicked, showing custom dropdown');
+            console.log('Input element:', $searchInput);
+            console.log('Custom dropdown element:', $customDropdown);
             
             // Clear and populate custom dropdown
             $customDropdown.empty();
+            console.log('Dropdown cleared');
             
             $.each(allModels, function(index, model) {
                 var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
@@ -525,15 +546,30 @@ jQuery(document).ready(function($) {
                 $customDropdown.append($item);
             });
             
+            console.log('Added', $customDropdown.children().length, 'items to dropdown');
+            console.log('Dropdown HTML:', $customDropdown.html());
+            
             // Position and show dropdown
             var inputOffset = $searchInput.offset();
+            console.log('Input offset:', inputOffset);
+            console.log('Input outer height:', $searchInput.outerHeight());
+            console.log('Input outer width:', $searchInput.outerWidth());
+            
             $customDropdown.css({
                 'top': inputOffset.top + $searchInput.outerHeight(),
                 'left': inputOffset.left,
                 'width': $searchInput.outerWidth(),
-                'display': 'block'
+                'display': 'block',
+                'position': 'absolute',
+                'background': 'white',
+                'border': '2px solid red', // Make it very visible
+                'z-index': '999999'
             });
             
+            console.log('Dropdown CSS applied');
+            console.log('Dropdown position:', $customDropdown.offset());
+            console.log('Dropdown is visible:', $customDropdown.is(':visible'));
+            console.log('Dropdown display:', $customDropdown.css('display'));
             console.log('Custom dropdown shown with', $customDropdown.children().length, 'items');
         });
         
