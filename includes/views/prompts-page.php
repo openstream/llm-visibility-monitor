@@ -782,44 +782,7 @@ jQuery(document).ready(function($) {
     }, 1000);
     
     // Try to intercept form submission at the document level
-    $(document).on('submit', 'form', function(e) {
-        console.log('=== DOCUMENT FORM SUBMIT ===');
-        console.log('Form action:', $(this).attr('action'));
-        console.log('Form method:', $(this).attr('method'));
-        console.log('Form has admin-post.php:', $(this).attr('action').indexOf('admin-post.php') !== -1);
-        
-        // If this is one of our admin-post.php forms, prevent submission and handle it
-        if ($(this).attr('action').indexOf('admin-post.php') !== -1) {
-            console.log('=== INTERCEPTING ADMIN-POST FORM ===');
-            e.preventDefault();
-            
-            // Get the form data
-            var $form = $(this);
-            var promptId = $form.find('input[name="prompt_id"]').val();
-            console.log('Intercepted form with prompt ID:', promptId);
-            
-            // Sync the model data
-            var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
-            if ($modelContainer.length === 0) {
-                $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
-            }
-            var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-            
-            if ($modelContainer.length && $hiddenModelInput.length) {
-                var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
-                if (typeof getSelectedModelsFunction === 'function') {
-                    var selectedModels = getSelectedModelsFunction();
-                    console.log('Intercepted - Selected models:', selectedModels);
-                    $hiddenModelInput.val(selectedModels.join(','));
-                    console.log('Intercepted - Hidden input value set to:', $hiddenModelInput.val());
-                }
-            }
-            
-            // Now submit the form manually
-            console.log('=== MANUALLY SUBMITTING FORM ===');
-            this.submit();
-        }
-    });
+    // Removed conflicting document-level form submission handler
     
     // Also try to catch any form submission at the window level
     window.addEventListener('beforeunload', function(e) {
@@ -919,16 +882,9 @@ jQuery(document).ready(function($) {
                 console.log('=== SUBMIT BUTTON BLUR (TEST) ===');
             });
             
-            // Try to manually trigger a click event to see if the button responds
-            console.log('=== TESTING MANUAL CLICK TRIGGER ===');
-            setTimeout(function() {
-                console.log('Manually triggering click on button');
-                $submitButton.trigger('click');
-            }, 3000);
-            
-            // Try to add a simple alert to see if the button is actually clickable
-            $submitButton.css('background-color', 'red');
-            $submitButton.attr('onclick', 'alert("Button clicked!"); return false;');
+            // Remove the red background and onclick alert
+            $submitButton.css('background-color', '');
+            $submitButton.removeAttr('onclick');
         });
     }, 2000);
     } catch (error) {
