@@ -341,7 +341,7 @@ msgstr "Modelle (optional, verwendet Standard wenn leer):"
 
 #: includes/views/prompts-page.php
 msgid "Click to see all models or type to filter..."
-msgstr "Klicken Sie, um alle Modelle zu sehen oder tippen Sie zum Filtern..."
+msgstr "Klicke, um alle Modelle zu sehen oder tippe zum Filtern..."
 
 #: includes/views/prompts-page.php
 msgid "Model & Actions"
