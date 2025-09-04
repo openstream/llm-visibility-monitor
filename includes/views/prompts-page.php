@@ -409,7 +409,10 @@ if ( $is_admin ) {
 </div>
 
 <script>
+console.log('=== SCRIPT TAG LOADED ===');
 jQuery(document).ready(function($) {
+    try {
+        console.log('=== JQUERY READY FUNCTION STARTING ===');
     // Get available models for autocomplete
     var availableModels = <?php 
         $models = LLMVM_Admin::get_openrouter_models();
@@ -661,5 +664,9 @@ jQuery(document).ready(function($) {
             return false;
         }
     });
+    } catch (error) {
+        console.error('JavaScript error in prompts page:', error);
+        console.error('Error stack:', error.stack);
+    }
 });
 </script>
