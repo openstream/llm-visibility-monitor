@@ -725,6 +725,26 @@ jQuery(document).ready(function($) {
         console.log('Form method:', $(this).attr('method'));
     });
     
+    // Try to catch any click on the page
+    $(document).on('click', '*', function(e) {
+        if ($(this).is('input[type="submit"]')) {
+            console.log('=== ANY CLICK ON SUBMIT BUTTON ===');
+            console.log('Button value:', $(this).val());
+            console.log('Button form:', $(this).closest('form').attr('action'));
+        }
+    });
+    
+    // Check for JavaScript errors
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.log('=== JAVASCRIPT ERROR ===');
+        console.log('Error:', msg);
+        console.log('URL:', url);
+        console.log('Line:', lineNo);
+        console.log('Column:', columnNo);
+        console.log('Error object:', error);
+        return false;
+    };
+    
     // Debug: Check if submit buttons exist
     console.log('Submit buttons found:', $('input[type="submit"]').length);
     $('input[type="submit"]').each(function(index) {
