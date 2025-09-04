@@ -774,23 +774,37 @@ jQuery(document).ready(function($) {
     
     // Removed click handler - relying on timer sync instead
     
-    // Add form submission debugging
+    // Handle form submission for editing prompts
     $('form[action*="admin-post.php"]').on('submit', function(e) {
-        console.log('=== FORM SUBMISSION DEBUG ===');
-        console.log('Form action:', $(this).attr('action'));
-        console.log('Form method:', $(this).attr('method'));
-        
         var $form = $(this);
         var promptId = $form.find('input[name="prompt_id"]').val();
-        var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
         
-        console.log('Prompt ID:', promptId);
-        console.log('Hidden model input value:', $hiddenModelInput.val());
-        console.log('Hidden model input name:', $hiddenModelInput.attr('name'));
-        
-        // Log all form data
-        var formData = $form.serialize();
-        console.log('Form data:', formData);
+        // Only handle edit prompt forms
+        if ($form.find('input[name="action"]').val() === 'llmvm_edit_prompt') {
+            console.log('=== EDIT PROMPT FORM SUBMISSION ===');
+            console.log('Prompt ID:', promptId);
+            
+            // Get current text from textarea
+            var $textarea = $form.closest('tr').find('textarea[name="prompt_text"]');
+            var currentText = $textarea.val();
+            console.log('Current text:', currentText);
+            
+            // Update hidden text field
+            $form.find('input[name="prompt_text"]').val(currentText);
+            
+            // Get current models from the model selector
+            var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
+            var $modelInput = $modelContainer.find('input[type="hidden"]');
+            var selectedModels = $modelInput.val();
+            console.log('Selected models:', selectedModels);
+            
+            // Update hidden models field
+            var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
+            $hiddenModelInput.val(selectedModels);
+            
+            console.log('Updated hidden text:', $form.find('input[name="prompt_text"]').val());
+            console.log('Updated hidden models:', $hiddenModelInput.val());
+        }
     });
     
     // Add confirmation for "Run All Prompts Now" button
