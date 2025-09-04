@@ -622,7 +622,7 @@ class LLMVM_Email_Reporter {
         // Convert markdown-style formatting to HTML
         $formatted = $answer;
         
-        // Convert markdown lists to HTML lists
+        // Convert markdown lists to HTML lists (do this first to avoid conflicts)
         $formatted = $this->convert_markdown_lists( $formatted );
         
         // Convert **bold** to <strong> (non-greedy match)
@@ -634,10 +634,10 @@ class LLMVM_Email_Reporter {
         // Convert `code` to <code> (non-greedy match)
         $formatted = preg_replace( '/`([^`]+)`/', '<code>$1</code>', $formatted );
         
-        // Convert ## headings to <h2>
+        // Convert ## headings to <h2> (must be before wpautop)
         $formatted = preg_replace( '/^## (.+)$/m', '<h2>$1</h2>', $formatted );
         
-        // Convert ### headings to <h3>
+        // Convert ### headings to <h3> (must be before wpautop)
         $formatted = preg_replace( '/^### (.+)$/m', '<h3>$1</h3>', $formatted );
         
         // Convert URLs to clickable links first
@@ -677,8 +677,8 @@ class LLMVM_Email_Reporter {
                 }
                 $result[] = '<li>' . trim( $matches[1] ) . '</li>';
             }
-            // Check for ordered list items (starting with 1. 2. etc.)
-            elseif ( preg_match( '/^[\s]*(\d+)\.\s+(.+)$/', $trimmed, $matches ) ) {
+            // Check for ordered list items (starting with any number followed by a dot)
+            elseif ( preg_match( '/^[\s]*\d+\.\s+(.+)$/', $trimmed, $matches ) ) {
                 if ( ! $in_list || $list_type !== 'ol' ) {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
@@ -687,7 +687,8 @@ class LLMVM_Email_Reporter {
                     $in_list = true;
                     $list_type = 'ol';
                 }
-                $result[] = '<li>' . trim( $matches[2] ) . '</li>';
+                // Always use <li> without the number, let CSS handle the numbering
+                $result[] = '<li>' . trim( $matches[1] ) . '</li>';
             }
             // Empty line or non-list content
             else {
