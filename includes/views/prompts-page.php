@@ -847,6 +847,26 @@ jQuery(document).ready(function($) {
             console.log('Save form', index, ':', $(this).attr('action'));
             console.log('Form has prompt_id:', $(this).find('input[name="prompt_id"]').length > 0);
         });
+        
+        // Add a simple test to see if we can detect any form submission
+        console.log('=== ADDING FORM SUBMISSION TEST ===');
+        $saveForms.each(function(index) {
+            var $form = $(this);
+            console.log('Adding test handler to form', index);
+            
+            // Add a simple click handler to the submit button
+            $form.find('input[type="submit"]').on('click', function(e) {
+                console.log('=== SUBMIT BUTTON CLICKED (TEST) ===');
+                console.log('Button value:', $(this).val());
+                console.log('Form action:', $form.attr('action'));
+                
+                // Don't prevent default, let it submit normally
+                // But add a small delay to see if we can catch it
+                setTimeout(function() {
+                    console.log('=== FORM SHOULD HAVE SUBMITTED BY NOW ===');
+                }, 100);
+            });
+        });
     }, 2000);
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
