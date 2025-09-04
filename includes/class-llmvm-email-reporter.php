@@ -717,13 +717,13 @@ class LLMVM_Email_Reporter {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
                     }
-                    $result[] = '<ol>';
+                    $result[] = '<ol style="list-style-type: none; padding-left: 0;">';
                     $in_list = true;
                     $list_type = 'ol';
                     $list_counter = 1; // Reset counter for new list
                 }
-                // Use simple <li> without value attribute - let CSS handle numbering
-                $result[] = '<li>' . trim( $matches[1] ) . '</li>';
+                // Manually insert the number into the content for email client compatibility
+                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . trim( $matches[1] ) . '</li>';
                 $list_counter++;
             }
             // Check for list items that might be missing proper formatting (fallback)
@@ -737,7 +737,7 @@ class LLMVM_Email_Reporter {
                     $list_type = 'ol';
                     $list_counter = 1;
                 }
-                $result[] = '<li>' . trim( $matches[2] ) . '</li>';
+                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . trim( $matches[2] ) . '</li>';
                 $list_counter++;
             }
             // Empty line - don't break the list, just add the line
