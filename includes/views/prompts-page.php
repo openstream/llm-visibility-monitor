@@ -645,14 +645,9 @@ jQuery(document).ready(function($) {
         
         // Update the display of selected models
         function updateDisplay() {
-            console.log('=== updateDisplay called for', containerId, '===');
-            console.log('Selected models:', selectedModels);
-            console.log('Available models count:', availableModels.length);
             $selectedDiv.empty();
             selectedModels.forEach(function(modelId) {
-                console.log('Looking for model:', modelId);
                 var model = availableModels.find(function(m) { return m.id === modelId; });
-                console.log('Found model:', model);
                 if (model) {
                     var $tag = $('<span class="llmvm-model-tag">' + 
                         model.name + ' (' + model.id + ')' +
@@ -661,7 +656,6 @@ jQuery(document).ready(function($) {
                     $selectedDiv.append($tag);
                 } else {
                     // Handle case where model is not found in available models
-                    console.log('Model not found in available models, creating fallback display for:', modelId);
                     // Extract a readable name from the model ID
                     var displayName = modelId;
                     if (modelId.includes('/')) {
@@ -757,43 +751,7 @@ jQuery(document).ready(function($) {
     // Simple approach: sync model data before form submission
     console.log('=== SETTING UP MODEL SYNC ===');
     
-    // Alternative approach: use a timer to sync model data periodically
-    setInterval(function() {
-        $('form[action*="admin-post.php"]').each(function() {
-            var $form = $(this);
-            var promptId = $form.find('input[name="prompt_id"]').val();
-            
-            if (promptId) {
-                // Find the model container
-                var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
-                if ($modelContainer.length === 0) {
-                    $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
-                }
-                
-                var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-                
-                if ($modelContainer.length) {
-                    var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
-                    if (typeof getSelectedModelsFunction === 'function') {
-                        var selectedModels = getSelectedModelsFunction();
-                        if (selectedModels.length > 0) {
-                            console.log('=== TIMER SYNC ===');
-                            console.log('Prompt ID:', promptId);
-                            console.log('Selected models:', selectedModels);
-                            
-                            // Clear existing hidden inputs in the form
-                            $form.find('input[name="prompt_models[]"]').remove();
-                            
-                            // Create new hidden inputs for each selected model
-                            selectedModels.forEach(function(modelId) {
-                                $form.append('<input type="hidden" name="prompt_models[]" value="' + modelId + '" />');
-                            });
-                        }
-                    }
-                }
-            }
-        });
-    }, 1000); // Sync every second
+    // Removed problematic timer-based sync that was interfering with model display
     
     // Removed click handler - relying on timer sync instead
     
