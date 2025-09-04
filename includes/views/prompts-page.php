@@ -646,64 +646,7 @@ jQuery(document).ready(function($) {
         console.log('Form', index, ':', $(this).attr('action'), 'ID:', $(this).attr('id'), 'Class:', $(this).attr('class'));
     });
     
-    console.log('=== ATTACHING FORM SUBMISSION HANDLER ===');
-    $('form[action*="admin-post.php"]').on('submit', function(e) {
-        var $form = $(this);
-        var promptId = $form.find('input[name="prompt_id"]').val();
-        console.log('=== FORM SUBMISSION STARTING ===');
-        console.log('Form submitted! Event triggered.');
-        console.log('Form prompt ID:', promptId);
-        console.log('Form action:', $form.attr('action'));
-        
-        // Removed alert to prevent popup interruptions
-        
-        // Sync textarea content
-        var $textarea = $form.closest('tr').find('.llmvm-prompt-cell textarea');
-        var $hiddenTextInput = $form.find('input[name="prompt_text"]');
-        if ($textarea.length && $hiddenTextInput.length) {
-            $hiddenTextInput.val($textarea.val());
-        }
-        
-        // Sync multi-model selector content
-        // For "Your Prompts" section, the model container is in the same table cell as the form
-        var $modelContainer = $form.closest('td').find('.llmvm-multi-model-container');
-        console.log('Form submission - Looking in td, found containers:', $modelContainer.length);
-        if ($modelContainer.length === 0) {
-            // Fallback: try to find it in the closest tr
-            $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
-            console.log('Form submission - Looking in tr, found containers:', $modelContainer.length);
-        }
-        
-        // Additional debugging: check if we can find the container by ID
-        if ($modelContainer.length === 0) {
-            console.log('Form submission - Trying to find container by ID pattern');
-            var promptId = $form.find('input[name="prompt_id"]').val();
-            if (promptId) {
-                var containerId = 'llmvm-prompt-models-container-' + promptId;
-                $modelContainer = $('#' + containerId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&'));
-                console.log('Form submission - Looking for container ID:', containerId);
-                console.log('Form submission - Found by ID:', $modelContainer.length);
-            }
-        }
-        var $hiddenModelInput = $form.find('input[name="prompt_models[]"]');
-        console.log('Form submission - Model container found:', $modelContainer.length > 0);
-        console.log('Form submission - Hidden model input found:', $hiddenModelInput.length > 0);
-        console.log('Form submission - Model container ID:', $modelContainer.attr('id'));
-        
-        if ($modelContainer.length && $hiddenModelInput.length) {
-            var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
-            console.log('Form submission - getSelectedModels function exists:', typeof getSelectedModelsFunction === 'function');
-            if (typeof getSelectedModelsFunction === 'function') {
-                var selectedModels = getSelectedModelsFunction();
-                console.log('Form submission - Selected models:', selectedModels);
-                $hiddenModelInput.val(selectedModels.join(','));
-                console.log('Form submission - Hidden input value set to:', $hiddenModelInput.val());
-            } else {
-                console.log('Form submission - getSelectedModels function not found');
-            }
-        }
-        console.log('=== FORM SUBMISSION COMPLETE ===');
-    });
+    // Removed conflicting form submission handler
     
     // Handle delete confirmation
     $('.delete-prompt-form').on('submit', function(e) {
