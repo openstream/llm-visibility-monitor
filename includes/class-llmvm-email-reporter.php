@@ -353,7 +353,7 @@ class LLMVM_Email_Reporter {
                     border: none;
                     position: relative;
                     padding: 4px 0;
-                    padding-left: 30%;
+                    padding-left: 80px;
                     font-size: 14px;
                 }
                 
@@ -361,7 +361,7 @@ class LLMVM_Email_Reporter {
                     content: attr(data-label) ": ";
                     position: absolute;
                     left: 6px;
-                    width: 25%;
+                    width: 70px;
                     padding-right: 8px;
                     white-space: nowrap;
                     font-weight: 600;
