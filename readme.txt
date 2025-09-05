@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,26 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 4. Individual result detail view
 
 == Changelog ==
+
+= 0.8.0 =
+* **New Feature**: User-specific timezone preferences
+  * Added timezone setting in user profile page (/wp-admin/profile.php)
+  * All users can set their preferred timezone for date display
+  * Dashboard and email reports now show dates in user's local timezone
+  * Fallback to site default timezone if user hasn't set preference
+  * Support for all PHP timezone identifiers (e.g., Europe/Zurich, America/New_York)
+* **Enhancement**: Improved email report rendering and mobile responsiveness
+  * Enhanced email report design for better desktop and mobile mail client compatibility
+  * Optimized column widths and spacing in email table
+  * Improved mobile responsiveness with better breakpoints and horizontal scrolling
+  * Fixed vertical alignment issues in email table cells
+  * Enhanced markdown to HTML conversion for better content formatting
+* **Enhancement**: Better markdown rendering in email reports
+  * Improved support for H1, H2, H3, H4 headings including alternative underline formats
+  * Enhanced list parsing for various unordered (-, *, +) and ordered (1., 1), 1:) list formats
+  * Fixed numbered list display with proper sequential numbering (1, 2, 3, 4 instead of 1, 1, 1, 1)
+  * Manual numbering implementation to ensure consistent display across email clients
+  * Better handling of markdown content from different LLM providers
 
 = 0.7.0 =
 * **New Feature**: Dual-tier user role system
@@ -211,6 +231,9 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * German localization (de_DE, de_CH)
 
 == Upgrade Notice ==
+
+= 0.8.0 =
+Adds user-specific timezone preferences for personalized date display. All users can now set their timezone in their profile page. Enhanced email report rendering with better mobile support and improved markdown formatting.
 
 = 0.7.0 =
 Introduces dual-tier user roles (Free/Pro) with configurable usage limits. Existing users auto-migrated to Free plan. Enhanced run confirmation system with usage tracking improves user experience.

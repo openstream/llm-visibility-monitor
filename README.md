@@ -125,6 +125,12 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 ## Changelog
 
 ### 0.8.0 - 2025-09-05
+- **New Feature**: User-specific timezone preferences
+  - Added timezone setting in user profile page (/wp-admin/profile.php)
+  - All users can set their preferred timezone for date display
+  - Dashboard and email reports now show dates in user's local timezone
+  - Fallback to site default timezone if user hasn't set preference
+  - Support for all PHP timezone identifiers (e.g., Europe/Zurich, America/New_York)
 - **Enhancement**: Improved email report rendering and mobile responsiveness
   - Enhanced email report design for better desktop and mobile mail client compatibility
   - Optimized column widths and spacing in email table (Date: 15%, Prompt: 20%, Model: 20%, Answer: 45%, User: 10%)
