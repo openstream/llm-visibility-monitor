@@ -74,28 +74,28 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
             vertical-align: baseline !important;
         }
         /* Specific fix for answer column with nested content */
-        .wp-list-table .column-answer {
+        .results-table .answer-col {
             margin-top: 0 !important;
             padding-top: 8px !important; /* Match other columns */
         }
-        .wp-list-table .column-answer .answer-content {
+        .results-table .answer-col .answer-content {
             margin: 0 !important;
             padding: 0 !important;
         }
-        .wp-list-table .column-answer .answer-content p:first-child {
+        .results-table .answer-col .answer-content p:first-child {
             margin-top: 0 !important;
             margin-block-start: 0 !important;
             padding-top: 0 !important;
         }
         /* Apply margin-top: 0 to all paragraphs in answer column */
-        .wp-list-table .column-answer p {
+        .results-table .answer-col p {
             margin-top: 0 !important;
         }
-        .wp-list-table .column-answer div,
-        .wp-list-table .column-answer p,
-        .wp-list-table .column-answer ol,
-        .wp-list-table .column-answer ul,
-        .wp-list-table .column-answer li {
+        .results-table .answer-col div,
+        .results-table .answer-col p,
+        .results-table .answer-col ol,
+        .results-table .answer-col ul,
+        .results-table .answer-col li {
             margin-top: 0 !important;
             margin-bottom: 0 !important;
             margin-block-start: 0 !important;
