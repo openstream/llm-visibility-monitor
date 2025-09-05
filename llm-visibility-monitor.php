@@ -175,11 +175,8 @@ function llmvm_init() {
 		( new LLMVM_Email_Reporter() )->hooks();
 	}
 
-	// Bypass SureCart admin restrictions for sc_customer role
-	llmvm_bypass_surecart_restrictions();
-
-	// Ensure sc_customer role has edit_posts capability
-	llmvm_ensure_sc_customer_capabilities();
+	// Ensure LLM Manager users can access admin pages
+	llmvm_ensure_llm_manager_admin_access();
 }
 add_action( 'plugins_loaded', 'llmvm_init' );
 
@@ -227,12 +224,25 @@ function llmvm_prevent_surecart_redirect(): void {
 }
 
 /**
- * Ensure sc_customer role has edit_posts capability for SureCart bypass.
+ * Ensure LLM Manager users can access admin pages.
  */
-function llmvm_ensure_sc_customer_capabilities(): void {
-	$sc_customer_role = get_role( 'sc_customer' );
-	if ( $sc_customer_role && ! $sc_customer_role->has_cap( 'edit_posts' ) ) {
-		$sc_customer_role->add_cap( 'edit_posts' );
+function llmvm_ensure_llm_manager_admin_access(): void {
+	// Ensure all LLM Manager roles have the necessary capabilities
+	$llm_roles = [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ];
+	
+	foreach ( $llm_roles as $role_name ) {
+		$role = get_role( $role_name );
+		if ( $role ) {
+			// Ensure they have level_1 capability for basic admin access
+			if ( ! $role->has_cap( 'level_1' ) ) {
+				$role->add_cap( 'level_1' );
+			}
+			
+			// Ensure they have edit_posts capability to bypass SureCart restrictions
+			if ( ! $role->has_cap( 'edit_posts' ) ) {
+				$role->add_cap( 'edit_posts' );
+			}
+		}
 	}
 }
 

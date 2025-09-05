@@ -96,10 +96,16 @@ class LLMVM_Activator {
 			$admin_role->add_cap( 'llmvm_unlimited_plan' );
 		}
 
-		// Ensure sc_customer role has edit_posts capability for SureCart bypass
-		$sc_customer_role = get_role( 'sc_customer' );
-		if ( $sc_customer_role ) {
-			$sc_customer_role->add_cap( 'edit_posts' );
+		// Ensure all LLM Manager roles have necessary capabilities for admin access
+		$llm_roles = [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ];
+		foreach ( $llm_roles as $role_name ) {
+			$role = get_role( $role_name );
+			if ( $role ) {
+				// Ensure they have level_1 capability for basic admin access
+				$role->add_cap( 'level_1' );
+				// Ensure they have edit_posts capability to bypass SureCart restrictions
+				$role->add_cap( 'edit_posts' );
+			}
 		}
 	}
 }

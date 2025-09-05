@@ -64,8 +64,8 @@ class LLMVM_Admin {
         // Add Subscription menu item
         add_action( 'admin_menu', [ $this, 'add_subscription_menu' ], 1000 );
 
-        // Clean up user roles to remove subscriber role from LLM Manager users
-        add_action( 'init', [ $this, 'cleanup_user_roles' ], 5 );
+        // Ensure LLM Manager users can access admin pages
+        add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
 
 
         // Form handlers for prompts CRUD.
@@ -151,9 +151,9 @@ class LLMVM_Admin {
     }
 
     /**
-     * Clean up user roles to remove subscriber role from LLM Manager users.
+     * Ensure LLM Manager users can access admin pages.
      */
-    public function cleanup_user_roles(): void {
+    public function ensure_admin_access(): void {
         // Only run for logged-in users
         if ( ! is_user_logged_in() ) {
             return;
@@ -164,30 +164,25 @@ class LLMVM_Admin {
             return;
         }
 
-        // Check if user has LLM Manager roles but also has subscriber role
+        // Check if user has any LLM Manager role
         $has_llm_role = false;
-        $has_subscriber = false;
-
         foreach ( $current_user->roles as $role ) {
             if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
                 $has_llm_role = true;
-            }
-            if ( $role === 'subscriber' ) {
-                $has_subscriber = true;
+                break;
             }
         }
 
-        // If user has LLM role but also subscriber, remove subscriber
-        if ( $has_llm_role && $has_subscriber ) {
-            $current_user->remove_role( 'subscriber' );
+        // If user has LLM role, ensure they have the necessary capabilities
+        if ( $has_llm_role ) {
+            // Ensure they have level_1 capability for basic admin access
+            if ( ! $current_user->has_cap( 'level_1' ) ) {
+                $current_user->add_cap( 'level_1' );
+            }
             
-            // Log this action for debugging
-            if ( class_exists( 'LLMVM_Logger' ) ) {
-                LLMVM_Logger::log( 'Removed subscriber role from user with LLM role', array(
-                    'user_id' => $current_user->ID,
-                    'user_login' => $current_user->user_login,
-                    'remaining_roles' => $current_user->roles
-                ) );
+            // Ensure they have edit_posts capability to bypass SureCart restrictions
+            if ( ! $current_user->has_cap( 'edit_posts' ) ) {
+                $current_user->add_cap( 'edit_posts' );
             }
         }
     }
