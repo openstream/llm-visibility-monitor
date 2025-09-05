@@ -248,7 +248,6 @@ class LLMVM_Email_Reporter {
             text-align: left;
             border-bottom: 2px solid #dee2e6;
             font-size: 13px;
-            border: 1px solid blue !important; /* Debug: show cell boundaries */
         }
         
         .results-table td {
@@ -256,7 +255,6 @@ class LLMVM_Email_Reporter {
             border-bottom: 1px solid #e9ecef;
             vertical-align: top !important;
             font-size: 13px;
-            border: 1px solid red !important; /* Debug: show cell boundaries */
         }
         
         /* Fix vertical alignment for answer column paragraphs */
