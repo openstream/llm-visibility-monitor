@@ -627,7 +627,7 @@ class LLMVM_Email_Reporter {
                     <tbody>';
 
             foreach ( $results as $result ) {
-                $date = isset( $result['created_at'] ) ? (string) $result['created_at'] : '';
+                $date = isset( $result['created_at'] ) ? LLMVM_Admin::convert_utc_to_user_timezone( $result['created_at'], $result['user_id'] ?? null ) : '';
                 $prompt = isset( $result['prompt'] ) ? (string) $result['prompt'] : '';
                 $model = isset( $result['model'] ) ? (string) $result['model'] : '';
                 $answer = isset( $result['answer'] ) ? (string) $result['answer'] : '';

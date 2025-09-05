@@ -192,7 +192,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                 </th>
                 <th scope="col" class="manage-column column-date sortable <?php echo esc_attr( $current_orderby === 'created_at' ? strtolower( $current_order ) : '' ); ?>">
                     <a href="<?php echo esc_url( llmvm_get_sort_url( 'created_at', $current_orderby === 'created_at' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
-                        <span><?php echo esc_html__( 'Date (UTC)', 'llm-visibility-monitor' ); ?></span>
+                        <span><?php echo esc_html__( 'Date', 'llm-visibility-monitor' ); ?></span>
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>
@@ -245,7 +245,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                             <?php echo esc_html( (string) ( $row['model'] ?? '' ) ); ?>
                         </td>
                         <td class="date column-date">
-                            <?php echo esc_html( (string) ( $row['created_at'] ?? '' ) ); ?>
+                            <?php echo esc_html( LLMVM_Admin::convert_utc_to_user_timezone( $row['created_at'] ?? '' ) ); ?>
                         </td>
                         <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
                         <td class="user column-user">
@@ -300,7 +300,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                 </th>
                 <th scope="col" class="manage-column column-date sortable <?php echo esc_attr( $current_orderby === 'created_at' ? strtolower( $current_order ) : '' ); ?>">
                     <a href="<?php echo esc_url( llmvm_get_sort_url( 'created_at', $current_orderby === 'created_at' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
-                        <span><?php echo esc_html__( 'Date (UTC)', 'llm-visibility-monitor' ); ?></span>
+                        <span><?php echo esc_html__( 'Date', 'llm-visibility-monitor' ); ?></span>
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>

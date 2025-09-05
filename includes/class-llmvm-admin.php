@@ -10,6 +10,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LLMVM_Admin {
 
     /**
+     * Convert UTC date to user's timezone.
+     */
+    public static function convert_utc_to_user_timezone( $utc_date, $user_id = null ) {
+        if ( empty( $utc_date ) ) {
+            return '';
+        }
+        
+        if ( ! $user_id ) {
+            $user_id = get_current_user_id();
+        }
+        
+        // Get user's timezone
+        $timezone_string = get_user_meta( $user_id, 'timezone', true );
+        if ( empty( $timezone_string ) ) {
+            $timezone_string = get_option( 'timezone_string' );
+        }
+        if ( empty( $timezone_string ) ) {
+            $timezone_string = 'UTC';
+        }
+        
+        // Create DateTime object from UTC date
+        $utc_datetime = new DateTime( $utc_date, new DateTimeZone( 'UTC' ) );
+        
+        // Convert to user's timezone
+        $user_timezone = new DateTimeZone( $timezone_string );
+        $utc_datetime->setTimezone( $user_timezone );
+        
+        // Format the date
+        return $utc_datetime->format( 'Y-m-d H:i:s' );
+    }
+
+    /**
      * Constructor.
      */
     public function __construct() {
