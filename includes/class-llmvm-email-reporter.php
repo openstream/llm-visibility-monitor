@@ -305,6 +305,16 @@ class LLMVM_Email_Reporter {
             display: inline-block;
             margin-top: 2px;
         }
+        .date-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 2px;
+        }
         
         /* Mobile responsive styles */
         @media only screen and (max-width: 768px) {
@@ -639,7 +649,7 @@ class LLMVM_Email_Reporter {
                     $html .= '<div class="meta-item">' . esc_html( $user_display ) . '</div>';
                 }
                 
-                $html .= '<div class="meta-item">' . esc_html( $date ) . '</div>
+                $html .= '<div class="meta-item"><span class="date-badge">' . esc_html( $date ) . '</span></div>
                             <div class="meta-item"><span class="model-badge">' . esc_html( $model ) . '</span></div>
                         </td>
                         <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
