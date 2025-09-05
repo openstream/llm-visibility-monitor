@@ -245,7 +245,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                             <?php echo esc_html( (string) ( $row['model'] ?? '' ) ); ?>
                         </td>
                         <td class="date column-date">
-                            <?php echo esc_html( LLMVM_Admin::convert_utc_to_site_timezone( $row['created_at'] ?? '' ) ); ?>
+                            <?php echo esc_html( LLMVM_Admin::convert_utc_to_user_timezone( $row['created_at'] ?? '' ) ); ?>
                         </td>
                         <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
                         <td class="user column-user">

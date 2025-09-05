@@ -569,7 +569,7 @@ class LLMVM_Email_Reporter {
 </head>
 <body>
     <div class="email-container">
-        <div class="header">
+    <div class="header">
             <h1>🤖 LLM Visibility Monitor</h1>
             <p>Generated on ' . current_time( 'F j, Y \a\t g:i A T' ) . '</p>';
         
@@ -581,7 +581,7 @@ class LLMVM_Email_Reporter {
         
         $html .= '</div>
     
-        <div class="content">
+    <div class="content">
             <div class="summary-card">
                 <h2>📊 Summary</h2>';
             
@@ -603,7 +603,7 @@ class LLMVM_Email_Reporter {
                         <span class="stat-label">Errors</span>
                     </div>
                 </div>
-            </div>';
+        </div>';
 
         if ( ! empty( $results ) ) {
             $html .= '
@@ -611,8 +611,8 @@ class LLMVM_Email_Reporter {
                 <h2>📋 Latest Results</h2>
                 <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 On mobile devices, you can scroll vertically to view the full content.</p>
                 <table class="results-table">
-                    <thead>
-                        <tr>';
+            <thead>
+                <tr>';
                 
             if ( $email_type === 'admin' ) {
                 $html .= '<th class="combined-meta-col">User & Date & Model</th>';
@@ -622,12 +622,12 @@ class LLMVM_Email_Reporter {
             
             $html .= '<th class="prompt-col">Prompt</th>
                             <th class="answer-col">Answer</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
+                </tr>
+            </thead>
+            <tbody>';
 
             foreach ( $results as $result ) {
-                $date = isset( $result['created_at'] ) ? LLMVM_Admin::convert_utc_to_site_timezone( $result['created_at'] ) : '';
+                $date = isset( $result['created_at'] ) ? LLMVM_Admin::convert_utc_to_user_timezone( $result['created_at'], $result['user_id'] ?? null ) : '';
                 $prompt = isset( $result['prompt'] ) ? (string) $result['prompt'] : '';
                 $model = isset( $result['model'] ) ? (string) $result['model'] : '';
                 $answer = isset( $result['answer'] ) ? (string) $result['answer'] : '';
@@ -656,11 +656,11 @@ class LLMVM_Email_Reporter {
                         <td class="answer-col" data-label="Answer">
                             <div class="answer-content">' . $formatted_answer . '</div>
                         </td>
-                    </tr>';
+                </tr>';
             }
 
             $html .= '
-                    </tbody>
+            </tbody>
                 </table>
             </div>';
         }
