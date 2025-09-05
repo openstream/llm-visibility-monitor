@@ -87,6 +87,10 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
             margin-block-start: 0 !important;
             padding-top: 0 !important;
         }
+        /* Apply margin-top: 0 to all paragraphs in answer column */
+        .wp-list-table .column-answer p {
+            margin-top: 0 !important;
+        }
         .wp-list-table .column-answer div,
         .wp-list-table .column-answer p,
         .wp-list-table .column-answer ol,
