@@ -29,20 +29,20 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
 
     <style>
         .wp-list-table .column-answer {
-            width: 40%;
+            width: 45%;
             word-wrap: break-word;
         }
         .wp-list-table .column-prompt {
             width: 25%;
         }
         .wp-list-table .column-model {
-            width: 15%;
+            width: 12%;
         }
         .wp-list-table .column-date {
-            width: 15%;
+            width: 12%;
         }
         .wp-list-table .column-user {
-            width: 10%;
+            width: 8%;
         }
         .wp-list-table td {
             vertical-align: top;
@@ -50,6 +50,12 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         }
         .wp-list-table th {
             padding: 8px 10px;
+        }
+        /* Make the table wider on desktop */
+        @media (min-width: 1200px) {
+            .wp-list-table {
+                min-width: 100%;
+            }
         }
     </style>
 
