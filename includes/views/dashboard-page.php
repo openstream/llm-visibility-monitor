@@ -84,6 +84,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         }
         .wp-list-table .column-answer .answer-content p:first-child {
             margin-top: 0 !important;
+            margin-block-start: 0 !important;
             padding-top: 0 !important;
         }
         .wp-list-table .column-answer div,
@@ -93,6 +94,8 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         .wp-list-table .column-answer li {
             margin-top: 0 !important;
             margin-bottom: 0 !important;
+            margin-block-start: 0 !important;
+            margin-block-end: 0 !important;
         }
         /* Force table to use full width and be wider */
         .wp-list-table {
