@@ -31,50 +31,51 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         .wp-list-table .column-answer {
             width: 55%;
             word-wrap: break-word;
-            vertical-align: top;
         }
         .wp-list-table .column-prompt {
             width: 20%;
-            vertical-align: top;
         }
         .wp-list-table .column-model {
             width: 18%;
             white-space: nowrap;
-            vertical-align: top;
         }
         .wp-list-table .column-date {
             width: 18%;
             white-space: nowrap;
-            vertical-align: top;
         }
         .wp-list-table .column-user {
             width: 12%;
-            vertical-align: top;
         }
         .wp-list-table td {
-            vertical-align: top;
+            vertical-align: top !important;
             padding: 8px 10px;
         }
         .wp-list-table th {
             padding: 8px 10px;
+            vertical-align: top !important;
         }
-        /* Make the table use more total width */
+        /* Force table to use full width and be wider */
         .wp-list-table {
-            width: 100%;
-            max-width: none;
+            width: 100% !important;
+            max-width: none !important;
+            table-layout: fixed !important;
         }
-        /* Ensure full width on all screen sizes and make it even wider on desktop */
+        /* Make it even wider on desktop */
         @media (min-width: 768px) {
             .wp-list-table {
-                width: 100%;
-                table-layout: fixed;
+                width: 100% !important;
+                min-width: 1600px !important;
             }
         }
         @media (min-width: 1200px) {
             .wp-list-table {
-                width: 100%;
-                min-width: 1400px;
+                width: 100% !important;
+                min-width: 1800px !important;
             }
+        }
+        /* Ensure the container doesn't limit width */
+        .wrap {
+            max-width: none !important;
         }
     </style>
 
