@@ -259,6 +259,16 @@ class LLMVM_Email_Reporter {
             border: 1px solid red !important; /* Debug: show cell boundaries */
         }
         
+        /* Fix vertical alignment for answer column paragraphs */
+        .results-table .answer-col p {
+            margin-top: 0 !important;
+            margin-block-start: 0 !important;
+        }
+        .results-table .answer-col .answer-content p:first-child {
+            margin-top: 0 !important;
+            margin-block-start: 0 !important;
+        }
+        
         .results-table tr:last-child td {
             border-bottom: none;
         }
