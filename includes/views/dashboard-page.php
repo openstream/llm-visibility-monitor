@@ -76,6 +76,15 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         /* Specific fix for answer column with nested content */
         .wp-list-table .column-answer {
             margin-top: 0 !important;
+            padding-top: 8px !important; /* Match other columns */
+        }
+        .wp-list-table .column-answer .answer-content {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .wp-list-table .column-answer .answer-content p:first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }
         .wp-list-table .column-answer div,
         .wp-list-table .column-answer p,
@@ -84,12 +93,6 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         .wp-list-table .column-answer li {
             margin-top: 0 !important;
             margin-bottom: 0 !important;
-        }
-        .wp-list-table .column-answer div:first-child,
-        .wp-list-table .column-answer p:first-child,
-        .wp-list-table .column-answer ol:first-child,
-        .wp-list-table .column-answer ul:first-child {
-            margin-top: 0 !important;
         }
         /* Force table to use full width and be wider */
         .wp-list-table {
