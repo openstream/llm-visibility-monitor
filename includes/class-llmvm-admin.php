@@ -71,8 +71,12 @@ class LLMVM_Admin {
         add_action( 'admin_post_llmvm_change_user_plan', [ $this, 'handle_change_user_plan' ] );
         add_action( 'admin_post_llmvm_remove_llm_access', [ $this, 'handle_remove_llm_access' ] );
         
-        // User timezone handler.
-        add_action( 'admin_post_llmvm_save_timezone', [ $this, 'handle_save_timezone' ] );
+        
+        // Add timezone field to user profile.
+        add_action( 'show_user_profile', [ $this, 'add_timezone_field' ] );
+        add_action( 'edit_user_profile', [ $this, 'add_timezone_field' ] );
+        add_action( 'personal_options_update', [ $this, 'save_timezone_field' ] );
+        add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
     }
 
     /**
@@ -1222,34 +1226,64 @@ class LLMVM_Admin {
         exit;
     }
 
-    /** Handle saving user timezone */
-    public function handle_save_timezone(): void {
-        // Verify nonce
-        if ( ! isset( $_POST['llmvm_timezone_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['llmvm_timezone_nonce'] ) ), 'llmvm_user_timezone' ) ) {
-            wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+
+    /** Add timezone field to user profile */
+    public function add_timezone_field( $user ): void {
+        $current_timezone = get_user_meta( $user->ID, 'llmvm_timezone', true );
+        if ( empty( $current_timezone ) ) {
+            $current_timezone = get_option( 'timezone_string' );
+            if ( empty( $current_timezone ) ) {
+                $gmt_offset = get_option( 'gmt_offset' );
+                $current_timezone = $gmt_offset !== false ? sprintf( '%+03d:00', $gmt_offset ) : 'UTC';
+            }
+        }
+        
+        // Get list of timezones
+        $timezones = timezone_identifiers_list();
+        ?>
+        <h3><?php echo esc_html__( 'LLM Visibility Monitor', 'llm-visibility-monitor' ); ?></h3>
+        <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="llmvm_timezone"><?php echo esc_html__( 'Timezone', 'llm-visibility-monitor' ); ?></label>
+                </th>
+                <td>
+                    <select name="llmvm_timezone" id="llmvm_timezone" class="regular-text">
+                        <option value=""><?php echo esc_html__( 'Use site default', 'llm-visibility-monitor' ); ?></option>
+                        <?php foreach ( $timezones as $timezone ) : ?>
+                            <option value="<?php echo esc_attr( $timezone ); ?>" <?php selected( $current_timezone, $timezone ); ?>>
+                                <?php echo esc_html( $timezone ); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description">
+                        <?php echo esc_html__( 'Choose your preferred timezone for displaying dates and times in LLM Visibility Monitor. If not set, the site default timezone will be used.', 'llm-visibility-monitor' ); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /** Save timezone field from user profile */
+    public function save_timezone_field( $user_id ): void {
+        if ( ! current_user_can( 'edit_user', $user_id ) ) {
+            return;
         }
 
         $timezone = isset( $_POST['llmvm_timezone'] ) ? sanitize_text_field( wp_unslash( $_POST['llmvm_timezone'] ) ) : '';
         
         // Validate timezone if provided
         if ( ! empty( $timezone ) && ! in_array( $timezone, timezone_identifiers_list(), true ) ) {
-            set_transient( 'llmvm_notice', [ 'type' => 'error', 'msg' => __( 'Invalid timezone selected.', 'llm-visibility-monitor' ) ], 60 );
-            wp_safe_redirect( admin_url( 'options-general.php?page=llmvm-settings' ) );
-            exit;
+            return;
         }
 
         // Save timezone preference
         if ( empty( $timezone ) ) {
-            delete_user_meta( get_current_user_id(), 'llmvm_timezone' );
-            $message = __( 'Timezone reset to site default.', 'llm-visibility-monitor' );
+            delete_user_meta( $user_id, 'llmvm_timezone' );
         } else {
-            update_user_meta( get_current_user_id(), 'llmvm_timezone', $timezone );
-            $message = __( 'Timezone preference saved successfully.', 'llm-visibility-monitor' );
+            update_user_meta( $user_id, 'llmvm_timezone', $timezone );
         }
-
-        set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => $message ], 60 );
-        wp_safe_redirect( admin_url( 'options-general.php?page=llmvm-settings' ) );
-        exit;
     }
 }
 
