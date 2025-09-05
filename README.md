@@ -124,6 +124,20 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
+### 0.8.0 - 2025-01-15
+- **Enhancement**: Improved email report rendering and mobile responsiveness
+  - Enhanced email report design for better desktop and mobile mail client compatibility
+  - Optimized column widths and spacing in email table (Date: 15%, Prompt: 20%, Model: 20%, Answer: 45%, User: 10%)
+  - Improved mobile responsiveness with better breakpoints and horizontal scrolling
+  - Fixed vertical alignment issues in email table cells
+  - Enhanced markdown to HTML conversion for better content formatting
+- **Enhancement**: Better markdown rendering in email reports
+  - Improved support for H1, H2, H3, H4 headings including alternative underline formats
+  - Enhanced list parsing for various unordered (-, *, +) and ordered (1., 1), 1:) list formats
+  - Fixed numbered list display with proper sequential numbering (1, 2, 3, 4 instead of 1, 1, 1, 1)
+  - Manual numbering implementation to ensure consistent display across email clients
+  - Better handling of markdown content from different LLM providers
+
 ### 0.7.0 - 2025-01-15
 - **New Feature**: Dual-tier user role system
   - Added "LLM Manager Pro" role with higher usage limits
