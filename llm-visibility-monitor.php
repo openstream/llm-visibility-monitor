@@ -177,6 +177,9 @@ function llmvm_init() {
 
 	// Bypass SureCart admin restrictions for sc_customer role
 	llmvm_bypass_surecart_restrictions();
+
+	// Ensure sc_customer role has edit_posts capability
+	llmvm_ensure_sc_customer_capabilities();
 }
 add_action( 'plugins_loaded', 'llmvm_init' );
 
@@ -220,6 +223,16 @@ function llmvm_prevent_surecart_redirect(): void {
 	if ( in_array( $current_page, $allowed_pages, true ) ) {
 		// Do nothing - this prevents the redirect
 		return;
+	}
+}
+
+/**
+ * Ensure sc_customer role has edit_posts capability for SureCart bypass.
+ */
+function llmvm_ensure_sc_customer_capabilities(): void {
+	$sc_customer_role = get_role( 'sc_customer' );
+	if ( $sc_customer_role && ! $sc_customer_role->has_cap( 'edit_posts' ) ) {
+		$sc_customer_role->add_cap( 'edit_posts' );
 	}
 }
 

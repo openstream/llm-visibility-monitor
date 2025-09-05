@@ -64,6 +64,9 @@ class LLMVM_Admin {
         // Add Subscription menu item
         add_action( 'admin_menu', [ $this, 'add_subscription_menu' ], 1000 );
 
+        // Clean up user roles to remove subscriber role from LLM Manager users
+        add_action( 'init', [ $this, 'cleanup_user_roles' ], 5 );
+
 
         // Form handlers for prompts CRUD.
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
@@ -145,6 +148,48 @@ class LLMVM_Admin {
             }, 1000);
         </script>
         <?php
+    }
+
+    /**
+     * Clean up user roles to remove subscriber role from LLM Manager users.
+     */
+    public function cleanup_user_roles(): void {
+        // Only run for logged-in users
+        if ( ! is_user_logged_in() ) {
+            return;
+        }
+
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+
+        // Check if user has LLM Manager roles but also has subscriber role
+        $has_llm_role = false;
+        $has_subscriber = false;
+
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+            }
+            if ( $role === 'subscriber' ) {
+                $has_subscriber = true;
+            }
+        }
+
+        // If user has LLM role but also subscriber, remove subscriber
+        if ( $has_llm_role && $has_subscriber ) {
+            $current_user->remove_role( 'subscriber' );
+            
+            // Log this action for debugging
+            if ( class_exists( 'LLMVM_Logger' ) ) {
+                LLMVM_Logger::log( 'Removed subscriber role from user with LLM role', array(
+                    'user_id' => $current_user->ID,
+                    'user_login' => $current_user->user_login,
+                    'remaining_roles' => $current_user->roles
+                ) );
+            }
+        }
     }
 
     /**
