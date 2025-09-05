@@ -50,13 +50,13 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
             vertical-align: top !important;
             padding: 8px 10px;
             margin: 0 !important;
-            border: 1px solid transparent; /* Debug: show cell boundaries */
+            border: 1px solid red !important; /* Debug: show cell boundaries */
         }
         .wp-list-table th {
             padding: 8px 10px;
             vertical-align: top !important;
             margin: 0 !important;
-            border: 1px solid transparent; /* Debug: show cell boundaries */
+            border: 1px solid blue !important; /* Debug: show cell boundaries */
         }
         /* Reset any default margins on content inside cells */
         .wp-list-table td * {
@@ -76,13 +76,13 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         @media (min-width: 768px) {
             .wp-list-table {
                 width: 100% !important;
-                min-width: 1600px !important;
+                min-width: 2000px !important;
             }
         }
         @media (min-width: 1200px) {
             .wp-list-table {
                 width: 100% !important;
-                min-width: 1800px !important;
+                min-width: 2200px !important;
             }
         }
         /* Ensure the container doesn't limit width */
