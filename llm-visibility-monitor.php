@@ -174,8 +174,54 @@ function llmvm_init() {
 	if ( class_exists( 'LLMVM_Email_Reporter' ) ) {
 		( new LLMVM_Email_Reporter() )->hooks();
 	}
+
+	// Bypass SureCart admin restrictions for sc_customer role
+	llmvm_bypass_surecart_restrictions();
 }
 add_action( 'plugins_loaded', 'llmvm_init' );
+
+// Run bypass even earlier to catch SureCart before it registers hooks
+add_action( 'init', 'llmvm_bypass_surecart_restrictions', 1 );
+
+/**
+ * Bypass SureCart admin restrictions for sc_customer role.
+ */
+function llmvm_bypass_surecart_restrictions(): void {
+	// Only apply to users with sc_customer role
+	if ( ! current_user_can( 'sc_customer' ) ) {
+		return;
+	}
+
+	// Add a higher priority hook to prevent SureCart redirects
+	add_action( 'admin_init', 'llmvm_prevent_surecart_redirect', 5 );
+}
+
+/**
+ * Prevent SureCart redirect by running before SureCart's hook.
+ */
+function llmvm_prevent_surecart_redirect(): void {
+	// Only apply to users with sc_customer role
+	if ( ! current_user_can( 'sc_customer' ) ) {
+		return;
+	}
+
+	// Get current page
+	$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+	
+	// Allow access to specific LLM pages
+	$allowed_pages = array(
+		'llmvm-prompts',
+		'llmvm-dashboard',
+		'llmvm-result'
+	);
+
+	// If accessing an allowed page, prevent redirect by doing nothing
+	// This method runs at priority 5, before SureCart's priority 10
+	if ( in_array( $current_page, $allowed_pages, true ) ) {
+		// Do nothing - this prevents the redirect
+		return;
+	}
+}
 
 
 

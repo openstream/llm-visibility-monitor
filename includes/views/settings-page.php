@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <hr />
         
         <h3><?php echo esc_html__( 'Available Roles and Capabilities', 'llm-visibility-monitor' ); ?></h3>
-        <p><?php echo esc_html__( 'To grant limited admin access to other users, assign them the "LLM Manager Free" or "LLM Manager Pro" role through the WordPress Users page.', 'llm-visibility-monitor' ); ?></p>
+        <p><?php echo esc_html__( 'To grant limited admin access to other users, assign them the "LLM Manager Free", "LLM Manager Pro", or "SC Customer" role through the WordPress Users page.', 'llm-visibility-monitor' ); ?></p>
         
         <table class="widefat">
             <thead>
@@ -57,6 +57,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <tr>
                     <td><strong><?php echo esc_html__( 'LLM Manager Free', 'llm-visibility-monitor' ); ?></strong></td>
                     <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Free plan with basic usage limits', 'llm-visibility-monitor' ); ?></td>
+                </tr>
+                <tr>
+                    <td><strong><?php echo esc_html__( 'SC Customer', 'llm-visibility-monitor' ); ?></strong></td>
+                    <td><?php echo esc_html__( 'Limited access: Prompts, Dashboard, Results (no Settings) - Free plan with basic usage limits. Can bypass /wp-admin/ restrictions for specific pages.', 'llm-visibility-monitor' ); ?></td>
                 </tr>
                 <tr>
                     <td><strong><?php echo esc_html__( 'Other Roles', 'llm-visibility-monitor' ); ?></strong></td>

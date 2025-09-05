@@ -53,10 +53,12 @@ class LLMVM_Activator {
 		remove_role( 'llm_manager' );
 		remove_role( 'llm_manager_free' );
 		remove_role( 'llm_manager_pro' );
+		remove_role( 'sc_customer' );
 
 		// Create LLM Manager Free role (renamed from original LLM Manager).
 		add_role( 'llm_manager_free', __( 'LLM Manager Free', 'llm-visibility-monitor' ), array(
 			'read'                    => true,
+			'level_1'                 => true, // Required for basic admin access
 			'llmvm_manage_prompts'    => true,
 			'llmvm_view_dashboard'    => true,
 			'llmvm_view_results'      => true,
@@ -66,10 +68,22 @@ class LLMVM_Activator {
 		// Create LLM Manager Pro role.
 		add_role( 'llm_manager_pro', __( 'LLM Manager Pro', 'llm-visibility-monitor' ), array(
 			'read'                    => true,
+			'level_1'                 => true, // Required for basic admin access
 			'llmvm_manage_prompts'    => true,
 			'llmvm_view_dashboard'    => true,
 			'llmvm_view_results'      => true,
 			'llmvm_pro_plan'          => true,
+		) );
+
+		// Create SC Customer role with limited admin access.
+		add_role( 'sc_customer', __( 'SC Customer', 'llm-visibility-monitor' ), array(
+			'read'                    => true,
+			'level_1'                 => true, // Required for basic admin access
+			'edit_posts'             => true, // Required to bypass SureCart admin restrictions
+			'llmvm_manage_prompts'    => true,
+			'llmvm_view_dashboard'    => true,
+			'llmvm_view_results'      => true,
+			'llmvm_free_plan'         => true,
 		) );
 
 		// Add LLM capabilities to administrator role.

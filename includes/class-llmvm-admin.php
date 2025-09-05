@@ -58,6 +58,13 @@ class LLMVM_Admin {
         add_action( 'admin_notices', [ $this, 'admin_notices' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
 
+        // Hide specific menu items for LLM Manager roles
+        add_action( 'admin_menu', [ $this, 'hide_menu_items_for_llm_managers' ], 999 );
+
+        // Add Subscription menu item
+        add_action( 'admin_menu', [ $this, 'add_subscription_menu' ], 1000 );
+
+
         // Form handlers for prompts CRUD.
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
         add_action( 'admin_post_llmvm_edit_prompt', [ $this, 'handle_edit_prompt' ] );
@@ -77,6 +84,67 @@ class LLMVM_Admin {
         add_action( 'edit_user_profile', [ $this, 'add_timezone_field' ] );
         add_action( 'personal_options_update', [ $this, 'save_timezone_field' ] );
         add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
+    }
+
+    /**
+     * Hide specific menu items for LLM Manager roles.
+     */
+    public function hide_menu_items_for_llm_managers(): void {
+        // Only apply to LLM Manager roles
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) || current_user_can( 'llmvm_manage_settings' ) ) {
+            return;
+        }
+
+        // Remove Dashboard menu
+        remove_menu_page( 'index.php' );
+
+        // Remove Posts menu
+        remove_menu_page( 'edit.php' );
+
+        // Remove Comments menu
+        remove_menu_page( 'edit-comments.php' );
+    }
+
+    /**
+     * Add Subscription menu item that links to customer dashboard.
+     */
+    public function add_subscription_menu(): void {
+        // Only show for users with LLM capabilities (not regular subscribers)
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) && ! current_user_can( 'llmvm_view_dashboard' ) ) {
+            return;
+        }
+
+        // Add the Subscription menu item after Tools
+        add_menu_page(
+            __( 'Subscription', 'llm-visibility-monitor' ),
+            __( 'Subscription', 'llm-visibility-monitor' ),
+            'read', // Basic read capability
+            'subscription',
+            [ $this, 'subscription_page_content' ],
+            'dashicons-cart', // Shopping cart icon
+            61 // Position after Tools (which is at 60)
+        );
+    }
+
+    /**
+     * Subscription page content with JavaScript redirect.
+     */
+    public function subscription_page_content(): void {
+        $redirect_url = home_url( '/customer-dashboard/' );
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e( 'Subscription', 'llm-visibility-monitor' ); ?></h1>
+            <p><?php esc_html_e( 'Redirecting to your subscription dashboard...', 'llm-visibility-monitor' ); ?></p>
+            <p><a href="<?php echo esc_url( $redirect_url ); ?>" class="button button-primary"><?php esc_html_e( 'Go to Subscription Dashboard', 'llm-visibility-monitor' ); ?></a></p>
+        </div>
+        
+        <script type="text/javascript">
+            // Redirect after a short delay
+            setTimeout(function() {
+                window.location.href = '<?php echo esc_js( $redirect_url ); ?>';
+            }, 1000);
+        </script>
+        <?php
     }
 
     /**
