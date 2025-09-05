@@ -655,14 +655,6 @@ class LLMVM_Email_Reporter {
             error_log( 'LLMVM Email Formatted: ' . substr( $formatted, 0, 500 ) );
         }
         
-        // Temporary direct file debugging (remove after testing)
-        file_put_contents( ABSPATH . 'llmvm-debug.txt', 
-            "=== EMAIL FORMAT DEBUG ===\n" .
-            "Original: " . substr( $answer, 0, 500 ) . "\n" .
-            "Formatted: " . substr( $formatted, 0, 500 ) . "\n" .
-            "Time: " . date( 'Y-m-d H:i:s' ) . "\n\n", 
-            FILE_APPEND | LOCK_EX 
-        );
         
         // Convert **bold** to <strong> (non-greedy match)
         $formatted = preg_replace( '/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $formatted );
@@ -704,13 +696,6 @@ class LLMVM_Email_Reporter {
             error_log( 'LLMVM List Input: ' . substr( $text, 0, 300 ) );
         }
         
-        // Temporary direct file debugging (remove after testing)
-        file_put_contents( ABSPATH . 'llmvm-debug.txt', 
-            "=== LIST CONVERSION DEBUG ===\n" .
-            "Input: " . substr( $text, 0, 300 ) . "\n" .
-            "Time: " . date( 'Y-m-d H:i:s' ) . "\n\n", 
-            FILE_APPEND | LOCK_EX 
-        );
         
         // Split into lines
         $lines = explode( "\n", $text );
@@ -727,13 +712,6 @@ class LLMVM_Email_Reporter {
                 error_log( 'LLMVM Processing line: ' . $trimmed );
             }
             
-            // Temporary direct file debugging for numbered lines
-            if ( preg_match( '/^\s*\d+[\.\):]/', $trimmed ) ) {
-                file_put_contents( ABSPATH . 'llmvm-debug.txt', 
-                    "Processing numbered line: " . $trimmed . "\n", 
-                    FILE_APPEND | LOCK_EX 
-                );
-            }
             
             // Check for unordered list items (starting with - or * or +)
             if ( preg_match( '/^[\s]*[-*+][\s]+(.+)$/', $trimmed, $matches ) ) {
@@ -753,17 +731,13 @@ class LLMVM_Email_Reporter {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
                     }
-                    $result[] = '<ol style="list-style-type: none; padding-left: 0;">';
+                    $result[] = '<ol style="list-style-type: decimal; padding-left: 20px;">';
                     $in_list = true;
                     $list_type = 'ol';
-                    $list_counter = 1; // Reset counter for new list
                 }
-                // Remove any existing numbers from the content and add our own
+                // Keep the original content as-is, don't add our own numbers
                 $content = trim( $matches[1] );
-                // Remove any leading numbers that might be in the content
-                $content = preg_replace( '/^\d+[\.\):]\s*/', '', $content );
-                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . $content . '</li>';
-                $list_counter++;
+                $result[] = '<li style="margin: 5px 0;">' . $content . '</li>';
             }
             // Check for list items that might be missing proper formatting (fallback)
             elseif ( preg_match( '/^[\s]*(\d+)[\s]+(.+)$/', $trimmed, $matches ) && strlen( $trimmed ) > 10 ) {
@@ -771,17 +745,13 @@ class LLMVM_Email_Reporter {
                     if ( $in_list ) {
                         $result[] = '</' . $list_type . '>';
                     }
-                    $result[] = '<ol>';
+                    $result[] = '<ol style="list-style-type: decimal; padding-left: 20px;">';
                     $in_list = true;
                     $list_type = 'ol';
-                    $list_counter = 1;
                 }
-                // Remove any existing numbers from the content and add our own
+                // Keep the original content as-is
                 $content = trim( $matches[2] );
-                // Remove any leading numbers that might be in the content
-                $content = preg_replace( '/^\d+[\.\):]\s*/', '', $content );
-                $result[] = '<li style="margin: 5px 0;"><strong>' . $list_counter . '.</strong> ' . $content . '</li>';
-                $list_counter++;
+                $result[] = '<li style="margin: 5px 0;">' . $content . '</li>';
             }
             // Empty line - don't break the list, just add the line
             elseif ( $trimmed === '' ) {

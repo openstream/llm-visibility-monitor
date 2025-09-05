@@ -198,14 +198,6 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                             if ( '' === trim( $answer ) ) {
                                 echo '<em>' . esc_html__( 'No answer (see logs for details)', 'llm-visibility-monitor' ) . '</em>';
                             } else {
-                                // Debug: Log the raw answer to see what the LLM actually returned
-                                file_put_contents( ABSPATH . 'llmvm-raw-debug.txt', 
-                                    "=== RAW ANSWER DEBUG ===\n" .
-                                    "Model: " . ( $row['model'] ?? '' ) . "\n" .
-                                    "Raw Answer: " . substr( $answer, 0, 1000 ) . "\n" .
-                                    "Time: " . date( 'Y-m-d H:i:s' ) . "\n\n", 
-                                    FILE_APPEND | LOCK_EX 
-                                );
                                 
                                 echo esc_html( wp_trim_words( $answer, 36 ) ?: '' );
                             }
