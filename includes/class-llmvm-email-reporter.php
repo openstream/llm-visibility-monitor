@@ -295,6 +295,16 @@ class LLMVM_Email_Reporter {
             display: inline-block; 
             min-width: 50px; 
         }
+        .model-badge {
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 2px;
+        }
         
         /* Mobile responsive styles */
         @media only screen and (max-width: 768px) {
@@ -626,11 +636,11 @@ class LLMVM_Email_Reporter {
                 if ( $email_type === 'admin' ) {
                     $result_user = get_user_by( 'id', $result_user_id );
                     $user_display = $result_user ? $result_user->display_name : 'Unknown User';
-                    $html .= '<div class="meta-item"><span class="meta-label">User:</span> ' . esc_html( $user_display ) . '</div>';
+                    $html .= '<div class="meta-item">' . esc_html( $user_display ) . '</div>';
                 }
                 
-                $html .= '<div class="meta-item"><span class="meta-label">Date:</span> ' . esc_html( $date ) . '</div>
-                            <div class="meta-item"><span class="meta-label">Model:</span> ' . esc_html( $model ) . '</div>
+                $html .= '<div class="meta-item">' . esc_html( $date ) . '</div>
+                            <div class="meta-item"><span class="model-badge">' . esc_html( $model ) . '</span></div>
                         </td>
                         <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
                         <td class="answer-col" data-label="Answer">
