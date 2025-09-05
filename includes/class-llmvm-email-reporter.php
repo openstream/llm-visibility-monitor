@@ -277,10 +277,24 @@ class LLMVM_Email_Reporter {
         
         /* Column widths for desktop - optimized for content */
         .date-col { width: 15%; min-width: 150px; }
-        .prompt-col { width: 20%; min-width: 150px; }
+        .prompt-col { width: 25%; min-width: 180px; }
         .model-col { width: 20%; min-width: 160px; }
-        .answer-col { width: 45%; }
+        .answer-col { width: 60%; }
         .user-col { width: 10%; min-width: 100px; }
+        
+        /* Combined column styles for better space utilization */
+        .combined-meta-col { width: 25%; min-width: 200px; }
+        .combined-meta-col .meta-item { 
+            margin-bottom: 3px; 
+            font-size: 12px; 
+            line-height: 1.3;
+        }
+        .combined-meta-col .meta-label { 
+            font-weight: 600; 
+            color: #495057; 
+            display: inline-block; 
+            min-width: 50px; 
+        }
         
         /* Mobile responsive styles */
         @media only screen and (max-width: 768px) {
@@ -581,12 +595,12 @@ class LLMVM_Email_Reporter {
                         <tr>';
                 
             if ( $email_type === 'admin' ) {
-                $html .= '<th class="user-col">User</th>';
+                $html .= '<th class="combined-meta-col">User & Date & Model</th>';
+            } else {
+                $html .= '<th class="combined-meta-col">Date & Model</th>';
             }
             
-            $html .= '<th class="date-col">Date (UTC)</th>
-                            <th class="prompt-col">Prompt</th>
-                            <th class="model-col">Model</th>
+            $html .= '<th class="prompt-col">Prompt</th>
                             <th class="answer-col">Answer</th>
                         </tr>
                     </thead>
@@ -606,19 +620,23 @@ class LLMVM_Email_Reporter {
                 $html .= '
                         <tr>';
                 
+                // Combined meta column
+                $html .= '<td class="combined-meta-col" data-label="Meta">';
+                
                 if ( $email_type === 'admin' ) {
                     $result_user = get_user_by( 'id', $result_user_id );
                     $user_display = $result_user ? $result_user->display_name : 'Unknown User';
-                    $html .= '<td class="user-col" data-label="User">' . esc_html( $user_display ) . '</td>';
+                    $html .= '<div class="meta-item"><span class="meta-label">User:</span> ' . esc_html( $user_display ) . '</div>';
                 }
                 
-                $html .= '<td class="date-col" data-label="Date">' . esc_html( $date ) . '</td>
-                            <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
-                            <td class="model-col" data-label="Model">' . esc_html( $model ) . '</td>
-                            <td class="answer-col" data-label="Answer">
-                                <div class="answer-content">' . $formatted_answer . '</div>
-                            </td>
-                        </tr>';
+                $html .= '<div class="meta-item"><span class="meta-label">Date:</span> ' . esc_html( $date ) . '</div>
+                            <div class="meta-item"><span class="meta-label">Model:</span> ' . esc_html( $model ) . '</div>
+                        </td>
+                        <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
+                        <td class="answer-col" data-label="Answer">
+                            <div class="answer-content">' . $formatted_answer . '</div>
+                        </td>
+                    </tr>';
             }
 
             $html .= '
