@@ -124,7 +124,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
-### 0.8.0 - 2025-01-15
+### 0.8.0 - 2025-09-05
 - **Enhancement**: Improved email report rendering and mobile responsiveness
   - Enhanced email report design for better desktop and mobile mail client compatibility
   - Optimized column widths and spacing in email table (Date: 15%, Prompt: 20%, Model: 20%, Answer: 45%, User: 10%)
@@ -138,7 +138,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
   - Manual numbering implementation to ensure consistent display across email clients
   - Better handling of markdown content from different LLM providers
 
-### 0.7.0 - 2025-01-15
+### 0.7.0 - 2025-09-04
 - **New Feature**: Dual-tier user role system
   - Added "LLM Manager Pro" role with higher usage limits
   - Renamed existing role to "LLM Manager Free" with basic limits
