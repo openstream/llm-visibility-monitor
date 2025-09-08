@@ -161,8 +161,30 @@ class LLMVM_Cron {
 		// Get the current user ID who is running the cron job
 		$current_user_id = get_current_user_id();
 		if ( $current_user_id === 0 ) {
-			// If no current user (e.g., system cron), use the prompt's user_id
-			$current_user_id = 1; // Default to admin
+			// If no current user (e.g., system cron), process all users
+			$current_user_id = null; // Will process all users
+		}
+
+		// If running as system cron (no current user), process all users
+		if ( $current_user_id === null ) {
+			// Get all unique user IDs from prompts
+			$user_ids = [];
+			foreach ( $prompts as $prompt_item ) {
+				$prompt_user_id = isset( $prompt_item['user_id'] ) ? (int) $prompt_item['user_id'] : 1;
+				if ( ! in_array( $prompt_user_id, $user_ids, true ) ) {
+					$user_ids[] = $prompt_user_id;
+				}
+			}
+			
+			LLMVM_Logger::log( 'System cron: processing all users', [ 'user_ids' => $user_ids ] );
+			
+			// Process each user individually
+			foreach ( $user_ids as $user_id ) {
+				$this->process_user_prompts( $user_id, $prompts, $client, $api_key, $model );
+			}
+			
+			LLMVM_Logger::log( 'System cron: completed processing all users' );
+			return;
 		}
 
 		// Check usage limits for non-admin users
@@ -184,26 +206,34 @@ class LLMVM_Cron {
 			}
 		}
 
-		// Filter prompts to only include those belonging to the current user
+		// Process prompts for the current user
+		$this->process_user_prompts( $current_user_id, $prompts, $client, $api_key, $model );
+	}
+
+	/**
+	 * Process prompts for a specific user.
+	 */
+	private function process_user_prompts( int $user_id, array $all_prompts, $client, string $api_key, string $model ): void {
+		// Filter prompts to only include those belonging to the specified user
 		$user_prompts = [];
-		foreach ( $prompts as $prompt_item ) {
+		foreach ( $all_prompts as $prompt_item ) {
 			$prompt_user_id = isset( $prompt_item['user_id'] ) ? (int) $prompt_item['user_id'] : 1;
-			if ( $prompt_user_id === $current_user_id ) {
+			if ( $prompt_user_id === $user_id ) {
 				$user_prompts[] = $prompt_item;
 			}
 		}
 
-		// Debug: Log the filtered prompts for the current user
+		// Debug: Log the filtered prompts for the user
 		LLMVM_Logger::log( 'User prompts filtered', [
-			'current_user_id' => $current_user_id,
-			'total_prompts' => count( $prompts ),
+			'user_id' => $user_id,
+			'total_prompts' => count( $all_prompts ),
 			'user_prompts_count' => count( $user_prompts ),
 			'user_prompt_ids' => array_column( $user_prompts, 'id' ),
 			'user_prompt_texts' => array_column( $user_prompts, 'text' )
 		] );
 
 		if ( empty( $user_prompts ) ) {
-			LLMVM_Logger::log( 'Run abort: no prompts found for current user', [ 'user_id' => $current_user_id ] );
+			LLMVM_Logger::log( 'No prompts found for user', [ 'user_id' => $user_id ] );
 			return;
 		}
 
@@ -223,9 +253,6 @@ class LLMVM_Cron {
 				$prompt_models = array( $model ); // Fall back to global default
 			}
 
-			// Use the current user ID who is running the job, not the prompt's stored user_id
-			$user_id = $current_user_id;
-
 			// Process each model for this prompt
 			foreach ( $prompt_models as $prompt_model ) {
 				LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
@@ -242,27 +269,27 @@ class LLMVM_Cron {
 				}
 			}
 		}
-		LLMVM_Logger::log( 'Run completed' );
+		LLMVM_Logger::log( 'User prompts processed', [ 'user_id' => $user_id ] );
 
 		// Track usage for non-admin users
-		if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+		if ( ! current_user_can( 'llmvm_manage_settings', $user_id ) ) {
 			$total_runs = 0;
-			foreach ( $prompts as $prompt_item ) {
+			foreach ( $user_prompts as $prompt_item ) {
 				if ( isset( $prompt_item['models'] ) && is_array( $prompt_item['models'] ) ) {
 					$total_runs += count( $prompt_item['models'] );
 				} else {
 					$total_runs += 1; // Fallback for single model
 				}
 			}
-			LLMVM_Database::increment_usage( $current_user_id, 0, $total_runs );
-			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $current_user_id, 'runs' => $total_runs ] );
+			LLMVM_Database::increment_usage( $user_id, 0, $total_runs );
+			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $user_id, 'runs' => $total_runs ] );
 		}
 
 		// Get the results that were just created for this user
-		$user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $current_user_id );
+		$user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $user_id );
 
 		// Fire action hook for email reporter and other extensions with user context
-		do_action( 'llmvm_run_completed', $current_user_id, $user_results );
+		do_action( 'llmvm_run_completed', $user_id, $user_results );
 	}
 
 	/**

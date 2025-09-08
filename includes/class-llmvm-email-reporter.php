@@ -36,9 +36,9 @@ class LLMVM_Email_Reporter {
         
         // Email reports enabled
         
-        // If no user results provided, fall back to old behavior (for backward compatibility)
+        // If no user results provided, fall back to getting current user's results
         if ( empty( $user_results ) ) {
-            $user_results = LLMVM_Database::get_latest_results( 10 );
+            $user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $user_id );
         }
         
         if ( empty( $user_results ) ) {
