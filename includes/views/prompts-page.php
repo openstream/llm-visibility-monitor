@@ -207,6 +207,7 @@ if ( $is_admin ) {
     // Display usage information for non-admin users
     if ( ! $is_admin ) {
         $usage_summary = LLMVM_Usage_Manager::get_usage_summary( $current_user_id );
+        
         ?>
         <div class="llmvm-usage-display" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 20px 0; border-radius: 4px;">
             <h3 style="margin-top: 0;"><?php echo esc_html__( 'Your Usage Summary', 'llm-visibility-monitor' ); ?> (<?php echo esc_html( $usage_summary['plan_name'] ); ?> Plan)</h3>
@@ -470,6 +471,23 @@ jQuery(document).ready(function($) {
         echo json_encode( $models, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP );
     ?>;
     
+    // Get user limits for validation
+    var userLimits = <?php 
+        $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+        echo json_encode( $limits, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP );
+    ?>;
+    
+    // TEMPORARY: Force free plan limits for testing (remove this after testing)
+    // Uncomment the next 3 lines to test with free plan limits regardless of user role
+    // userLimits = {
+    //     max_models_per_prompt: <?php 
+    //         $options = get_option( 'llmvm_options', array() );
+    //         echo isset( $options['free_max_models'] ) ? (int) $options['free_max_models'] : 3;
+    //     ?>,
+    //     plan_name: 'Free (Test Mode)'
+    // };
+    
+    
     // Fallback models if none are available
     if (!availableModels || !Array.isArray(availableModels) || availableModels.length === 0) {
         availableModels = [
@@ -627,6 +645,15 @@ jQuery(document).ready(function($) {
         // Add model to selection
         function addModel(model) {
             if (selectedModels.indexOf(model.id) === -1) {
+                // Check if user has reached the model limit
+                if (selectedModels.length >= userLimits.max_models_per_prompt) {
+                    alert('❌ Model limit reached!\n\n' +
+                          'You have reached your limit of ' + userLimits.max_models_per_prompt + ' models per prompt.\n' +
+                          'Plan: ' + userLimits.plan_name + '\n\n' +
+                          'Please remove a model first or upgrade your plan.');
+                    return;
+                }
+                
                 selectedModels.push(model.id);
                 updateDisplay();
                 updateHiddenInput();
@@ -673,6 +700,12 @@ jQuery(document).ready(function($) {
                     $selectedDiv.append($tag);
                 }
             });
+            
+            // Add model counter
+            var counterText = selectedModels.length + ' / ' + userLimits.max_models_per_prompt + ' models selected';
+            var counterColor = selectedModels.length >= userLimits.max_models_per_prompt ? '#d63638' : '#00a32a';
+            var $counter = $('<div class="llmvm-model-counter" style="margin-top: 5px; font-size: 12px; color: ' + counterColor + '; font-weight: bold;">' + counterText + '</div>');
+            $selectedDiv.append($counter);
         }
         
         // Update hidden input with selected models

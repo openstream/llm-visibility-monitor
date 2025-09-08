@@ -22,8 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Run completed. Latest responses are visible on the Dashboard.', 'llm-visibility-monitor' ) ?></p></div>
     <?php endif; ?>
+    
 
-    <form action="options.php" method="post">
+    <form action="options.php" method="post" id="llmvm-settings-form">
         <?php
         settings_fields( 'llmvm_settings' );
         do_settings_sections( 'llmvm-settings' );

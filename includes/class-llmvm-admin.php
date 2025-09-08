@@ -346,9 +346,15 @@ class LLMVM_Admin {
         $new['free_max_models'] = isset( $input['free_max_models'] ) ? max( 1, (int) $input['free_max_models'] ) : 3;
         $new['free_max_runs'] = isset( $input['free_max_runs'] ) ? max( 1, (int) $input['free_max_runs'] ) : 30;
         
+        // Force clear any cached options to ensure fresh values
+        wp_cache_delete( 'llmvm_options', 'options' );
+        
         $new['pro_max_prompts'] = isset( $input['pro_max_prompts'] ) ? max( 1, (int) $input['pro_max_prompts'] ) : 10;
         $new['pro_max_models'] = isset( $input['pro_max_models'] ) ? max( 1, (int) $input['pro_max_models'] ) : 6;
         $new['pro_max_runs'] = isset( $input['pro_max_runs'] ) ? max( 1, (int) $input['pro_max_runs'] ) : 300;
+        
+        
+        
 
         return $new;
     }
@@ -494,6 +500,12 @@ class LLMVM_Admin {
             $options = [];
         }
         $value = isset( $options['free_max_runs'] ) ? (int) $options['free_max_runs'] : 30;
+        
+        // Force clear any cached options to ensure fresh values
+        wp_cache_delete( 'llmvm_options', 'options' );
+        $options = get_option( 'llmvm_options', [] );
+        $value = isset( $options['free_max_runs'] ) ? (int) $options['free_max_runs'] : 30;
+        
         echo '<input type="number" name="llmvm_options[free_max_runs]" value="' . esc_attr( $value ) . '" min="1" class="small-text" />';
         echo '<p class="description">' . esc_html__( 'Maximum number of runs Free plan users can execute per month.', 'llm-visibility-monitor' ) . '</p>';
     }

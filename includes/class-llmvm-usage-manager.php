@@ -185,6 +185,7 @@ class LLMVM_Usage_Manager {
 			}
 		}
 		
+		
 		return array(
 			'plan_name' => $limits['plan_name'],
 			'prompts' => array(
