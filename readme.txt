@@ -109,6 +109,12 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Added proper cache clearing to ensure fresh values are saved and displayed
   * Improved settings form reliability and data integrity
   * Enhanced error handling and validation
+* **Bug Fix**: Fixed email reporter data passing issues
+  * Resolved issue where email reports were not being sent due to WordPress action hook parameter limitations
+  * Implemented global variable approach to reliably pass current run results to email reporter
+  * Email reports now correctly send only results from the current execution (not latest 10 from database)
+  * Fixed cross-user data leakage in email reports
+  * Enhanced email report reliability and data accuracy
 
 = 0.8.0 - 2025-09-05 =
 * **New Feature**: User-specific timezone preferences
