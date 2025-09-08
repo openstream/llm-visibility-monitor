@@ -115,6 +115,15 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Email reports now correctly send only results from the current execution (not latest 10 from database)
   * Fixed cross-user data leakage in email reports
   * Enhanced email report reliability and data accuracy
+* **Enhancement**: Optimized mobile email report layout and width utilization
+  * Increased prompt column width from 25% to 30% for better readability
+  * Increased answer column width from 50% to 55% for more content space
+  * Reduced meta column width from 25% to 20% to optimize space usage
+  * Enhanced mobile responsive design with better column width distribution
+  * Improved stacked card layout for screens ≤600px with full width utilization
+  * Removed unnecessary labels ("Meta:", "Prompt:", "Answer:") in mobile view for cleaner presentation
+  * Increased answer content max-height from 200px to 300px for better readability
+  * Better padding and spacing for improved mobile user experience
 
 = 0.8.0 - 2025-09-05 =
 * **New Feature**: User-specific timezone preferences
