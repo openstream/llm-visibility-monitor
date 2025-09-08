@@ -2,6 +2,19 @@
 
 Monitor LLM responses on a schedule and store/export results.
 
+## Version 0.9.0
+
+### New Features & Improvements
+- **Model Limit Enforcement**: Free plan users are now limited to 3 models per prompt with client-side validation
+- **Visual Feedback**: Added model selection counter showing "X / Y models selected" with color coding
+- **Settings Caching Fix**: Resolved WordPress object caching issues that caused settings values to be reduced
+- **Enhanced User Experience**: Better validation and user feedback for model selection limits
+
+### Bug Fixes
+- Fixed systematic value reduction in settings (e.g., 50→44→46, 40→33, 30→27)
+- Improved settings form reliability and data integrity
+- Enhanced error handling and validation
+
 ## Requirements
 
 - WordPress 6.4+

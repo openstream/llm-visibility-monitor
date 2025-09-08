@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,18 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 4. Individual result detail view
 
 == Changelog ==
+
+= 0.9.0 =
+* **New Feature**: Model limit enforcement for free plan users
+  * Free plan users are now limited to 3 models per prompt with client-side validation
+  * Added visual counter showing "X / Y models selected" with color coding
+  * Alert notification when model limit is reached
+  * Enhanced user experience with better validation and feedback
+* **Bug Fix**: Resolved WordPress object caching issues in settings
+  * Fixed systematic value reduction in settings (e.g., 50→44→46, 40→33, 30→27)
+  * Added proper cache clearing to ensure fresh values are saved and displayed
+  * Improved settings form reliability and data integrity
+  * Enhanced error handling and validation
 
 = 0.8.0 =
 * **New Feature**: User-specific timezone preferences
