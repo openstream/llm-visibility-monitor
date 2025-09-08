@@ -303,7 +303,8 @@ class LLMVM_Cron {
 
 		// Store current run results in transient for email reporter
 		$transient_key = 'llmvm_current_run_results_' . $user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		$transient_stored = set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		LLMVM_Logger::log( 'Transient stored for user', [ 'key' => $transient_key, 'stored' => $transient_stored, 'results_count' => count( $current_run_results ) ] );
 		
 		// Fire action hook for email reporter and other extensions with user context
 		// Pass the results from the current run instead of fetching latest results
@@ -445,7 +446,8 @@ class LLMVM_Cron {
 
 		// Store current run results in transient for email reporter
 		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		$transient_stored = set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		LLMVM_Logger::log( 'Transient stored', [ 'key' => $transient_key, 'stored' => $transient_stored, 'results_count' => count( $current_run_results ) ] );
 		
 		// Fire action hook for email reporter and other extensions with user context
 		// Pass the results from the current run instead of fetching latest results

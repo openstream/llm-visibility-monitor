@@ -20,9 +20,14 @@ class LLMVM_Email_Reporter {
     /**
      * Send email report after a cron run completes.
      */
-    public function send_report_after_run( int $user_id = 0, $user_results_or_key = [] ): void {
+    public function send_report_after_run( $user_id = 0, $user_results_or_key = [] ): void {
         // Email reporter started
-        LLMVM_Logger::log( 'Email reporter called', [ 'user_id' => $user_id, 'user_results_or_key' => $user_results_or_key ] );
+        LLMVM_Logger::log( 'Email reporter called', [ 
+            'user_id' => $user_id, 
+            'user_results_or_key' => $user_results_or_key,
+            'user_results_or_key_type' => gettype( $user_results_or_key ),
+            'user_results_or_key_value' => var_export( $user_results_or_key, true )
+        ] );
         
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
