@@ -2,19 +2,6 @@
 
 Monitor LLM responses on a schedule and store/export results.
 
-## Version 0.9.0
-
-### New Features & Improvements
-- **Model Limit Enforcement**: Free plan users are now limited to 3 models per prompt with client-side validation
-- **Visual Feedback**: Added model selection counter showing "X / Y models selected" with color coding
-- **Settings Caching Fix**: Resolved WordPress object caching issues that caused settings values to be reduced
-- **Enhanced User Experience**: Better validation and user feedback for model selection limits
-
-### Bug Fixes
-- Fixed systematic value reduction in settings (e.g., 50→44→46, 40→33, 30→27)
-- Improved settings form reliability and data integrity
-- Enhanced error handling and validation
-
 ## Requirements
 
 - WordPress 6.4+
@@ -136,6 +123,18 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 4. If logging is enabled, check `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 
 ## Changelog
+
+### 0.9.0 - 2025-01-27
+- **New Feature**: Model limit enforcement for free plan users
+  - Free plan users are now limited to 3 models per prompt with client-side validation
+  - Added visual counter showing "X / Y models selected" with color coding
+  - Alert notification when model limit is reached
+  - Enhanced user experience with better validation and feedback
+- **Bug Fix**: Resolved WordPress object caching issues in settings
+  - Fixed systematic value reduction in settings (e.g., 50→44→46, 40→33, 30→27)
+  - Added proper cache clearing to ensure fresh values are saved and displayed
+  - Improved settings form reliability and data integrity
+  - Enhanced error handling and validation
 
 ### 0.8.0 - 2025-09-05
 - **New Feature**: User-specific timezone preferences
