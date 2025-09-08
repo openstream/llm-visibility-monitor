@@ -124,7 +124,7 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
-### 0.9.0 - 2025-01-27
+### 0.9.0 - 2025-09-08
 - **New Feature**: Model limit enforcement for free plan users
   - Free plan users are now limited to 3 models per prompt with client-side validation
   - Added visual counter showing "X / Y models selected" with color coding
