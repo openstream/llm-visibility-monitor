@@ -110,7 +110,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Improved settings form reliability and data integrity
   * Enhanced error handling and validation
 
-= 0.8.0 =
+= 0.8.0 - 2025-09-05 =
 * **New Feature**: User-specific timezone preferences
   * Added timezone setting in user profile page (/wp-admin/profile.php)
   * All users can set their preferred timezone for date display
@@ -130,7 +130,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Manual numbering implementation to ensure consistent display across email clients
   * Better handling of markdown content from different LLM providers
 
-= 0.7.0 =
+= 0.7.0 - 2025-09-04 =
 * **New Feature**: Dual-tier user role system
   * Added "LLM Manager Pro" role with higher usage limits
   * Renamed existing role to "LLM Manager Free" with basic limits
@@ -162,7 +162,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Generic role descriptions instead of hardcoded limits
   * Improved admin interface organization
 
-= 0.6.0 =
+= 0.6.0 - 2025-09-04 =
 * **New Feature**: Multi-model selection for prompts
   * Users can now select multiple AI models for each individual prompt
   * Searchable multi-select dropdown with real-time filtering
@@ -175,7 +175,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Better handling of model data and form submission
   * Fixed issues with model saving and display
 
-= 0.5.0 =
+= 0.5.0 - 2025-09-02 =
 * **New Feature**: Implemented role-based access control
   * Added "LLM Manager" role with limited admin access
   * LLM Managers can manage prompts, view dashboard, and view results
@@ -200,14 +200,14 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Enhanced cron job user context
   * Better user permission enforcement
 
-= 0.4.0 =
+= 0.4.0 - 2025-09-02 =
 * **New Feature**: Per-prompt model selection
   * Users can now specify a different OpenRouter model for each individual prompt
   * Falls back to global default model if no specific model is selected
   * Prevents duplicate prompts with the same text and model combination
   * Added admin notices for successful operations and warnings
 
-= 0.3.0 =
+= 0.3.0 - 2025-09-01 =
 * **Enhancement**: Improved dashboard table functionality
   * Added column sorting (click column headers to sort)
   * Implemented bulk delete functionality for results
@@ -217,7 +217,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Enhanced email reports with markdown to HTML conversion
   * Fixed vertical spacing between buttons and table
 
-= 0.2.0 =
+= 0.2.0 - 2025-08-27 =
 * **New Feature**: Email reporting system
   * Configurable email notifications for cron job results
   * HTML-formatted reports with prompt, model, and answer details
@@ -231,7 +231,7 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Graceful fallback for API errors
   * Better error handling and user feedback
 
-= 0.1.0 =
+= 0.1.0 - 2025-08-27 =
 * **Initial Release**: Core LLM monitoring functionality
   * OpenRouter API integration with secure API key storage
   * Prompt management (CRUD operations)
