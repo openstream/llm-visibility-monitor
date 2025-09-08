@@ -301,8 +301,9 @@ class LLMVM_Database {
 	 * @param string $model    The model used for the response.
 	 * @param string $answer   The response from the LLM.
 	 * @param int    $user_id  The user ID who owns this result.
+	 * @return int The ID of the inserted result, or 0 if insertion failed.
 	 */
-	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1 ): void {
+	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1 ): int {
 		global $wpdb;
 
 		// Log the insert attempt.
@@ -347,6 +348,7 @@ class LLMVM_Database {
 					'user_id'       => $user_id,
 				)
 			);
+			return 0;
 		} else {
 			LLMVM_Logger::log(
 				'Database insert successful',
@@ -358,6 +360,7 @@ class LLMVM_Database {
 					'user_id'       => $user_id,
 				)
 			);
+			return $wpdb->insert_id;
 		}
 	}
 

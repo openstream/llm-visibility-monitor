@@ -36,13 +36,9 @@ class LLMVM_Email_Reporter {
         
         // Email reports enabled
         
-        // If no user results provided, fall back to getting current user's results
+        // If no user results provided, skip email (no results from current run)
         if ( empty( $user_results ) ) {
-            $user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $user_id );
-        }
-        
-        if ( empty( $user_results ) ) {
-            LLMVM_Logger::log( 'Email report: no results found, skipping' );
+            LLMVM_Logger::log( 'Email report: no results from current run, skipping', [ 'user_id' => $user_id ] );
             return;
         }
 
@@ -51,14 +47,14 @@ class LLMVM_Email_Reporter {
         $is_admin = $current_user && current_user_can( 'llmvm_manage_settings', $user_id );
         
         if ( $is_admin ) {
-            // Admin gets all results sent to admin email
+            // Admin gets current run results sent to admin email
             $recipient_email = get_option( 'admin_email' );
-            $results_to_send = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, 0 ); // All results
+            $results_to_send = $user_results; // Current run results
             $email_type = 'admin';
         } else {
-            // Regular user gets only their results sent to their email
+            // Regular user gets only their current run results sent to their email
             $recipient_email = $current_user ? $current_user->user_email : '';
-            $results_to_send = $user_results; // Only user's results
+            $results_to_send = $user_results; // Current run results
             $email_type = 'user';
         }
         
@@ -68,7 +64,7 @@ class LLMVM_Email_Reporter {
         }
 
         // Prepare email content
-        $subject = sprintf( '[%s] LLM Visibility Monitor Report', get_bloginfo( 'name' ) );
+        $subject = sprintf( '[%s] LLM Visibility Monitor - Run Results', get_bloginfo( 'name' ) );
         $message = $this->generate_report_email( $results_to_send, $email_type, $current_user );
 
         // Send email
@@ -574,9 +570,9 @@ class LLMVM_Email_Reporter {
             <p>Generated on ' . current_time( 'F j, Y \a\t g:i A T' ) . '</p>';
         
         if ( $email_type === 'user' && $user ) {
-            $html .= '<p>Report for: ' . esc_html( $user->display_name ) . '</p>';
+            $html .= '<p>Run Results for: ' . esc_html( $user->display_name ) . '</p>';
         } elseif ( $email_type === 'admin' ) {
-            $html .= '<p>Administrator Report (All Users)</p>';
+            $html .= '<p>Administrator Run Results</p>';
         }
         
         $html .= '</div>

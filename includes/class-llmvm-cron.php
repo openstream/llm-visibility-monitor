@@ -237,6 +237,9 @@ class LLMVM_Cron {
 			return;
 		}
 
+		// Track results from this run
+		$current_run_results = [];
+
 		foreach ( $user_prompts as $prompt_item ) {
 			$prompt_text = isset( $prompt_item['text'] ) ? (string) $prompt_item['text'] : '';
 			if ( '' === trim( $prompt_text ) ) {
@@ -263,7 +266,20 @@ class LLMVM_Cron {
 				$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
 				LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-				LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+				$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+				
+				// Track this result for the current run
+				if ( $result_id ) {
+					$current_run_results[] = [
+						'id' => $result_id,
+						'prompt' => $prompt_text,
+						'model' => $resp_model,
+						'answer' => $answer,
+						'user_id' => $user_id,
+						'created_at' => current_time( 'mysql' )
+					];
+				}
+				
 				if ( $status && $status >= 400 ) {
 					LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
 				}
@@ -285,11 +301,9 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $user_id, 'runs' => $total_runs ] );
 		}
 
-		// Get the results that were just created for this user
-		$user_results = LLMVM_Database::get_latest_results( 10, 'created_at', 'DESC', 0, $user_id );
-
 		// Fire action hook for email reporter and other extensions with user context
-		do_action( 'llmvm_run_completed', $user_id, $user_results );
+		// Pass the results from the current run instead of fetching latest results
+		do_action( 'llmvm_run_completed', $user_id, $current_run_results );
 	}
 
 	/**
@@ -379,6 +393,9 @@ class LLMVM_Cron {
 		// Use the current user ID who is running the job
 		$user_id = $current_user_id;
 
+		// Track results from this run
+		$current_run_results = [];
+
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
 			LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
@@ -389,7 +406,20 @@ class LLMVM_Cron {
 			$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
 
 			LLMVM_Logger::log( 'Inserting single prompt result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-			LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+			$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+			
+			// Track this result for the current run
+			if ( $result_id ) {
+				$current_run_results[] = [
+					'id' => $result_id,
+					'prompt' => $prompt_text,
+					'model' => $resp_model,
+					'answer' => $answer,
+					'user_id' => $user_id,
+					'created_at' => current_time( 'mysql' )
+				];
+			}
+			
 			if ( $status && $status >= 400 ) {
 				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
 			}
@@ -404,11 +434,9 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for single prompt run', [ 'user_id' => $current_user_id, 'runs' => $runs_count ] );
 		}
 
-		// Get the result that was just created
-		$user_results = LLMVM_Database::get_latest_results( 1, 'created_at', 'DESC', 0, $current_user_id );
-
 		// Fire action hook for email reporter and other extensions with user context
-		do_action( 'llmvm_run_completed', $current_user_id, $user_results );
+		// Pass the results from the current run instead of fetching latest results
+		do_action( 'llmvm_run_completed', $current_user_id, $current_run_results );
 	}
 
 	/**
