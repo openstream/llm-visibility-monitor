@@ -415,10 +415,12 @@ class LLMVM_Email_Reporter {
                     border: 1px solid #e9ecef;
                     border-radius: 8px;
                     margin-bottom: 15px;
+                    margin-left: 8px;
+                    margin-right: 8px;
                     padding: 15px;
                     background: #ffffff;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    width: 100%;
+                    width: calc(100% - 16px);
                 }
                 
                 .results-table td {
@@ -746,7 +748,10 @@ class LLMVM_Email_Reporter {
         // Convert markdown-style formatting to HTML
         $formatted = $answer;
         
-        // Convert markdown lists to HTML lists (do this first to avoid conflicts)
+        // Convert markdown tables to HTML tables (do this first to avoid conflicts)
+        $formatted = $this->convert_markdown_tables( $formatted );
+        
+        // Convert markdown lists to HTML lists (do this after tables to avoid conflicts)
         $formatted = $this->convert_markdown_lists( $formatted );
         
         // Debug: Log the original and formatted result to see what's being generated
@@ -874,5 +879,95 @@ class LLMVM_Email_Reporter {
         }
         
         return implode( "\n", $result );
+    }
+
+    /**
+     * Convert markdown tables to HTML tables with mobile-responsive styling.
+     */
+    private function convert_markdown_tables( string $text ): string {
+        // Split into lines
+        $lines = explode( "\n", $text );
+        $result = [];
+        $in_table = false;
+        $table_rows = [];
+        $header_row = null;
+        
+        foreach ( $lines as $line ) {
+            $trimmed = trim( $line );
+            
+            // Check if this line looks like a table row (contains |)
+            if ( strpos( $trimmed, '|' ) !== false && ! empty( $trimmed ) ) {
+                // Check if this is a separator row (contains only |, -, :, and spaces)
+                if ( preg_match( '/^[\s]*\|?[\s]*:?-+:?[\s]*(\|[\s]*:?-+:?[\s]*)*\|?[\s]*$/', $trimmed ) ) {
+                    // This is a separator row, skip it
+                    continue;
+                }
+                
+                // This is a data row
+                if ( ! $in_table ) {
+                    $in_table = true;
+                    $table_rows = [];
+                }
+                
+                // Split by | and clean up
+                $cells = array_map( 'trim', explode( '|', $trimmed ) );
+                // Remove empty first/last elements if they exist (from leading/trailing |)
+                if ( empty( $cells[0] ) ) {
+                    array_shift( $cells );
+                }
+                if ( empty( $cells[count( $cells ) - 1] ) ) {
+                    array_pop( $cells );
+                }
+                
+                $table_rows[] = $cells;
+            } else {
+                // Not a table row
+                if ( $in_table ) {
+                    // Close the table
+                    $result[] = $this->generate_html_table( $table_rows );
+                    $in_table = false;
+                    $table_rows = [];
+                }
+                $result[] = $line;
+            }
+        }
+        
+        // Close any remaining table
+        if ( $in_table ) {
+            $result[] = $this->generate_html_table( $table_rows );
+        }
+        
+        return implode( "\n", $result );
+    }
+
+    /**
+     * Generate HTML table from array of rows with mobile-responsive styling.
+     */
+    private function generate_html_table( array $rows ): string {
+        if ( empty( $rows ) ) {
+            return '';
+        }
+        
+        $html = '<div style="overflow-x: auto; margin: 15px 0;">';
+        $html .= '<table style="width: 100%; border-collapse: collapse; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+        
+        foreach ( $rows as $index => $row ) {
+            $is_header = ( $index === 0 );
+            $tag = $is_header ? 'th' : 'td';
+            $style = $is_header 
+                ? 'background: #f8f9fa; color: #495057; font-weight: 600; padding: 12px 8px; border-bottom: 2px solid #dee2e6; text-align: left; font-size: 13px;'
+                : 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; font-size: 13px; vertical-align: top;';
+            
+            $html .= '<tr>';
+            foreach ( $row as $cell ) {
+                $html .= '<' . $tag . ' style="' . $style . '">' . esc_html( $cell ) . '</' . $tag . '>';
+            }
+            $html .= '</tr>';
+        }
+        
+        $html .= '</table>';
+        $html .= '</div>';
+        
+        return $html;
     }
 }
