@@ -20,9 +20,9 @@ class LLMVM_Email_Reporter {
     /**
      * Send email report after a cron run completes.
      */
-    public function send_report_after_run( int $user_id = 0, array $user_results = [] ): void {
+    public function send_report_after_run( int $user_id = 0, $user_results_or_key = [] ): void {
         // Email reporter started
-        LLMVM_Logger::log( 'Email reporter called', [ 'user_id' => $user_id, 'results_count' => count( $user_results ), 'results' => $user_results ] );
+        LLMVM_Logger::log( 'Email reporter called', [ 'user_id' => $user_id, 'user_results_or_key' => $user_results_or_key ] );
         
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
@@ -36,6 +36,20 @@ class LLMVM_Email_Reporter {
         }
         
         // Email reports enabled
+        
+        // Handle both old format (array) and new format (transient key)
+        $user_results = [];
+        if ( is_string( $user_results_or_key ) && strpos( $user_results_or_key, 'llmvm_current_run_results_' ) === 0 ) {
+            // New format: transient key
+            $user_results = get_transient( $user_results_or_key );
+            LLMVM_Logger::log( 'Retrieved results from transient', [ 'key' => $user_results_or_key, 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
+            if ( $user_results !== false ) {
+                delete_transient( $user_results_or_key ); // Clean up
+            }
+        } elseif ( is_array( $user_results_or_key ) ) {
+            // Old format: direct array
+            $user_results = $user_results_or_key;
+        }
         
         // If no user results provided, skip email (no results from current run)
         if ( empty( $user_results ) ) {

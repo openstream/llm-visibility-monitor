@@ -301,9 +301,14 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $user_id, 'runs' => $total_runs ] );
 		}
 
+		// Store current run results in transient for email reporter
+		$transient_key = 'llmvm_current_run_results_' . $user_id . '_' . time();
+		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		
 		// Fire action hook for email reporter and other extensions with user context
 		// Pass the results from the current run instead of fetching latest results
-		do_action( 'llmvm_run_completed', $user_id, $current_run_results );
+		LLMVM_Logger::log( 'Firing email action for user', [ 'user_id' => $user_id, 'results_count' => count( $current_run_results ), 'transient_key' => $transient_key ] );
+		do_action( 'llmvm_run_completed', $user_id, $transient_key );
 	}
 
 	/**
@@ -438,10 +443,14 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for single prompt run', [ 'user_id' => $current_user_id, 'runs' => $runs_count ] );
 		}
 
+		// Store current run results in transient for email reporter
+		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
+		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
+		
 		// Fire action hook for email reporter and other extensions with user context
 		// Pass the results from the current run instead of fetching latest results
-		LLMVM_Logger::log( 'Firing email action', [ 'user_id' => $current_user_id, 'results_count' => count( $current_run_results ) ] );
-		do_action( 'llmvm_run_completed', $current_user_id, $current_run_results );
+		LLMVM_Logger::log( 'Firing email action', [ 'user_id' => $current_user_id, 'results_count' => count( $current_run_results ), 'transient_key' => $transient_key ] );
+		do_action( 'llmvm_run_completed', $current_user_id, $transient_key );
 	}
 
 	/**
