@@ -455,12 +455,14 @@ class LLMVM_Email_Reporter {
                 
                 /* Full width utilization for prompt and answer */
                 .results-table td[data-label="Prompt"],
-                .results-table td[data-label="Answer"] {
+                .results-table td[data-label="Answer"],
+                .results-table td[data-label="Meta"] {
                     padding-left: 0;
                 }
                 
                 .results-table td[data-label="Prompt"]:before,
-                .results-table td[data-label="Answer"]:before {
+                .results-table td[data-label="Answer"]:before,
+                .results-table td[data-label="Meta"]:before {
                     display: none;
                 }
                 
