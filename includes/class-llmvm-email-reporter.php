@@ -415,12 +415,12 @@ class LLMVM_Email_Reporter {
                     border: 1px solid #e9ecef;
                     border-radius: 8px;
                     margin-bottom: 15px;
-                    margin-left: 4px;
-                    margin-right: 4px;
+                    margin-left: 0;
+                    margin-right: 0;
                     padding: 15px;
                     background: #ffffff;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    width: calc(100% - 8px);
+                    width: 90%;
                 }
                 
                 .results-table td {
