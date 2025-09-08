@@ -409,6 +409,7 @@ class LLMVM_Cron {
 			$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
 			
 			// Track this result for the current run
+			LLMVM_Logger::log( 'Result tracking debug', [ 'result_id' => $result_id, 'current_run_results_count' => count( $current_run_results ) ] );
 			if ( $result_id ) {
 				$current_run_results[] = [
 					'id' => $result_id,
@@ -418,6 +419,9 @@ class LLMVM_Cron {
 					'user_id' => $user_id,
 					'created_at' => current_time( 'mysql' )
 				];
+				LLMVM_Logger::log( 'Result added to current run', [ 'result_id' => $result_id, 'new_count' => count( $current_run_results ) ] );
+			} else {
+				LLMVM_Logger::log( 'Failed to track result - no result_id returned' );
 			}
 			
 			if ( $status && $status >= 400 ) {
@@ -436,6 +440,7 @@ class LLMVM_Cron {
 
 		// Fire action hook for email reporter and other extensions with user context
 		// Pass the results from the current run instead of fetching latest results
+		LLMVM_Logger::log( 'Firing email action', [ 'user_id' => $current_user_id, 'results_count' => count( $current_run_results ) ] );
 		do_action( 'llmvm_run_completed', $current_user_id, $current_run_results );
 	}
 

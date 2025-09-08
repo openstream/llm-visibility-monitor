@@ -22,6 +22,7 @@ class LLMVM_Email_Reporter {
      */
     public function send_report_after_run( int $user_id = 0, array $user_results = [] ): void {
         // Email reporter started
+        LLMVM_Logger::log( 'Email reporter called', [ 'user_id' => $user_id, 'results_count' => count( $user_results ), 'results' => $user_results ] );
         
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
