@@ -150,6 +150,16 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
   - Removed unnecessary labels ("Meta:", "Prompt:", "Answer:") in mobile view for cleaner presentation
   - Increased answer content max-height from 200px to 300px for better readability
   - Better padding and spacing for improved mobile user experience
+  - Fine-tuned mobile card width to 90% to ensure full border visibility
+  - Aligned left border with other email text for consistent layout
+- **New Feature**: Markdown table support in email reports
+  - Added comprehensive markdown table to HTML conversion functionality
+  - Support for standard markdown table syntax with | separators
+  - Automatic detection and skipping of separator rows (|----|)
+  - Mobile-responsive HTML tables with horizontal scrolling
+  - First row automatically becomes table header with distinct styling
+  - Professional styling with borders, shadows, and proper spacing
+  - Consistent design integration with existing email report theme
 
 ### 0.8.0 - 2025-09-05
 - **New Feature**: User-specific timezone preferences
