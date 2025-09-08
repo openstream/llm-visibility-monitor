@@ -26,7 +26,8 @@ class LLMVM_Email_Reporter {
             'user_id' => $user_id, 
             'user_results_or_key' => $user_results_or_key,
             'user_results_or_key_type' => gettype( $user_results_or_key ),
-            'user_results_or_key_value' => var_export( $user_results_or_key, true )
+            'user_results_or_key_value' => var_export( $user_results_or_key, true ),
+            'global_transient_key' => isset( $GLOBALS['llmvm_current_run_transient_key'] ) ? $GLOBALS['llmvm_current_run_transient_key'] : 'not_set'
         ] );
         
         $options = get_option( 'llmvm_options', [] );
@@ -42,17 +43,25 @@ class LLMVM_Email_Reporter {
         
         // Email reports enabled
         
-        // Handle both old format (array) and new format (transient key)
+        // Get results from current run using global transient key
         $user_results = [];
-        if ( is_string( $user_results_or_key ) && strpos( $user_results_or_key, 'llmvm_current_run_results_' ) === 0 ) {
-            // New format: transient key
+        if ( isset( $GLOBALS['llmvm_current_run_transient_key'] ) ) {
+            $transient_key = $GLOBALS['llmvm_current_run_transient_key'];
+            $user_results = get_transient( $transient_key );
+            LLMVM_Logger::log( 'Retrieved results from global transient', [ 'key' => $transient_key, 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
+            if ( $user_results !== false ) {
+                delete_transient( $transient_key ); // Clean up
+                unset( $GLOBALS['llmvm_current_run_transient_key'] ); // Clean up global
+            }
+        } elseif ( is_string( $user_results_or_key ) && strpos( $user_results_or_key, 'llmvm_current_run_results_' ) === 0 ) {
+            // Fallback: old format with transient key parameter
             $user_results = get_transient( $user_results_or_key );
-            LLMVM_Logger::log( 'Retrieved results from transient', [ 'key' => $user_results_or_key, 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
+            LLMVM_Logger::log( 'Retrieved results from parameter transient', [ 'key' => $user_results_or_key, 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
             if ( $user_results !== false ) {
                 delete_transient( $user_results_or_key ); // Clean up
             }
         } elseif ( is_array( $user_results_or_key ) ) {
-            // Old format: direct array
+            // Fallback: old format with direct array
             $user_results = $user_results_or_key;
         }
         
