@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.8.0' );
+define( 'LLMVM_VERSION', '0.10.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 /**

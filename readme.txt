@@ -140,6 +140,25 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
   * Removed duplicate "Login Page Customization" section on settings page
   * Proper form integration for all settings sections
   * Cleaner settings interface with no duplicate content
+* **New Feature**: Real-time Progress Tracking with Progress Bar
+  * Enhanced loading overlay with realistic progress bar instead of simulated progress
+  * Real-time progress updates via AJAX polling during prompt execution
+  * Server-side progress tracking using WordPress transients for reliable state management
+  * Progress messages show current step and detailed status (e.g., "Starting model: gpt-4o-mini")
+  * Accurate progress percentage based on actual completion status
+  * Progress bar reflects real execution time instead of estimated completion
+  * Enhanced user experience with accurate feedback during long-running operations
+* **Enhancement**: Web Search Progress Messages
+  * Progress messages now display `:online` suffix when web search is enabled
+  * Clear indication of which models are using web search capabilities
+  * Examples: "Starting model: gpt-4o-mini:online" and "Completed model: gpt-4o-mini:online"
+  * Better visibility into web search usage during prompt execution
+* **Bug Fix**: Fixed missing dates in email reports
+  * Resolved issue where email reports showed only green lines instead of timestamps
+  * Added missing `created_at` field to progress tracking result arrays
+  * Email reports now display proper timestamps for all results
+  * Fixed in both `run_with_progress()` and `run_single_prompt_with_progress()` methods
+  * Enhanced result data structure with complete timestamp information
 
 = 0.9.0 - 2025-09-08 =
 * **New Feature**: Model limit enforcement for free plan users
