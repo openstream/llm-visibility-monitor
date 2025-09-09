@@ -261,6 +261,10 @@ if ( $is_admin ) {
             <?php if ( $usage_summary['runs']['used'] >= $usage_summary['runs']['limit'] ) : ?>
                 <div style="color: #d63638; margin-top: 10px; font-weight: bold;">
                     ⚠️ <?php echo esc_html__( 'You have reached your monthly run limit. Your limit will reset next month.', 'llm-visibility-monitor' ); ?>
+                    <br>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=subscription' ) ); ?>" style="color: #0073aa; text-decoration: underline;">
+                        <?php echo esc_html__( 'Upgrade your plan to get more runs', 'llm-visibility-monitor' ); ?>
+                    </a>
                 </div>
             <?php endif; ?>
         </div>
