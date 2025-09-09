@@ -424,7 +424,6 @@ if ( $is_admin ) {
                 <tr>
                     <th class="llmvm-prompt-cell"><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
                     <th class="column-model"><?php echo esc_html__( 'Model & Actions', 'llm-visibility-monitor' ); ?></th>
-                    <th class="column-web-search"><?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -461,6 +460,14 @@ if ( $is_admin ) {
                                     <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_models[]" value="" />
+                                    <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
+                                        <input type="checkbox" 
+                                               id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
+                                               name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
+                                               value="1" 
+                                               <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
+                                        <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
+                                    </label>
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
@@ -473,16 +480,6 @@ if ( $is_admin ) {
                                     <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
                                 </a>
                             </div>
-                        </td>
-                        <td class="column-web-search">
-                            <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
-                                <input type="checkbox" 
-                                       id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
-                                       name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
-                                       value="1" 
-                                       <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
-                                <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
-                            </label>
                         </td>
                     </tr>
                 <?php endforeach; ?>
