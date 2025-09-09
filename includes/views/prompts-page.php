@@ -456,8 +456,8 @@ if ( $is_admin ) {
                                 <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" style="display: inline-block; margin-right: 15px;">
                                     <input type="checkbox" 
                                            id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
-                                           name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
-                                           value="1" 
+                                           class="llmvm-web-search-checkbox"
+                                           data-prompt-id="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"
                                            <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
                                     <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
                                 </label>
@@ -470,6 +470,7 @@ if ( $is_admin ) {
                                     <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_models[]" value="" />
+                                    <input type="hidden" id="llmvm-web-search-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo ! empty( $prompt['web_search'] ) ? '1' : '0'; ?>" />
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
@@ -1019,6 +1020,19 @@ jQuery(document).ready(function($) {
         
         if (confirmed) {
             window.location.href = originalHref;
+        }
+    });
+    
+    // Sync web search checkbox with hidden input field
+    document.querySelectorAll('.llmvm-web-search-checkbox').forEach(function(checkbox) {
+        var promptId = checkbox.getAttribute('data-prompt-id');
+        var hiddenInput = document.getElementById('llmvm-web-search-hidden-' + promptId);
+        
+        if (hiddenInput) {
+            // Update hidden input when checkbox changes
+            checkbox.addEventListener('change', function() {
+                hiddenInput.value = this.checked ? '1' : '0';
+            });
         }
     });
     
