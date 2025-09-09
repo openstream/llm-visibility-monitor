@@ -28,6 +28,34 @@ if ( ! defined( 'ABSPATH' ) ) {
         <?php
         settings_fields( 'llmvm_settings' );
         do_settings_sections( 'llmvm-settings' );
+        
+        // Add Login Page Customization section inside the form
+        if ( current_user_can( 'llmvm_manage_settings' ) ) :
+        ?>
+            <hr />
+            <h3><?php echo esc_html__( 'Login Page Customization', 'llm-visibility-monitor' ); ?></h3>
+            <p><?php echo esc_html__( 'Customize the WordPress login page with your own branding. The login page will show "LLM Visibility Monitor" instead of the WordPress logo, and you can add custom text below it.', 'llm-visibility-monitor' ); ?></p>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><?php echo esc_html__( 'Login Page Custom Text', 'llm-visibility-monitor' ); ?></th>
+                    <td>
+                        <?php
+                        $options = get_option( 'llmvm_options', [] );
+                        if ( ! is_array( $options ) ) {
+                            $options = [];
+                        }
+                        $value = isset( $options['login_custom_text'] ) ? (string) $options['login_custom_text'] : '';
+                        ?>
+                        <textarea name="llmvm_options[login_custom_text]" id="llmvm_login_custom_text" rows="5" cols="50" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
+                        <p class="description"><?php echo esc_html__( 'Enter custom text to display below the site name on the login page. You can use HTML tags like &lt;strong&gt;, &lt;em&gt;, and &lt;a&gt; for formatting.', 'llm-visibility-monitor' ); ?></p>
+                        <p class="description"><?php echo esc_html__( 'Example: &lt;strong&gt;Welcome!&lt;/strong&gt; Please log in to access &lt;a href="https://docs.openstream.ch"&gt;documentation&lt;/a&gt;.', 'llm-visibility-monitor' ); ?></p>
+                    </td>
+                </tr>
+            </table>
+        <?php
+        endif;
+        
         submit_button( __( 'Save Settings', 'llm-visibility-monitor' ) );
         ?>
     </form>
@@ -79,29 +107,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             </a>
         </p>
         
-        <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
-            <hr />
-            <h3><?php echo esc_html__( 'Login Page Customization', 'llm-visibility-monitor' ); ?></h3>
-            <p><?php echo esc_html__( 'Customize the WordPress login page with your own branding. The login page will show "LLM Visibility Monitor" instead of the WordPress logo, and you can add custom text below it.', 'llm-visibility-monitor' ); ?></p>
-            
-            <table class="form-table">
-                <tr>
-                    <th scope="row"><?php echo esc_html__( 'Login Page Custom Text', 'llm-visibility-monitor' ); ?></th>
-                    <td>
-                        <?php
-                        $options = get_option( 'llmvm_options', [] );
-                        if ( ! is_array( $options ) ) {
-                            $options = [];
-                        }
-                        $value = isset( $options['login_custom_text'] ) ? (string) $options['login_custom_text'] : '';
-                        ?>
-                        <textarea name="llmvm_options[login_custom_text]" id="llmvm_login_custom_text" rows="5" cols="50" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
-                        <p class="description"><?php echo esc_html__( 'Enter custom text to display below the site name on the login page. You can use HTML tags like &lt;strong&gt;, &lt;em&gt;, and &lt;a&gt; for formatting.', 'llm-visibility-monitor' ); ?></p>
-                        <p class="description"><?php echo esc_html__( 'Example: &lt;strong&gt;Welcome!&lt;/strong&gt; Please log in to access &lt;a href="https://docs.openstream.ch"&gt;documentation&lt;/a&gt;.', 'llm-visibility-monitor' ); ?></p>
-                    </td>
-                </tr>
-            </table>
-        <?php endif; ?>
     <?php endif; ?>
 </div>
 

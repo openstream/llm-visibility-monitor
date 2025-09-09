@@ -1448,6 +1448,7 @@ class LLMVM_Admin {
         <style type="text/css">
             #login h1 a {
                 background-image: none !important;
+                background: none !important;
                 width: auto !important;
                 height: auto !important;
                 text-indent: 0 !important;
@@ -1458,9 +1459,14 @@ class LLMVM_Admin {
                 line-height: 1.3 !important;
                 padding: 0 !important;
                 margin-bottom: 25px !important;
+                display: block !important;
+                text-align: center !important;
             }
             #login h1 {
                 padding-bottom: 0 !important;
+            }
+            #login h1 a:before {
+                content: none !important;
             }
             .llmvm-login-custom-text {
                 text-align: center;
