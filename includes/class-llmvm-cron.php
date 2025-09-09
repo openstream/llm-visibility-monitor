@@ -548,8 +548,14 @@ class LLMVM_Cron {
 
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
+			// Show model name with :online suffix if web search is enabled
+			$display_model = $prompt_model;
+			if ( ! empty( $prompt['web_search'] ) ) {
+				$display_model = $prompt_model . ':online';
+			}
+			
 			// Update progress to show we're starting this model
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $prompt_model );
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $display_model );
 
 			// Append :online to model if web search is enabled
 			$model_to_use = $prompt_model;
@@ -582,7 +588,7 @@ class LLMVM_Cron {
 			
 			// Update progress after model is completed
 			$current_step++;
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $prompt_model );
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $display_model );
 		}
 		}
 
@@ -673,8 +679,14 @@ class LLMVM_Cron {
 
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
+			// Show model name with :online suffix if web search is enabled
+			$display_model = $prompt_model;
+			if ( ! empty( $target_prompt['web_search'] ) ) {
+				$display_model = $prompt_model . ':online';
+			}
+			
 			// Update progress to show we're starting this model
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $prompt_model );
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $display_model );
 
 			// Append :online to model if web search is enabled
 			$model_to_use = $prompt_model;
@@ -707,7 +719,7 @@ class LLMVM_Cron {
 			
 			// Update progress after model is completed
 			$current_step++;
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $prompt_model );
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $display_model );
 		}
 
 		// Complete progress tracking
