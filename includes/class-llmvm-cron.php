@@ -566,7 +566,7 @@ class LLMVM_Cron {
 				$error = isset( $response['error'] ) ? (string) $response['error'] : '';
 
 				// Store result
-				$result = LLMVM_Database::store_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
+				$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
 				if ( $result ) {
 					$current_run_results[] = [
 						'prompt' => $prompt_text,
@@ -689,7 +689,7 @@ class LLMVM_Cron {
 			$error = isset( $response['error'] ) ? (string) $response['error'] : '';
 
 			// Store result
-			$result = LLMVM_Database::store_result( $prompt_text, $resp_model, $answer, $current_user_id );
+			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $current_user_id );
 			if ( $result ) {
 				$current_run_results[] = [
 					'prompt' => $prompt_text,
