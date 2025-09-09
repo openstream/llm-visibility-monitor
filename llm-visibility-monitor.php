@@ -159,7 +159,7 @@ function llmvm_init() {
 		add_action( 'login_enqueue_scripts', [ $admin_instance, 'customize_login_page' ] );
 		add_filter( 'login_headerurl', [ $admin_instance, 'login_header_url' ] );
 		add_filter( 'login_headertext', [ $admin_instance, 'login_header_text' ] );
-		add_action( 'login_footer', [ $admin_instance, 'login_custom_text' ] );
+		add_action( 'login_header', [ $admin_instance, 'login_custom_text_after_header' ] );
 	}
 
 	if ( is_admin() && class_exists( 'LLMVM_Exporter' ) ) {

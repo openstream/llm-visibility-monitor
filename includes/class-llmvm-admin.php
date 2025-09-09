@@ -89,6 +89,7 @@ class LLMVM_Admin {
         add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
         
         // Login page customization hooks are now registered in main plugin file
+        add_action( 'login_header', [ $this, 'login_custom_text_after_header' ] );
     }
 
     /**
@@ -1535,9 +1536,9 @@ class LLMVM_Admin {
     }
 
     /**
-     * Add custom text below login form
+     * Add custom text right after the login header
      */
-    public function login_custom_text(): void {
+    public function login_custom_text_after_header(): void {
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
             $options = [];
@@ -1545,8 +1546,16 @@ class LLMVM_Admin {
         $custom_text = isset( $options['login_custom_text'] ) ? (string) $options['login_custom_text'] : '';
         
         if ( ! empty( trim( $custom_text ) ) ) {
-            echo '<div class="llmvm-login-custom-text">' . wp_kses_post( $custom_text ) . '</div>';
+            echo '<div class="llmvm-login-custom-text" style="text-align: center; margin: 16px 0; padding: 16px; background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 14px; line-height: 1.5;">' . wp_kses_post( $custom_text ) . '</div>';
         }
+    }
+
+    /**
+     * Add custom text below login form (kept for backward compatibility)
+     */
+    public function login_custom_text(): void {
+        // This method is kept for backward compatibility but not used
+        // Custom text is now displayed after the header instead
     }
 }
 
