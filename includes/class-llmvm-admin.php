@@ -67,6 +67,9 @@ class LLMVM_Admin {
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
 
+        // Customize admin bar for LLM Manager roles
+        add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
+
 
         // Form handlers for prompts CRUD.
         add_action( 'admin_post_llmvm_add_prompt', [ $this, 'handle_add_prompt' ] );
@@ -111,6 +114,30 @@ class LLMVM_Admin {
 
         // Remove Comments menu
         remove_menu_page( 'edit-comments.php' );
+    }
+
+    /**
+     * Customize admin bar for LLM Manager roles.
+     */
+    public function customize_admin_bar_for_llm_managers(): void {
+        // Only apply to LLM Manager roles (not admins)
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) || current_user_can( 'llmvm_manage_settings' ) ) {
+            return;
+        }
+
+        global $wp_admin_bar;
+
+        // Remove comments/notifications node
+        $wp_admin_bar->remove_node( 'comments' );
+
+        // Remove the "New" dropdown menu
+        $wp_admin_bar->remove_node( 'new-content' );
+
+        // Remove other unnecessary admin bar items for LLM Managers
+        $wp_admin_bar->remove_node( 'wp-logo' ); // WordPress logo
+        $wp_admin_bar->remove_node( 'site-name' ); // Site name
+        $wp_admin_bar->remove_node( 'updates' ); // Updates notification
+        $wp_admin_bar->remove_node( 'search' ); // Search box
     }
 
     /**
