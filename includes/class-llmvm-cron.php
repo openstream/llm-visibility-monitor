@@ -258,8 +258,14 @@ class LLMVM_Cron {
 
 			// Process each model for this prompt
 			foreach ( $prompt_models as $prompt_model ) {
-				LLMVM_Logger::log( 'Sending prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-				$response   = $client->query( $api_key, $prompt_text, $prompt_model );
+				// Append :online to model if web search is enabled
+				$model_to_use = $prompt_model;
+				if ( ! empty( $prompt_item['web_search'] ) ) {
+					$model_to_use = $prompt_model . ':online';
+				}
+				
+				LLMVM_Logger::log( 'Sending prompt', [ 'model' => $model_to_use, 'original_model' => $prompt_model, 'web_search' => ! empty( $prompt_item['web_search'] ), 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
+				$response   = $client->query( $api_key, $prompt_text, $model_to_use );
 				$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
 				$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
 				$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
@@ -404,8 +410,14 @@ class LLMVM_Cron {
 
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
-			LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $prompt_model, 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-			$response   = $client->query( $api_key, $prompt_text, $prompt_model );
+			// Append :online to model if web search is enabled
+			$model_to_use = $prompt_model;
+			if ( ! empty( $target_prompt['web_search'] ) ) {
+				$model_to_use = $prompt_model . ':online';
+			}
+			
+			LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $model_to_use, 'original_model' => $prompt_model, 'web_search' => ! empty( $target_prompt['web_search'] ), 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
+			$response   = $client->query( $api_key, $prompt_text, $model_to_use );
 			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
 			$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
 			$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;

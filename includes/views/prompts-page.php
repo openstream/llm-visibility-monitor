@@ -56,6 +56,19 @@ if ( $is_admin ) {
 .column-owner {
     width: 15%;
 }
+.column-web-search {
+    width: 10%;
+    text-align: center;
+}
+.llmvm-admin-table .column-web-search {
+    width: 8%;
+}
+.llmvm-admin-table .column-model {
+    width: 30%;
+}
+.llmvm-admin-table .column-owner {
+    width: 12%;
+}
 .llmvm-prompt-display {
     padding: 8px 10px;
 }
@@ -302,6 +315,13 @@ if ( $is_admin ) {
                 <input type="hidden" id="llmvm-new-prompt-models-input" name="prompt_models[]" value="" />
             </div>
         </p>
+        <p>
+            <label for="llmvm-new-prompt-web-search">
+                <input type="checkbox" id="llmvm-new-prompt-web-search" name="web_search" value="1" />
+                <?php echo esc_html__( 'Enable Web Search (appends :online to models)', 'llm-visibility-monitor' ); ?>
+            </label>
+            <br><small class="description"><?php echo esc_html__( 'Uses OpenRouter web search plugin to find relevant information from the web.', 'llm-visibility-monitor' ); ?></small>
+        </p>
         <?php submit_button( __( 'Add Prompt', 'llm-visibility-monitor' ), 'secondary' ); ?>
     </form>
 
@@ -312,6 +332,7 @@ if ( $is_admin ) {
                 <tr>
                     <th class="llmvm-prompt-cell"><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
                     <th class="column-model"><?php echo esc_html__( 'Model & Actions', 'llm-visibility-monitor' ); ?></th>
+                    <th class="column-web-search"><?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?></th>
                     <th class="column-owner"><?php echo esc_html__( 'Owner', 'llm-visibility-monitor' ); ?></th>
                 </tr>
             </thead>
@@ -373,6 +394,20 @@ if ( $is_admin ) {
                                 <span class="description"><?php echo esc_html__( 'Read-only', 'llm-visibility-monitor' ); ?></span>
                             <?php endif; ?>
                         </td>
+                        <td class="column-web-search">
+                            <?php if ( $is_owner ) : ?>
+                                <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
+                                    <input type="checkbox" 
+                                           id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
+                                           name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
+                                           value="1" 
+                                           <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
+                                    <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
+                                </label>
+                            <?php else : ?>
+                                <?php echo ! empty( $prompt['web_search'] ) ? '✅' : '❌'; ?>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php echo esc_html( $owner_name ); ?>
                         </td>
@@ -389,6 +424,7 @@ if ( $is_admin ) {
                 <tr>
                     <th class="llmvm-prompt-cell"><?php echo esc_html__( 'Prompt', 'llm-visibility-monitor' ); ?></th>
                     <th class="column-model"><?php echo esc_html__( 'Model & Actions', 'llm-visibility-monitor' ); ?></th>
+                    <th class="column-web-search"><?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -437,6 +473,16 @@ if ( $is_admin ) {
                                     <?php echo esc_html__( 'Run Now', 'llm-visibility-monitor' ); ?>
                                 </a>
                             </div>
+                        </td>
+                        <td class="column-web-search">
+                            <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
+                                <input type="checkbox" 
+                                       id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
+                                       name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
+                                       value="1" 
+                                       <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
+                                <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
+                            </label>
                         </td>
                     </tr>
                 <?php endforeach; ?>

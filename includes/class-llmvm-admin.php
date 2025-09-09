@@ -783,6 +783,8 @@ class LLMVM_Admin {
             }
         }
         
+        // Handle web search option
+        $web_search = isset( $_POST['web_search'] ) && '1' === $_POST['web_search']; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
         
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
@@ -849,7 +851,8 @@ class LLMVM_Admin {
                     'id' => uniqid( 'p_', true ), 
                     'text' => $text,
                     'models' => $models,
-                    'user_id' => $current_user_id
+                    'user_id' => $current_user_id,
+                    'web_search' => $web_search
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
                 
@@ -912,6 +915,8 @@ class LLMVM_Admin {
             }
         }
         
+        // Handle web search option
+        $web_search = isset( $_POST['web_search'] ) && is_array( $_POST['web_search'] ) && isset( $_POST['web_search'][ $id ] ) && '1' === $_POST['web_search'][ $id ]; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -963,6 +968,7 @@ class LLMVM_Admin {
                         // Remove old 'model' field if it exists
                         unset( $prompt['model'] );
                     }
+                    $prompt['web_search'] = $web_search;
                     $prompt_updated = true;
                     set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt updated successfully.', 'llm-visibility-monitor' ) ], 60 );
                 } else {

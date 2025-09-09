@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,17 @@ Yes! The plugin implements strict user isolation. Each user's prompts, results, 
 4. Individual result detail view
 
 == Changelog ==
+
+= 0.10.0 - 2025-09-08 =
+* **New Feature**: Web Search Integration with OpenRouter
+  * Added web search checkbox to "Add New Prompt" form
+  * Added "Web Search" column to prompts table showing web search status
+  * Automatic appending of :online to model names when web search is enabled
+  * Follows OpenRouter web search documentation for model-agnostic grounding
+  * Users can enable/disable web search for individual prompts
+  * Web search status visible in both admin and user views
+  * Backward compatibility maintained for existing prompts
+  * Enhanced logging to track web search usage and model modifications
 
 = 0.9.0 - 2025-09-08 =
 * **New Feature**: Model limit enforcement for free plan users

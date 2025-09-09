@@ -124,6 +124,17 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 
 ## Changelog
 
+### 0.10.0 - 2025-09-08
+- **New Feature**: Web Search Integration with OpenRouter
+  - Added web search checkbox to "Add New Prompt" form
+  - Added "Web Search" column to prompts table showing web search status
+  - Automatic appending of `:online` to model names when web search is enabled
+  - Follows OpenRouter web search documentation for model-agnostic grounding
+  - Users can enable/disable web search for individual prompts
+  - Web search status visible in both admin and user views
+  - Backward compatibility maintained for existing prompts
+  - Enhanced logging to track web search usage and model modifications
+
 ### 0.9.0 - 2025-09-08
 - **New Feature**: Model limit enforcement for free plan users
   - Free plan users are now limited to 3 models per prompt with client-side validation
