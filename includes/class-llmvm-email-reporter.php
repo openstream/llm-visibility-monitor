@@ -754,6 +754,9 @@ class LLMVM_Email_Reporter {
         // Convert markdown lists to HTML lists (do this after tables to avoid conflicts)
         $formatted = $this->convert_markdown_lists( $formatted );
         
+        // Convert markdown links to HTML links
+        $formatted = $this->convert_markdown_links( $formatted );
+        
         // Debug: Log the original and formatted result to see what's being generated
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             error_log( 'LLMVM Email Original: ' . substr( $answer, 0, 500 ) );
@@ -969,5 +972,39 @@ class LLMVM_Email_Reporter {
         $html .= '</div>';
         
         return $html;
+    }
+
+    /**
+     * Convert markdown links to HTML links.
+     * Supports format: [link text](URL)
+     */
+    private function convert_markdown_links( string $text ): string {
+        // Pattern to match markdown links: [text](url)
+        // This regex handles:
+        // - [text](url)
+        // - [text with spaces](url)
+        // - [text](url with spaces)
+        // - URLs with various protocols (http, https, ftp, etc.)
+        $pattern = '/\[([^\]]+)\]\(([^)]+)\)/';
+        
+        return preg_replace_callback( $pattern, function( $matches ) {
+            $link_text = $matches[1];
+            $url = $matches[2];
+            
+            // Basic URL validation and sanitization
+            $url = trim( $url );
+            
+            // If URL doesn't start with a protocol, assume it's http
+            if ( ! preg_match( '/^https?:\/\//', $url ) && ! preg_match( '/^ftp:\/\//', $url ) && ! preg_match( '/^mailto:/', $url ) ) {
+                $url = 'http://' . $url;
+            }
+            
+            // Escape the URL for HTML attributes
+            $escaped_url = esc_url( $url );
+            $escaped_text = esc_html( $link_text );
+            
+            // Return HTML link with email-friendly styling
+            return '<a href="' . $escaped_url . '" style="color: #0073aa; text-decoration: underline; word-break: break-all;">' . $escaped_text . '</a>';
+        }, $text );
     }
 }
