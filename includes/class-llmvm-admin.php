@@ -88,12 +88,7 @@ class LLMVM_Admin {
         add_action( 'personal_options_update', [ $this, 'save_timezone_field' ] );
         add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
         
-        // Login page customization
-        add_action( 'login_enqueue_scripts', [ $this, 'customize_login_page' ] );
-        add_filter( 'login_headerurl', [ $this, 'login_header_url' ] );
-        add_filter( 'login_headertext', [ $this, 'login_header_text' ] );
-        add_filter( 'login_headertitle', [ $this, 'login_header_text' ] ); // Alternative filter name
-        add_action( 'login_footer', [ $this, 'login_custom_text' ] );
+        // Login page customization hooks are now registered in main plugin file
     }
 
     /**
@@ -364,8 +359,8 @@ class LLMVM_Admin {
         $new['pro_max_models'] = isset( $input['pro_max_models'] ) ? max( 1, (int) $input['pro_max_models'] ) : 6;
         $new['pro_max_runs'] = isset( $input['pro_max_runs'] ) ? max( 1, (int) $input['pro_max_runs'] ) : 300;
         
-        
-        
+        // Login page customization
+        $new['login_custom_text'] = isset( $input['login_custom_text'] ) ? wp_kses_post( (string) $input['login_custom_text'] ) : '';
 
         return $new;
     }

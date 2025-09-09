@@ -152,6 +152,16 @@ function llmvm_init() {
 	if ( is_admin() && class_exists( 'LLMVM_Admin' ) ) {
 		new LLMVM_Admin();
 	}
+	
+	// Register login page customization hooks (needs to run on login page too)
+	if ( class_exists( 'LLMVM_Admin' ) ) {
+		$admin_instance = new LLMVM_Admin();
+		add_action( 'login_enqueue_scripts', [ $admin_instance, 'customize_login_page' ] );
+		add_filter( 'login_headerurl', [ $admin_instance, 'login_header_url' ] );
+		add_filter( 'login_headertext', [ $admin_instance, 'login_header_text' ] );
+		add_filter( 'login_headertitle', [ $admin_instance, 'login_header_text' ] );
+		add_action( 'login_footer', [ $admin_instance, 'login_custom_text' ] );
+	}
 
 	if ( is_admin() && class_exists( 'LLMVM_Exporter' ) ) {
 		( new LLMVM_Exporter() )->hooks();
