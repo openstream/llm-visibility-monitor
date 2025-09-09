@@ -89,7 +89,6 @@ class LLMVM_Admin {
         add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
         
         // Login page customization hooks are now registered in main plugin file
-        add_action( 'login_header', [ $this, 'login_custom_text_after_header' ] );
     }
 
     /**
