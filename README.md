@@ -122,6 +122,34 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
 3. Review results in Tools → LLM Visibility Dashboard and/or export CSV.
 4. If logging is enabled, check `wp-content/uploads/llm-visibility-monitor/llmvm.log`.
 
+## Development
+
+### PHP Syntax Checking with DDEV
+
+When developing with DDEV, you can check PHP syntax using the following commands:
+
+```bash
+# Check PHP version
+ddev php -v
+
+# Check syntax of main plugin file
+ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/llm-visibility-monitor.php
+
+# Check syntax of key plugin files
+ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/class-llmvm-cron.php
+ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/class-llmvm-progress-tracker.php
+ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/class-llmvm-admin.php
+ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/class-llmvm-database.php
+```
+
+**Note**: When using `ddev php` from the host system, use the full container paths (`/var/www/html/...`). If you're inside the DDEV container, you can use relative paths.
+
+### Container Paths
+
+- **Plugin Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/`
+- **Main Plugin File**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/llm-visibility-monitor.php`
+- **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
+
 ## Changelog
 
 ### 0.10.0 - 2025-09-08
