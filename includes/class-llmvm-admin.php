@@ -73,6 +73,9 @@ class LLMVM_Admin {
         add_action( 'admin_post_llmvm_edit_prompt', [ $this, 'handle_edit_prompt' ] );
         add_action( 'admin_post_llmvm_delete_prompt', [ $this, 'handle_delete_prompt' ] );
         
+        // AJAX handlers for progress tracking
+        add_action( 'wp_ajax_llmvm_get_progress', [ $this, 'ajax_get_progress' ] );
+        
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
         add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete' ] );
@@ -1132,6 +1135,37 @@ class LLMVM_Admin {
         // Redirect back to dashboard
         wp_safe_redirect( admin_url( 'tools.php?page=llmvm-dashboard' ) );
         exit;
+    }
+    
+    /**
+     * AJAX handler to get progress updates
+     */
+    public function ajax_get_progress(): void {
+        // Check user permissions
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+        
+        // Verify nonce
+        if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'llmvm_progress_nonce' ) ) {
+            wp_send_json_error( [ 'message' => 'Security check failed' ], 403 );
+        }
+        
+        // Get run ID
+        $run_id = isset( $_POST['run_id'] ) ? sanitize_text_field( wp_unslash( $_POST['run_id'] ) ) : '';
+        
+        if ( empty( $run_id ) ) {
+            wp_send_json_error( [ 'message' => 'Run ID is required' ], 400 );
+        }
+        
+        // Get progress from tracker
+        $progress = LLMVM_Progress_Tracker::get_progress( $run_id );
+        
+        if ( 'not_found' === $progress['status'] ) {
+            wp_send_json_error( [ 'message' => 'Progress not found' ], 404 );
+        }
+        
+        wp_send_json_success( $progress );
     }
 
 

@@ -948,31 +948,16 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Calculate total steps for progress bar
-            var totalSteps = 0;
-            <?php if ( ! $is_admin ) : ?>
-            var userPrompts = <?php echo json_encode( $user_prompts ); ?>;
-            userPrompts.forEach(function(prompt) {
-                if (prompt.models && Array.isArray(prompt.models)) {
-                    totalSteps += prompt.models.length;
-                } else {
-                    totalSteps += 1; // Default to 1 if no models array
-                }
-            });
-            <?php else : ?>
-            var allPrompts = <?php echo json_encode( $all_prompts ); ?>;
-            allPrompts.forEach(function(prompt) {
-                if (prompt.models && Array.isArray(prompt.models)) {
-                    totalSteps += prompt.models.length;
-                } else {
-                    totalSteps += 1; // Default to 1 if no models array
-                }
-            });
-            <?php endif; ?>
+            // Generate a unique run ID for progress tracking
+            var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
-            // Show loading overlay with progress bar
-            showLoadingOverlay('Running all prompts... This may take several minutes.', totalSteps);
-            window.location.href = originalHref;
+            // Show loading overlay with progress tracking
+            showLoadingOverlay('Running all prompts... This may take several minutes.', runId);
+            
+            // Add run ID to the URL
+            var url = new URL(originalHref, window.location.origin);
+            url.searchParams.set('run_id', runId);
+            window.location.href = url.toString();
         }
     });
     
@@ -1047,15 +1032,16 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Calculate total steps for this single prompt
-            var totalSteps = 1;
-            if (promptData.models && Array.isArray(promptData.models)) {
-                totalSteps = promptData.models.length;
-            }
+            // Generate a unique run ID for progress tracking
+            var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
-            // Show loading overlay with progress bar
-            showLoadingOverlay('Running prompt... Please wait.', totalSteps);
-            window.location.href = originalHref;
+            // Show loading overlay with progress tracking
+            showLoadingOverlay('Running prompt... Please wait.', runId);
+            
+            // Add run ID to the URL
+            var url = new URL(originalHref, window.location.origin);
+            url.searchParams.set('run_id', runId);
+            window.location.href = url.toString();
         }
     });
     
@@ -1073,7 +1059,7 @@ jQuery(document).ready(function($) {
     });
     
     // Loading overlay functions
-    function showLoadingOverlay(message, totalSteps) {
+    function showLoadingOverlay(message, runId) {
         // Create overlay if it doesn't exist
         if (!document.getElementById('llmvm-loading-overlay')) {
             var overlay = document.createElement('div');
@@ -1112,13 +1098,9 @@ jQuery(document).ready(function($) {
             }
         }
         
-        // Initialize progress if totalSteps is provided
-        if (totalSteps && totalSteps > 0) {
-            initializeProgress(totalSteps);
-            // Start progress simulation after a realistic delay
-            setTimeout(function() {
-                startProgressSimulation(totalSteps);
-            }, 2000);
+        // Start real progress tracking if runId is provided
+        if (runId) {
+            startRealProgressTracking(runId);
         }
         
         // Disable all interactive elements
@@ -1163,61 +1145,68 @@ jQuery(document).ready(function($) {
         }
     }
     
-    function startProgressSimulation(totalSteps) {
-        if (totalSteps <= 0) return;
+    function startRealProgressTracking(runId) {
+        if (!runId) return;
         
-        var currentStep = 0;
-        var stepDelays = [];
+        var progressInterval;
+        var pollCount = 0;
+        var maxPolls = 300; // Maximum 5 minutes of polling (300 * 1 second)
         
-        // Create realistic timing for each step
-        for (var i = 0; i < totalSteps; i++) {
-            if (i === 0) {
-                // First step: quick initialization
-                stepDelays.push(1500);
-            } else if (i < totalSteps - 1) {
-                // Middle steps: moderate processing time (3-5 seconds)
-                stepDelays.push(3000 + Math.random() * 2000);
-            } else {
-                // Last step: longer finalization time (8-12 seconds)
-                stepDelays.push(8000 + Math.random() * 4000);
+        function pollProgress() {
+            pollCount++;
+            
+            // Stop polling if we've exceeded max polls
+            if (pollCount > maxPolls) {
+                console.warn('Progress polling timeout reached');
+                clearInterval(progressInterval);
+                return;
             }
-        }
-        
-        function processNextStep() {
-            if (currentStep < totalSteps) {
-                currentStep++;
-                updateProgress(currentStep, totalSteps);
-                
-                // Update message based on progress
-                var percentage = Math.round((currentStep / totalSteps) * 100);
-                if (percentage < 25) {
-                    updateLoadingMessage('Initializing prompts...');
-                } else if (percentage < 50) {
-                    updateLoadingMessage('Processing AI models...');
-                } else if (percentage < 75) {
-                    updateLoadingMessage('Generating responses...');
-                } else if (percentage < 100) {
-                    updateLoadingMessage('Finalizing results...');
+            
+            // Make AJAX request to get progress
+            var formData = new FormData();
+            formData.append('action', 'llmvm_get_progress');
+            formData.append('run_id', runId);
+            formData.append('_wpnonce', '<?php echo wp_create_nonce( 'llmvm_progress_nonce' ); ?>');
+            
+            fetch(ajaxurl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    var progress = data.data;
+                    
+                    // Show progress container if we have progress data
+                    var progressContainer = document.getElementById('llmvm-progress-container');
+                    if (progressContainer && progress.total > 0) {
+                        progressContainer.style.display = 'block';
+                    }
+                    
+                    // Update progress
+                    updateProgress(progress.current, progress.total);
+                    updateLoadingMessage(progress.message);
+                    
+                    // Check if completed
+                    if (progress.completed || progress.status === 'completed') {
+                        clearInterval(progressInterval);
+                        console.log('Progress tracking completed');
+                    }
                 } else {
-                    updateLoadingMessage('Completing...');
+                    console.warn('Progress polling failed:', data);
                 }
-                
-                // Add extra delay for certain percentages to simulate processing
-                var extraDelay = 0;
-                if (percentage === 50 || percentage === 75) {
-                    // Pause at 50% and 75% for extra processing time
-                    extraDelay = 2000 + Math.random() * 3000;
-                }
-                
-                // Schedule next step with realistic delay
-                if (currentStep < totalSteps) {
-                    setTimeout(processNextStep, stepDelays[currentStep - 1] + extraDelay);
-                }
-            }
+            })
+            .catch(error => {
+                console.error('Progress polling error:', error);
+            });
         }
         
-        // Start the first step after initial delay
-        setTimeout(processNextStep, stepDelays[0]);
+        // Start polling immediately, then every 1 second
+        pollProgress();
+        progressInterval = setInterval(pollProgress, 1000);
+        
+        // Store interval for cleanup
+        window.llmvmProgressInterval = progressInterval;
     }
     
     function preventContextMenu(e) {

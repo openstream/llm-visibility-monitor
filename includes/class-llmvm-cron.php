@@ -466,6 +466,263 @@ class LLMVM_Cron {
 		// Fire action hook for email reporter and other extensions with user context
 		do_action( 'llmvm_run_completed', $current_user_id );
 	}
+	
+	/**
+	 * Run all prompts with progress tracking
+	 */
+	public function run_with_progress( string $run_id ): void {
+		$options = get_option( 'llmvm_options', [] );
+		if ( ! is_array( $options ) ) {
+			$options = [];
+		}
+		$raw_key = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+		$api_key = $raw_key !== '' ? self::decrypt_api_key( $raw_key ) : '';
+		$model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+		$prompts = get_option( 'llmvm_prompts', [] );
+		if ( ! is_array( $prompts ) ) {
+			$prompts = [];
+		}
+
+		// Calculate total steps for progress tracking
+		$total_steps = 0;
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+				$total_steps += count( $prompt['models'] );
+			} else {
+				$total_steps += 1; // Default to 1 if no models array
+			}
+		}
+
+		// Initialize progress tracking
+		LLMVM_Progress_Tracker::init_progress( $run_id, $total_steps, 'Starting prompt execution...' );
+
+		$current_user_id = get_current_user_id();
+		$is_admin = current_user_can( 'llmvm_manage_settings' );
+
+		// Check usage limits for non-admin users
+		if ( ! $is_admin ) {
+			$total_runs = 0;
+			foreach ( $prompts as $prompt ) {
+				if ( isset( $prompt['user_id'] ) && (int) $prompt['user_id'] === $current_user_id ) {
+					if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+						$total_runs += count( $prompt['models'] );
+					} else {
+						$total_runs += 1;
+					}
+				}
+			}
+			
+			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
+				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Run aborted: insufficient runs remaining' );
+				return;
+			}
+		}
+
+		$client = new LLMVM_OpenRouter_Client();
+		$current_step = 0;
+		$current_run_results = [];
+
+		// Process prompts for the current user
+		foreach ( $prompts as $prompt ) {
+			$prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
+			
+			// Skip prompts not owned by current user (unless admin)
+			if ( ! $is_admin && $prompt_user_id !== $current_user_id ) {
+				continue;
+			}
+
+			$prompt_text = isset( $prompt['text'] ) ? (string) $prompt['text'] : '';
+			if ( '' === trim( $prompt_text ) ) {
+				continue;
+			}
+
+			// Get models for this prompt
+			$prompt_models = array();
+			if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+				$prompt_models = $prompt['models'];
+			} elseif ( isset( $prompt['model'] ) && '' !== trim( $prompt['model'] ) ) {
+				$prompt_models = array( $prompt['model'] );
+			} else {
+				$prompt_models = array( $model );
+			}
+
+			// Process each model for this prompt
+			foreach ( $prompt_models as $prompt_model ) {
+				$current_step++;
+				
+				// Update progress
+				LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Processing model: ' . $prompt_model );
+
+				// Append :online to model if web search is enabled
+				$model_to_use = $prompt_model;
+				if ( ! empty( $prompt['web_search'] ) ) {
+					$model_to_use = $prompt_model . ':online';
+				}
+
+				$response = $client->query( $api_key, $prompt_text, $model_to_use );
+				$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+				$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+				$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
+				$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+
+				// Store result
+				$result = LLMVM_Database::store_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
+				if ( $result ) {
+					$current_run_results[] = [
+						'prompt' => $prompt_text,
+						'model' => $resp_model,
+						'answer' => $answer,
+						'user_id' => $prompt_user_id,
+						'status' => $status,
+						'error' => $error
+					];
+				}
+
+				if ( $status && $status >= 400 ) {
+					LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+				}
+			}
+		}
+
+		// Complete progress tracking
+		LLMVM_Progress_Tracker::complete_progress( $run_id, 'All prompts completed successfully!' );
+
+		// Track usage for non-admin users
+		if ( ! $is_admin ) {
+			$runs_count = $current_step;
+			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
+		}
+
+		// Store current run results in transient for email reporter
+		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
+		set_transient( $transient_key, $current_run_results, 300 );
+		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
+
+		// Fire action hook for email reporter
+		do_action( 'llmvm_run_completed', $current_user_id );
+	}
+	
+	/**
+	 * Run single prompt with progress tracking
+	 */
+	public function run_single_prompt_with_progress( string $prompt_id, string $run_id ): void {
+		$options = get_option( 'llmvm_options', [] );
+		if ( ! is_array( $options ) ) {
+			$options = [];
+		}
+		$raw_key = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
+		$api_key = $raw_key !== '' ? self::decrypt_api_key( $raw_key ) : '';
+		$model = isset( $options['model'] ) ? (string) $options['model'] : 'openrouter/stub-model-v1';
+		$prompts = get_option( 'llmvm_prompts', [] );
+		if ( ! is_array( $prompts ) ) {
+			$prompts = [];
+		}
+
+		// Find the specific prompt
+		$target_prompt = null;
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+				$target_prompt = $prompt;
+				break;
+			}
+		}
+
+		if ( ! $target_prompt ) {
+			LLMVM_Progress_Tracker::complete_progress( $run_id, 'Error: Prompt not found' );
+			return;
+		}
+
+		// Check if current user can run this prompt
+		$current_user_id = get_current_user_id();
+		$prompt_user_id = isset( $target_prompt['user_id'] ) ? (int) $target_prompt['user_id'] : 1;
+		$is_admin = current_user_can( 'llmvm_manage_settings' );
+
+		if ( ! $is_admin && $prompt_user_id !== $current_user_id ) {
+			LLMVM_Progress_Tracker::complete_progress( $run_id, 'Error: Not authorized to run this prompt' );
+			return;
+		}
+
+		// Get models for this prompt
+		$prompt_models = array();
+		if ( isset( $target_prompt['models'] ) && is_array( $target_prompt['models'] ) ) {
+			$prompt_models = $target_prompt['models'];
+		} elseif ( isset( $target_prompt['model'] ) && '' !== trim( $target_prompt['model'] ) ) {
+			$prompt_models = array( $target_prompt['model'] );
+		} else {
+			$prompt_models = array( $model );
+		}
+
+		// Check usage limits for non-admin users
+		if ( ! $is_admin ) {
+			$runs_needed = count( $prompt_models );
+			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $runs_needed ) ) {
+				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Error: Insufficient runs remaining' );
+				return;
+			}
+		}
+
+		// Initialize progress tracking
+		LLMVM_Progress_Tracker::init_progress( $run_id, count( $prompt_models ), 'Starting single prompt execution...' );
+
+		$client = new LLMVM_OpenRouter_Client();
+		$prompt_text = isset( $target_prompt['text'] ) ? (string) $target_prompt['text'] : '';
+		$current_step = 0;
+		$current_run_results = [];
+
+		// Process each model for this prompt
+		foreach ( $prompt_models as $prompt_model ) {
+			$current_step++;
+			
+			// Update progress
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Processing model: ' . $prompt_model );
+
+			// Append :online to model if web search is enabled
+			$model_to_use = $prompt_model;
+			if ( ! empty( $target_prompt['web_search'] ) ) {
+				$model_to_use = $prompt_model . ':online';
+			}
+
+			$response = $client->query( $api_key, $prompt_text, $model_to_use );
+			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+			$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+			$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
+			$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+
+			// Store result
+			$result = LLMVM_Database::store_result( $prompt_text, $resp_model, $answer, $current_user_id );
+			if ( $result ) {
+				$current_run_results[] = [
+					'prompt' => $prompt_text,
+					'model' => $resp_model,
+					'answer' => $answer,
+					'user_id' => $current_user_id,
+					'status' => $status,
+					'error' => $error
+				];
+			}
+
+			if ( $status && $status >= 400 ) {
+				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
+			}
+		}
+
+		// Complete progress tracking
+		LLMVM_Progress_Tracker::complete_progress( $run_id, 'Single prompt completed successfully!' );
+
+		// Track usage for non-admin users
+		if ( ! $is_admin ) {
+			$runs_count = count( $prompt_models );
+			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
+		}
+
+		// Store current run results in transient for email reporter
+		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
+		set_transient( $transient_key, $current_run_results, 300 );
+		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
+
+		// Fire action hook for email reporter
+		do_action( 'llmvm_run_completed', $current_user_id );
+	}
 
 	/**
 	 * Handle manual run from admin.
@@ -479,8 +736,19 @@ class LLMVM_Cron {
 		if ( ! wp_verify_nonce( $nonce, 'llmvm_run_now' ) ) {
 			wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
 		}
-		LLMVM_Logger::log( 'Run Now triggered', [ 'user_id' => get_current_user_id(), 'user_roles' => implode( ', ', wp_get_current_user()->roles ) ] );
-		$this->run();
+		
+		// Get run ID for progress tracking
+		$run_id = isset( $_GET['run_id'] ) ? sanitize_text_field( wp_unslash( $_GET['run_id'] ) ) : '';
+		
+		LLMVM_Logger::log( 'Run Now triggered', [ 'user_id' => get_current_user_id(), 'user_roles' => implode( ', ', wp_get_current_user()->roles ), 'run_id' => $run_id ] );
+		
+		// Run with progress tracking if run_id is provided
+		if ( ! empty( $run_id ) ) {
+			$this->run_with_progress( $run_id );
+		} else {
+			$this->run();
+		}
+		
 		wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-dashboard&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );
 		exit;
 	}
@@ -504,14 +772,23 @@ class LLMVM_Cron {
 		if ( empty( $prompt_id ) ) {
 			wp_die( esc_html__( 'No prompt ID provided', 'llm-visibility-monitor' ) );
 		}
+		
+		// Get run ID for progress tracking
+		$run_id = isset( $_GET['run_id'] ) ? sanitize_text_field( wp_unslash( $_GET['run_id'] ) ) : '';
 
 		LLMVM_Logger::log( 'Single prompt run triggered', [
 			'user_id' => get_current_user_id(),
 			'user_roles' => implode( ', ', wp_get_current_user()->roles ),
-			'prompt_id' => $prompt_id
+			'prompt_id' => $prompt_id,
+			'run_id' => $run_id
 		] );
 
-		$this->run_single_prompt( $prompt_id );
+		// Run with progress tracking if run_id is provided
+		if ( ! empty( $run_id ) ) {
+			$this->run_single_prompt_with_progress( $prompt_id, $run_id );
+		} else {
+			$this->run_single_prompt( $prompt_id );
+		}
 
 		// Redirect back to prompts page with success message
 		wp_safe_redirect( wp_nonce_url( admin_url( 'tools.php?page=llmvm-prompts&llmvm_ran=1' ), 'llmvm_run_completed' ) ?: '' );

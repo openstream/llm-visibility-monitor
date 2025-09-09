@@ -80,6 +80,7 @@ function llmvm_load_includes() {
 			'class-llmvm-admin.php',
 			'class-llmvm-exporter.php',
 			'class-llmvm-email-reporter.php',
+			'class-llmvm-progress-tracker.php',
 		);
 
 		foreach ( $files as $file ) {
