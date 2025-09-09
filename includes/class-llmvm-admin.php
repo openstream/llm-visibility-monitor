@@ -92,6 +92,7 @@ class LLMVM_Admin {
         add_action( 'login_enqueue_scripts', [ $this, 'customize_login_page' ] );
         add_filter( 'login_headerurl', [ $this, 'login_header_url' ] );
         add_filter( 'login_headertext', [ $this, 'login_header_text' ] );
+        add_filter( 'login_headertitle', [ $this, 'login_header_text' ] ); // Alternative filter name
         add_action( 'login_footer', [ $this, 'login_custom_text' ] );
     }
 
@@ -1446,7 +1447,10 @@ class LLMVM_Admin {
     public function customize_login_page(): void {
         ?>
         <style type="text/css">
-            #login h1 a {
+            /* Hide WordPress logo completely */
+            #login h1 a,
+            .wp-login-logo,
+            .login h1 a {
                 background-image: none !important;
                 background: none !important;
                 width: auto !important;
@@ -1461,13 +1465,22 @@ class LLMVM_Admin {
                 margin-bottom: 25px !important;
                 display: block !important;
                 text-align: center !important;
+                overflow: visible !important;
             }
+            
+            /* Remove any pseudo-elements */
+            #login h1 a:before,
+            #login h1 a:after,
+            .wp-login-logo:before,
+            .wp-login-logo:after {
+                content: none !important;
+                display: none !important;
+            }
+            
             #login h1 {
                 padding-bottom: 0 !important;
             }
-            #login h1 a:before {
-                content: none !important;
-            }
+            
             .llmvm-login-custom-text {
                 text-align: center;
                 margin: 16px 0;
@@ -1486,6 +1499,29 @@ class LLMVM_Admin {
                 text-decoration: underline;
             }
         </style>
+        
+        <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force replace WordPress logo with custom text
+            var logoLink = document.querySelector('#login h1 a');
+            if (logoLink) {
+                logoLink.innerHTML = 'LLM Visibility Monitor';
+                logoLink.style.backgroundImage = 'none';
+                logoLink.style.background = 'none';
+                logoLink.style.textIndent = '0';
+                logoLink.style.fontSize = '24px';
+                logoLink.style.fontWeight = '600';
+                logoLink.style.color = '#23282d';
+                logoLink.style.textDecoration = 'none';
+                logoLink.style.lineHeight = '1.3';
+                logoLink.style.padding = '0';
+                logoLink.style.marginBottom = '25px';
+                logoLink.style.display = 'block';
+                logoLink.style.textAlign = 'center';
+                logoLink.style.overflow = 'visible';
+            }
+        });
+        </script>
         <?php
     }
 
