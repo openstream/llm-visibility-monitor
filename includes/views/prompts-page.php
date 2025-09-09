@@ -948,8 +948,30 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Show loading overlay to prevent interactions
-            showLoadingOverlay('Running all prompts... This may take several minutes.');
+            // Calculate total steps for progress bar
+            var totalSteps = 0;
+            <?php if ( ! $is_admin ) : ?>
+            var userPrompts = <?php echo json_encode( $user_prompts ); ?>;
+            userPrompts.forEach(function(prompt) {
+                if (prompt.models && Array.isArray(prompt.models)) {
+                    totalSteps += prompt.models.length;
+                } else {
+                    totalSteps += 1; // Default to 1 if no models array
+                }
+            });
+            <?php else : ?>
+            var allPrompts = <?php echo json_encode( $all_prompts ); ?>;
+            allPrompts.forEach(function(prompt) {
+                if (prompt.models && Array.isArray(prompt.models)) {
+                    totalSteps += prompt.models.length;
+                } else {
+                    totalSteps += 1; // Default to 1 if no models array
+                }
+            });
+            <?php endif; ?>
+            
+            // Show loading overlay with progress bar
+            showLoadingOverlay('Running all prompts... This may take several minutes.', totalSteps);
             window.location.href = originalHref;
         }
     });
@@ -1025,8 +1047,14 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Show loading overlay to prevent interactions
-            showLoadingOverlay('Running prompt... Please wait.');
+            // Calculate total steps for this single prompt
+            var totalSteps = 1;
+            if (promptData.models && Array.isArray(promptData.models)) {
+                totalSteps = promptData.models.length;
+            }
+            
+            // Show loading overlay with progress bar
+            showLoadingOverlay('Running prompt... Please wait.', totalSteps);
             window.location.href = originalHref;
         }
     });
@@ -1045,27 +1073,36 @@ jQuery(document).ready(function($) {
     });
     
     // Loading overlay functions
-    function showLoadingOverlay(message) {
+    function showLoadingOverlay(message, totalSteps) {
         // Create overlay if it doesn't exist
         if (!document.getElementById('llmvm-loading-overlay')) {
             var overlay = document.createElement('div');
             overlay.id = 'llmvm-loading-overlay';
             overlay.innerHTML = 
                 '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 999999; display: flex; align-items: center; justify-content: center;">' +
-                    '<div style="background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); max-width: 400px; margin: 20px;">' +
+                    '<div style="background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); max-width: 450px; margin: 20px;">' +
                         '<div style="margin-bottom: 20px;">' +
                             '<div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0073aa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>' +
                         '</div>' +
                         '<h3 style="margin: 0 0 10px 0; color: #333; font-size: 18px;">Processing...</h3>' +
-                        '<p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;" id="llmvm-loading-message">' + message + '</p>' +
+                        '<p style="margin: 0 0 15px 0; color: #666; font-size: 14px; line-height: 1.4;" id="llmvm-loading-message">' + message + '</p>' +
+                        '<div id="llmvm-progress-container" style="margin: 15px 0; display: none;">' +
+                            '<div style="background: #f0f0f0; border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 8px;">' +
+                                '<div id="llmvm-progress-bar" style="background: linear-gradient(90deg, #0073aa, #005a87); height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 10px;"></div>' +
+                            '</div>' +
+                            '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666;">' +
+                                '<span id="llmvm-progress-text">0%</span>' +
+                                '<span id="llmvm-progress-steps">0 / 0</span>' +
+                            '</div>' +
+                        '</div>' +
                         '<p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">Please do not close this window or navigate away.</p>' +
                     '</div>' +
                 '</div>';
             document.body.appendChild(overlay);
             
-            // Add CSS animation
+            // Add CSS animations
             var style = document.createElement('style');
-            style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+            style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }';
             document.head.appendChild(style);
         } else {
             // Update message if overlay exists
@@ -1073,6 +1110,15 @@ jQuery(document).ready(function($) {
             if (messageEl) {
                 messageEl.textContent = message;
             }
+        }
+        
+        // Initialize progress if totalSteps is provided
+        if (totalSteps && totalSteps > 0) {
+            initializeProgress(totalSteps);
+            // Start progress simulation after a short delay
+            setTimeout(function() {
+                startProgressSimulation(totalSteps);
+            }, 1000);
         }
         
         // Disable all interactive elements
@@ -1084,6 +1130,68 @@ jQuery(document).ready(function($) {
         
         // Prevent keyboard shortcuts that might interfere
         document.addEventListener('keydown', preventKeyboardShortcuts);
+    }
+    
+    function initializeProgress(totalSteps) {
+        var progressContainer = document.getElementById('llmvm-progress-container');
+        var progressSteps = document.getElementById('llmvm-progress-steps');
+        
+        if (progressContainer && progressSteps) {
+            progressContainer.style.display = 'block';
+            progressSteps.textContent = '0 / ' + totalSteps;
+            updateProgress(0, totalSteps);
+        }
+    }
+    
+    function updateProgress(currentStep, totalSteps) {
+        var progressBar = document.getElementById('llmvm-progress-bar');
+        var progressText = document.getElementById('llmvm-progress-text');
+        var progressSteps = document.getElementById('llmvm-progress-steps');
+        
+        if (progressBar && progressText && progressSteps && totalSteps > 0) {
+            var percentage = Math.round((currentStep / totalSteps) * 100);
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = percentage + '%';
+            progressSteps.textContent = currentStep + ' / ' + totalSteps;
+        }
+    }
+    
+    function updateLoadingMessage(message) {
+        var messageEl = document.getElementById('llmvm-loading-message');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+    }
+    
+    function startProgressSimulation(totalSteps) {
+        if (totalSteps <= 0) return;
+        
+        var currentStep = 0;
+        var progressInterval = setInterval(function() {
+            currentStep++;
+            if (currentStep <= totalSteps) {
+                updateProgress(currentStep, totalSteps);
+                
+                // Update message based on progress
+                var percentage = Math.round((currentStep / totalSteps) * 100);
+                if (percentage < 25) {
+                    updateLoadingMessage('Initializing prompts...');
+                } else if (percentage < 50) {
+                    updateLoadingMessage('Processing AI models...');
+                } else if (percentage < 75) {
+                    updateLoadingMessage('Generating responses...');
+                } else if (percentage < 100) {
+                    updateLoadingMessage('Finalizing results...');
+                } else {
+                    updateLoadingMessage('Completing...');
+                }
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 2000); // Update every 2 seconds
+        
+        // Store interval ID for cleanup if needed
+        window.llmvmProgressInterval = progressInterval;
     }
     
     function preventContextMenu(e) {
