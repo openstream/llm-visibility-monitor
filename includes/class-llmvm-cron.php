@@ -584,6 +584,7 @@ class LLMVM_Cron {
 			$current_step++;
 			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $prompt_model );
 		}
+		}
 
 		// Complete progress tracking
 		LLMVM_Progress_Tracker::complete_progress( $run_id, 'All prompts completed successfully!' );
