@@ -1115,10 +1115,10 @@ jQuery(document).ready(function($) {
         // Initialize progress if totalSteps is provided
         if (totalSteps && totalSteps > 0) {
             initializeProgress(totalSteps);
-            // Start progress simulation after a short delay
+            // Start progress simulation after a realistic delay
             setTimeout(function() {
                 startProgressSimulation(totalSteps);
-            }, 1000);
+            }, 2000);
         }
         
         // Disable all interactive elements
@@ -1167,9 +1167,25 @@ jQuery(document).ready(function($) {
         if (totalSteps <= 0) return;
         
         var currentStep = 0;
-        var progressInterval = setInterval(function() {
-            currentStep++;
-            if (currentStep <= totalSteps) {
+        var stepDelays = [];
+        
+        // Create realistic timing for each step
+        for (var i = 0; i < totalSteps; i++) {
+            if (i === 0) {
+                // First step: quick initialization
+                stepDelays.push(1500);
+            } else if (i < totalSteps - 1) {
+                // Middle steps: moderate processing time (3-5 seconds)
+                stepDelays.push(3000 + Math.random() * 2000);
+            } else {
+                // Last step: longer finalization time (8-12 seconds)
+                stepDelays.push(8000 + Math.random() * 4000);
+            }
+        }
+        
+        function processNextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
                 updateProgress(currentStep, totalSteps);
                 
                 // Update message based on progress
@@ -1185,13 +1201,23 @@ jQuery(document).ready(function($) {
                 } else {
                     updateLoadingMessage('Completing...');
                 }
-            } else {
-                clearInterval(progressInterval);
+                
+                // Add extra delay for certain percentages to simulate processing
+                var extraDelay = 0;
+                if (percentage === 50 || percentage === 75) {
+                    // Pause at 50% and 75% for extra processing time
+                    extraDelay = 2000 + Math.random() * 3000;
+                }
+                
+                // Schedule next step with realistic delay
+                if (currentStep < totalSteps) {
+                    setTimeout(processNextStep, stepDelays[currentStep - 1] + extraDelay);
+                }
             }
-        }, 2000); // Update every 2 seconds
+        }
         
-        // Store interval ID for cleanup if needed
-        window.llmvmProgressInterval = progressInterval;
+        // Start the first step after initial delay
+        setTimeout(processNextStep, stepDelays[0]);
     }
     
     function preventContextMenu(e) {
