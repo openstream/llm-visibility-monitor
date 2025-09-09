@@ -948,6 +948,8 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
+            // Show loading overlay to prevent interactions
+            showLoadingOverlay('Running all prompts... This may take several minutes.');
             window.location.href = originalHref;
         }
     });
@@ -1023,6 +1025,8 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
+            // Show loading overlay to prevent interactions
+            showLoadingOverlay('Running prompt... Please wait.');
             window.location.href = originalHref;
         }
     });
@@ -1039,6 +1043,69 @@ jQuery(document).ready(function($) {
             });
         }
     });
+    
+    // Loading overlay functions
+    function showLoadingOverlay(message) {
+        // Create overlay if it doesn't exist
+        if (!document.getElementById('llmvm-loading-overlay')) {
+            var overlay = document.createElement('div');
+            overlay.id = 'llmvm-loading-overlay';
+            overlay.innerHTML = 
+                '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 999999; display: flex; align-items: center; justify-content: center;">' +
+                    '<div style="background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); max-width: 400px; margin: 20px;">' +
+                        '<div style="margin-bottom: 20px;">' +
+                            '<div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0073aa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>' +
+                        '</div>' +
+                        '<h3 style="margin: 0 0 10px 0; color: #333; font-size: 18px;">Processing...</h3>' +
+                        '<p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;" id="llmvm-loading-message">' + message + '</p>' +
+                        '<p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">Please do not close this window or navigate away.</p>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+            
+            // Add CSS animation
+            var style = document.createElement('style');
+            style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        } else {
+            // Update message if overlay exists
+            var messageEl = document.getElementById('llmvm-loading-message');
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+        }
+        
+        // Disable all interactive elements
+        document.body.style.pointerEvents = 'none';
+        document.body.style.userSelect = 'none';
+        
+        // Prevent context menu
+        document.addEventListener('contextmenu', preventContextMenu);
+        
+        // Prevent keyboard shortcuts that might interfere
+        document.addEventListener('keydown', preventKeyboardShortcuts);
+    }
+    
+    function preventContextMenu(e) {
+        e.preventDefault();
+        return false;
+    }
+    
+    function preventKeyboardShortcuts(e) {
+        // Prevent common shortcuts that might interfere
+        if (e.ctrlKey || e.metaKey) {
+            var key = e.key.toLowerCase();
+            if (['r', 'f5', 'w', 'n', 't'].includes(key)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        // Prevent F5 and other function keys
+        if (e.keyCode >= 112 && e.keyCode <= 123) {
+            e.preventDefault();
+            return false;
+        }
+    }
     
     } catch (error) {
         console.error('JavaScript error in prompts page:', error);
