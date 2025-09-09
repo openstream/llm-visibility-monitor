@@ -134,6 +134,38 @@ This plugin connects to the OpenRouter API to send prompts to various AI models 
   - Web search status visible in both admin and user views
   - Backward compatibility maintained for existing prompts
   - Enhanced logging to track web search usage and model modifications
+- **New Feature**: Loading Overlay for Run Operations
+  - Added loading overlay that prevents user interactions during prompt execution
+  - Prevents accidental interruption of running prompts
+  - Shows progress messages for "Run All Prompts Now" and individual "Run Now" operations
+  - Blocks all user interactions (clicks, keyboard shortcuts, context menu) during execution
+  - Enhanced user experience with clear visual feedback
+- **New Feature**: Markdown Link Support in Email Reports
+  - Added support for markdown link syntax `[text](URL)` in email reports
+  - Automatic conversion to HTML `<a>` tags with proper styling
+  - Secure URL handling with `esc_url()` and `esc_html()` for XSS protection
+  - Email-compatible inline CSS styling for links
+  - Enhanced content formatting for better email readability
+- **New Feature**: Login Page Customization
+  - Added "Login Page Customization" section in plugin settings
+  - Replaces WordPress logo with site name "LLM Visibility Monitor" on login page
+  - Custom text area for adding personalized content below the site name
+  - Supports HTML formatting including links and bold text
+  - Editable through Settings → LLM Visibility Monitor → Login Page Customization
+  - Professional styling with proper spacing and visual hierarchy
+- **Enhancement**: Upgrade Link for Usage Limits
+  - Added upgrade link in usage summary when monthly run limit is reached
+  - Direct link to subscription page for easy plan upgrades
+  - Encourages users to upgrade when they hit their limits
+  - Improved user experience with clear upgrade path
+- **Bug Fix**: Fixed duplicate menu items in WordPress admin
+  - Resolved issue where "LLM Visibility Monitor" appeared twice in Settings sidebar
+  - Optimized admin class instantiation to prevent duplicate menu registration
+  - Cleaner admin interface with single menu entry
+- **Bug Fix**: Fixed duplicate settings sections
+  - Removed duplicate "Login Page Customization" section on settings page
+  - Proper form integration for all settings sections
+  - Cleaner settings interface with no duplicate content
 
 ### 0.9.0 - 2025-09-08
 - **New Feature**: Model limit enforcement for free plan users
