@@ -452,6 +452,16 @@ if ( $is_admin ) {
                                 <div id="llmvm-prompt-models-selected-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" class="llmvm-selected-models"></div>
                                 <input type="hidden" id="llmvm-prompt-models-input-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="prompt_models[]" value="" />
                             </div>
+                            <div class="llmvm-web-search-container" style="margin-top: 10px;">
+                                <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" style="display: inline-block; margin-right: 15px;">
+                                    <input type="checkbox" 
+                                           id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
+                                           name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
+                                           value="1" 
+                                           <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
+                                    <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
+                                </label>
+                            </div>
                             <br><br>
                             <div class="llmvm-all-buttons">
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">
@@ -460,14 +470,6 @@ if ( $is_admin ) {
                                     <input type="hidden" name="prompt_id" value="<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_models[]" value="" />
-                                    <label for="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>">
-                                        <input type="checkbox" 
-                                               id="llmvm-prompt-web-search-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" 
-                                               name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" 
-                                               value="1" 
-                                               <?php checked( ! empty( $prompt['web_search'] ) ); ?> />
-                                        <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
-                                    </label>
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
