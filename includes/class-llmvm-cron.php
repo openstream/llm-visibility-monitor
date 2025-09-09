@@ -546,42 +546,43 @@ class LLMVM_Cron {
 				$prompt_models = array( $model );
 			}
 
-			// Process each model for this prompt
-			foreach ( $prompt_models as $prompt_model ) {
-				$current_step++;
-				
-				// Update progress
-				LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Processing model: ' . $prompt_model );
+		// Process each model for this prompt
+		foreach ( $prompt_models as $prompt_model ) {
+			// Update progress to show we're starting this model
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $prompt_model );
 
-				// Append :online to model if web search is enabled
-				$model_to_use = $prompt_model;
-				if ( ! empty( $prompt['web_search'] ) ) {
-					$model_to_use = $prompt_model . ':online';
-				}
-
-				$response = $client->query( $api_key, $prompt_text, $model_to_use );
-				$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-				$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
-				$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
-				$error = isset( $response['error'] ) ? (string) $response['error'] : '';
-
-				// Store result
-				$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
-				if ( $result ) {
-					$current_run_results[] = [
-						'prompt' => $prompt_text,
-						'model' => $resp_model,
-						'answer' => $answer,
-						'user_id' => $prompt_user_id,
-						'status' => $status,
-						'error' => $error
-					];
-				}
-
-				if ( $status && $status >= 400 ) {
-					LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
-				}
+			// Append :online to model if web search is enabled
+			$model_to_use = $prompt_model;
+			if ( ! empty( $prompt['web_search'] ) ) {
+				$model_to_use = $prompt_model . ':online';
 			}
+
+			$response = $client->query( $api_key, $prompt_text, $model_to_use );
+			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+			$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+			$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
+			$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+
+			// Store result
+			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
+			if ( $result ) {
+				$current_run_results[] = [
+					'prompt' => $prompt_text,
+					'model' => $resp_model,
+					'answer' => $answer,
+					'user_id' => $prompt_user_id,
+					'status' => $status,
+					'error' => $error
+				];
+			}
+
+			if ( $status && $status >= 400 ) {
+				LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+			}
+			
+			// Update progress after model is completed
+			$current_step++;
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $prompt_model );
 		}
 
 		// Complete progress tracking
@@ -671,10 +672,8 @@ class LLMVM_Cron {
 
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
-			$current_step++;
-			
-			// Update progress
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Processing model: ' . $prompt_model );
+			// Update progress to show we're starting this model
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Starting model: ' . $prompt_model );
 
 			// Append :online to model if web search is enabled
 			$model_to_use = $prompt_model;
@@ -704,6 +703,10 @@ class LLMVM_Cron {
 			if ( $status && $status >= 400 ) {
 				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
 			}
+			
+			// Update progress after model is completed
+			$current_step++;
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $prompt_model );
 		}
 
 		// Complete progress tracking
