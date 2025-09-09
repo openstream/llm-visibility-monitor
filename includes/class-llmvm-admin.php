@@ -87,6 +87,12 @@ class LLMVM_Admin {
         add_action( 'edit_user_profile', [ $this, 'add_timezone_field' ] );
         add_action( 'personal_options_update', [ $this, 'save_timezone_field' ] );
         add_action( 'edit_user_profile_update', [ $this, 'save_timezone_field' ] );
+        
+        // Login page customization
+        add_action( 'login_enqueue_scripts', [ $this, 'customize_login_page' ] );
+        add_filter( 'login_headerurl', [ $this, 'login_header_url' ] );
+        add_filter( 'login_headertext', [ $this, 'login_header_text' ] );
+        add_action( 'login_footer', [ $this, 'login_custom_text' ] );
     }
 
     /**
@@ -260,7 +266,7 @@ class LLMVM_Admin {
         register_setting( 'llmvm_settings', 'llmvm_options', [
             'type'              => 'array',
             'sanitize_callback' => [ $this, 'sanitize_options' ],
-            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false ],
+            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false, 'login_custom_text' => '' ],
             'show_in_rest'      => false,
         ] );
 
@@ -286,6 +292,10 @@ class LLMVM_Admin {
 
         // User Role Management Section
         add_settings_section( 'llmvm_section_roles', __( 'User Role Management', 'llm-visibility-monitor' ), [ $this, 'section_roles_description' ], 'llmvm-settings' );
+
+        // Login Page Customization Section
+        add_settings_section( 'llmvm_section_login', __( 'Login Page Customization', 'llm-visibility-monitor' ), [ $this, 'section_login_description' ], 'llmvm-settings' );
+        add_settings_field( 'llmvm_login_custom_text', __( 'Login Page Custom Text', 'llm-visibility-monitor' ), [ $this, 'field_login_custom_text' ], 'llmvm-settings', 'llmvm_section_login' );
     }
 
     /**
@@ -597,6 +607,24 @@ class LLMVM_Admin {
         }
         
         echo '</div>';
+    }
+
+    /** Render login page customization section description */
+    public function section_login_description(): void {
+        echo '<p>' . esc_html__( 'Customize the WordPress login page with your own branding. The login page will show "LLM Visibility Monitor" instead of the WordPress logo, and you can add custom text below it.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render login custom text field */
+    public function field_login_custom_text(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['login_custom_text'] ) ? (string) $options['login_custom_text'] : '';
+        
+        echo '<textarea name="llmvm_options[login_custom_text]" id="llmvm_login_custom_text" rows="5" cols="50" class="large-text">' . esc_textarea( $value ) . '</textarea>';
+        echo '<p class="description">' . esc_html__( 'Enter custom text to display below the site name on the login page. You can use HTML tags like &lt;strong&gt;, &lt;em&gt;, and &lt;a&gt; for formatting.', 'llm-visibility-monitor' ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'Example: &lt;strong&gt;Welcome!&lt;/strong&gt; Please log in to access &lt;a href="https://docs.openstream.ch"&gt;documentation&lt;/a&gt;.', 'llm-visibility-monitor' ) . '</p>';
     }
 
     /** Render prompts management page */
@@ -1409,6 +1437,78 @@ class LLMVM_Admin {
             delete_user_meta( $user_id, 'llmvm_timezone' );
         } else {
             update_user_meta( $user_id, 'llmvm_timezone', $timezone );
+        }
+    }
+
+    /**
+     * Customize login page CSS and logo
+     */
+    public function customize_login_page(): void {
+        ?>
+        <style type="text/css">
+            #login h1 a {
+                background-image: none !important;
+                width: auto !important;
+                height: auto !important;
+                text-indent: 0 !important;
+                font-size: 24px !important;
+                font-weight: 600 !important;
+                color: #23282d !important;
+                text-decoration: none !important;
+                line-height: 1.3 !important;
+                padding: 0 !important;
+                margin-bottom: 25px !important;
+            }
+            #login h1 {
+                padding-bottom: 0 !important;
+            }
+            .llmvm-login-custom-text {
+                text-align: center;
+                margin: 16px 0;
+                padding: 16px;
+                background: #f9f9f9;
+                border: 1px solid #e5e5e5;
+                border-radius: 4px;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            .llmvm-login-custom-text a {
+                color: #0073aa;
+                text-decoration: none;
+            }
+            .llmvm-login-custom-text a:hover {
+                text-decoration: underline;
+            }
+        </style>
+        <?php
+    }
+
+    /**
+     * Change login header URL to site URL
+     */
+    public function login_header_url(): string {
+        return home_url();
+    }
+
+    /**
+     * Change login header text to site name
+     */
+    public function login_header_text(): string {
+        return 'LLM Visibility Monitor';
+    }
+
+    /**
+     * Add custom text below login form
+     */
+    public function login_custom_text(): void {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $custom_text = isset( $options['login_custom_text'] ) ? (string) $options['login_custom_text'] : '';
+        
+        if ( ! empty( trim( $custom_text ) ) ) {
+            echo '<div class="llmvm-login-custom-text">' . wp_kses_post( $custom_text ) . '</div>';
         }
     }
 }
