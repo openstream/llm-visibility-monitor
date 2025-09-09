@@ -573,10 +573,12 @@ class LLMVM_Cron {
 			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
 			if ( $result ) {
 				$current_run_results[] = [
+					'id' => $result,
 					'prompt' => $prompt_text,
 					'model' => $resp_model,
 					'answer' => $answer,
 					'user_id' => $prompt_user_id,
+					'created_at' => current_time( 'mysql' ),
 					'status' => $status,
 					'error' => $error
 				];
@@ -704,10 +706,12 @@ class LLMVM_Cron {
 			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $current_user_id );
 			if ( $result ) {
 				$current_run_results[] = [
+					'id' => $result,
 					'prompt' => $prompt_text,
 					'model' => $resp_model,
 					'answer' => $answer,
 					'user_id' => $current_user_id,
+					'created_at' => current_time( 'mysql' ),
 					'status' => $status,
 					'error' => $error
 				];
