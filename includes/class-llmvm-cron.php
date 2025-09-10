@@ -181,6 +181,10 @@ class LLMVM_Cron {
 	 * Run scheduled job: send prompts to OpenRouter and store results.
 	 */
 	public function run(): void {
+		// Set execution time limit for long-running operations
+		set_time_limit( 720 ); // 12 minutes
+		ini_set( 'max_execution_time', 720 );
+		
 		$options   = get_option( 'llmvm_options', [] );
 		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
 		if ( ! is_array( $options ) ) {
@@ -545,6 +549,10 @@ class LLMVM_Cron {
 	 * Run all prompts with progress tracking
 	 */
 	public function run_with_progress( string $run_id ): void {
+		// Set execution time limit for long-running operations
+		set_time_limit( 720 ); // 12 minutes
+		ini_set( 'max_execution_time', 720 );
+		
 		$options = get_option( 'llmvm_options', [] );
 		if ( ! is_array( $options ) ) {
 			$options = [];
@@ -690,6 +698,10 @@ class LLMVM_Cron {
 	 * Run single prompt with progress tracking
 	 */
 	public function run_single_prompt_with_progress( string $prompt_id, string $run_id ): void {
+		// Set execution time limit for long-running operations
+		set_time_limit( 720 ); // 12 minutes
+		ini_set( 'max_execution_time', 720 );
+		
 		$options = get_option( 'llmvm_options', [] );
 		if ( ! is_array( $options ) ) {
 			$options = [];

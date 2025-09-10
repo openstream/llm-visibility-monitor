@@ -1043,13 +1043,21 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         <?php if ( $is_admin ) : ?>
-        // Admin users - simplified confirmation
+        // Admin users - simplified confirmation with large run warning
+        var warningMessage = '';
+        if (totalRuns > 10) {
+            warningMessage = '⚠️ WARNING: Large run detected!\n' +
+                           'Runs with more than 10 models may timeout on some servers.\n' +
+                           'Consider running prompts individually if you encounter errors.\n\n';
+        }
+        
         var confirmed = confirm('🚀 Run All Prompts Confirmation\n\n' +
+                               warningMessage +
                                'Prompts to run: ' + promptCount + '\n' +
                                'Total runs: ' + totalRuns + '\n\n' +
                                'This may take several minutes. Continue?');
         <?php else : ?>
-        // Regular users - full confirmation with usage info
+        // Regular users - full confirmation with usage info and large run warning
         var currentUsage = <?php echo json_encode( LLMVM_Usage_Manager::get_usage_summary( $current_user_id ) ); ?>;
         var remainingRuns = currentUsage.runs.remaining;
         
@@ -1063,8 +1071,17 @@ jQuery(document).ready(function($) {
             return false;
         }
         
+        // Add warning for large runs
+        var warningMessage = '';
+        if (totalRuns > 10) {
+            warningMessage = '⚠️ WARNING: Large run detected!\n' +
+                           'Runs with more than 10 models may timeout on some servers.\n' +
+                           'Consider running prompts individually if you encounter errors.\n\n';
+        }
+        
         // Show confirmation
         var confirmed = confirm('🚀 Run All Prompts Confirmation\n\n' +
+                               warningMessage +
                                'Prompts to run: ' + promptCount + '\n' +
                                'Total runs: ' + totalRuns + '\n' +
                                'Runs remaining after: ' + (remainingRuns - totalRuns) + '\n' +
