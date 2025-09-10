@@ -134,8 +134,6 @@ class LLMVM_Admin {
         $wp_admin_bar->remove_node( 'new-content' );
 
         // Remove other unnecessary admin bar items for LLM Managers
-        $wp_admin_bar->remove_node( 'wp-logo' ); // WordPress logo
-        $wp_admin_bar->remove_node( 'site-name' ); // Site name
         $wp_admin_bar->remove_node( 'updates' ); // Updates notification
         $wp_admin_bar->remove_node( 'search' ); // Search box
     }
