@@ -551,4 +551,50 @@ msgstr "Benutzer nicht gefunden"
 msgid "Invalid user ID"
 msgstr "Ungültige Benutzer-ID"
 
+#: includes/views/prompts-page.php
+msgid "Prompt Text"
+msgstr "Prompt-Text"
+
+#: includes/views/prompts-page.php
+msgid "Enter your prompt text here..."
+msgstr "Geben Sie hier Ihren Prompt-Text ein..."
+
+#: includes/views/prompts-page.php
+msgid "Enter the prompt text that will be sent to the AI models."
+msgstr "Geben Sie den Prompt-Text ein, der an die KI-Modelle gesendet wird."
+
+#: includes/views/prompts-page.php
+msgid "Optional: Select specific models. If empty, the default model will be used."
+msgstr "Optional: Wählen Sie spezifische Modelle. Wenn leer, wird das Standardmodell verwendet."
+
+#: includes/views/prompts-page.php
+msgid "Options"
+msgstr "Optionen"
+
+#: includes/views/prompts-page.php
+msgid "Enable Web Search"
+msgstr "Web-Suche aktivieren"
+
+#: includes/views/prompts-page.php
+msgid "Uses OpenRouter web search plugin to find relevant information from the web (appends :online to models)."
+msgstr "Verwendet das OpenRouter Web-Suche-Plugin, um relevante Informationen aus dem Web zu finden (fügt :online zu Modellen hinzu)."
+
+#: includes/views/prompts-page.php
+msgid "How often this prompt should be executed automatically."
+msgstr "Wie oft dieser Prompt automatisch ausgeführt werden soll."
+
+
+#: includes/views/prompts-page.php
+msgid "Cron Frequency:"
+msgstr "Cron-Häufigkeit:"
+
+#: includes/views/prompts-page.php
+msgid "Next cron execution:"
+msgstr "Nächste Cron-Ausführung:"
+
+#: includes/views/prompts-page.php
+msgid "No prompts found."
+msgstr "Keine Prompts gefunden."
+
+
 
