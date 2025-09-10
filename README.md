@@ -152,6 +152,26 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.11.0 - 2025-09-10
+- **New Feature**: Per-Prompt Cron Frequency Settings
+  - Added cron frequency dropdown (daily/weekly/monthly) to "Add New Prompt" form
+  - Each prompt can now have its own individual cron schedule
+  - Updated "Your Prompts" section to show current cron frequency and allow changes
+  - Removed global cron frequency setting from Settings page
+  - Individual cron jobs are automatically scheduled for each prompt based on their frequency
+  - Enhanced cron scheduler to handle per-prompt frequencies with proper WordPress cron integration
+  - Database migration automatically adds cron_frequency field to existing prompts (defaults to daily)
+  - Improved user experience with granular control over prompt execution timing
+- **Enhancement**: Improved Cron Management
+  - Automatic scheduling/unscheduling of cron jobs when prompts are added, edited, or deleted
+  - Better cron job isolation with unique hooks per prompt
+  - Enhanced logging for cron job operations
+  - Proper cleanup of cron jobs when prompts are removed
+- **Technical Improvement**: Database Schema Update
+  - Updated database version to 1.5.0
+  - Added migration for existing prompts to include cron_frequency field
+  - Backward compatibility maintained for existing installations
+
 ### 0.10.0 - 2025-09-09
 - **New Feature**: Web Search Integration with OpenRouter
   - Added web search checkbox to "Add New Prompt" form

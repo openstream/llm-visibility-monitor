@@ -176,8 +176,78 @@ if ( $is_admin ) {
     left: 8px;
     justify-content: flex-end;
 }
+/* Add New Prompt Section Styling */
+.llmvm-add-prompt-container {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    max-width: 45%;
+}
+
+.llmvm-add-prompt-container .form-table {
+    margin-top: 0;
+}
+
+.llmvm-add-prompt-container .form-table th {
+    width: 120px;
+    padding: 15px 10px 15px 0;
+    vertical-align: top;
+}
+
+.llmvm-add-prompt-container .form-table td {
+    padding: 15px 0;
+}
+
+.llmvm-prompt-textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100px;
+    resize: vertical;
+}
+
+.llmvm-model-search {
+    width: 100%;
+    max-width: 100%;
+}
+
+.llmvm-cron-select {
+    width: 100%;
+    max-width: 200px;
+}
+
+.llmvm-add-prompt-container .description {
+    margin-top: 5px;
+    color: #646970;
+    font-style: italic;
+}
+
+.llmvm-add-prompt-container fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.llmvm-add-prompt-container fieldset label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.llmvm-add-prompt-container fieldset input[type="checkbox"] {
+    margin: 0;
+}
+
 /* Responsive design for mobile devices */
 @media screen and (max-width: 782px) {
+    .llmvm-add-prompt-container {
+        max-width: 100%;
+        margin: 15px 0;
+        padding: 15px;
+    }
+    
     .llmvm-prompt-cell {
         width: 100%;
         margin-bottom: 16px;
@@ -304,30 +374,62 @@ if ( $is_admin ) {
     }
     ?>
     
-    <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
-        <?php wp_nonce_field( 'llmvm_add_prompt' ); ?>
-        <input type="hidden" name="action" value="llmvm_add_prompt" />
-        <p>
-            <label for="llmvm-new-prompt" class="screen-reader-text"><?php echo esc_html__( 'New Prompt', 'llm-visibility-monitor' ); ?></label>
-            <textarea id="llmvm-new-prompt" name="prompt_text" class="large-text" rows="3" required></textarea>
-        </p>
-        <p>
-            <label for="llmvm-new-prompt-models"><?php echo esc_html__( 'Models (optional, uses default if empty):', 'llm-visibility-monitor' ); ?></label>
-            <div id="llmvm-new-prompt-models-container" class="llmvm-multi-model-container">
-                <input type="text" id="llmvm-new-prompt-models-search" class="regular-text" placeholder="<?php echo esc_attr__( 'Click to see all models or type to filter...', 'llm-visibility-monitor' ); ?>" />
-                <div id="llmvm-new-prompt-models-selected" class="llmvm-selected-models"></div>
-                <input type="hidden" id="llmvm-new-prompt-models-input" name="prompt_models[]" value="" />
-            </div>
-        </p>
-        <p>
-            <label for="llmvm-new-prompt-web-search">
-                <input type="checkbox" id="llmvm-new-prompt-web-search" name="web_search" value="1" />
-                <?php echo esc_html__( 'Enable Web Search (appends :online to models)', 'llm-visibility-monitor' ); ?>
-            </label>
-            <br><small class="description"><?php echo esc_html__( 'Uses OpenRouter web search plugin to find relevant information from the web.', 'llm-visibility-monitor' ); ?></small>
-        </p>
-        <?php submit_button( __( 'Add Prompt', 'llm-visibility-monitor' ), 'secondary' ); ?>
-    </form>
+    <div class="llmvm-add-prompt-container">
+        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
+            <?php wp_nonce_field( 'llmvm_add_prompt' ); ?>
+            <input type="hidden" name="action" value="llmvm_add_prompt" />
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="llmvm-new-prompt"><?php echo esc_html__( 'Prompt Text', 'llm-visibility-monitor' ); ?></label>
+                    </th>
+                    <td>
+                        <textarea id="llmvm-new-prompt" name="prompt_text" class="llmvm-prompt-textarea" rows="4" required placeholder="<?php echo esc_attr__( 'Enter your prompt text here...', 'llm-visibility-monitor' ); ?>"></textarea>
+                        <p class="description"><?php echo esc_html__( 'Enter the prompt text that will be sent to the AI models.', 'llm-visibility-monitor' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="llmvm-new-prompt-models"><?php echo esc_html__( 'Models', 'llm-visibility-monitor' ); ?></label>
+                    </th>
+                    <td>
+                        <div id="llmvm-new-prompt-models-container" class="llmvm-multi-model-container">
+                            <input type="text" id="llmvm-new-prompt-models-search" class="llmvm-model-search" placeholder="<?php echo esc_attr__( 'Click to see all models or type to filter...', 'llm-visibility-monitor' ); ?>" />
+                            <div id="llmvm-new-prompt-models-selected" class="llmvm-selected-models"></div>
+                            <input type="hidden" id="llmvm-new-prompt-models-input" name="prompt_models[]" value="" />
+                        </div>
+                        <p class="description"><?php echo esc_html__( 'Optional: Select specific models. If empty, the default model will be used.', 'llm-visibility-monitor' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php echo esc_html__( 'Options', 'llm-visibility-monitor' ); ?></th>
+                    <td>
+                        <fieldset>
+                            <label for="llmvm-new-prompt-web-search">
+                                <input type="checkbox" id="llmvm-new-prompt-web-search" name="web_search" value="1" />
+                                <?php echo esc_html__( 'Enable Web Search', 'llm-visibility-monitor' ); ?>
+                            </label>
+                            <p class="description"><?php echo esc_html__( 'Uses OpenRouter web search plugin to find relevant information from the web (appends :online to models).', 'llm-visibility-monitor' ); ?></p>
+                        </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="llmvm-new-prompt-cron-frequency"><?php echo esc_html__( 'Cron Frequency', 'llm-visibility-monitor' ); ?></label>
+                    </th>
+                    <td>
+                        <select id="llmvm-new-prompt-cron-frequency" name="cron_frequency" class="llmvm-cron-select">
+                            <option value="daily"><?php echo esc_html__( 'Daily', 'llm-visibility-monitor' ); ?></option>
+                            <option value="weekly"><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
+                            <option value="monthly"><?php echo esc_html__( 'Monthly', 'llm-visibility-monitor' ); ?></option>
+                        </select>
+                        <p class="description"><?php echo esc_html__( 'How often this prompt should be executed automatically.', 'llm-visibility-monitor' ); ?></p>
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button( __( 'Add Prompt', 'llm-visibility-monitor' ), 'primary' ); ?>
+        </form>
+    </div>
 
     <?php if ( $is_admin && ! empty( $all_prompts ) ) : ?>
         <h2><?php echo esc_html__( 'All Prompts (Admin View)', 'llm-visibility-monitor' ); ?></h2>
@@ -467,8 +569,18 @@ if ( $is_admin ) {
                                 </label>
                             </div>
                             <div style="margin-top: 10px; padding: 8px; background: #f0f0f1; border-radius: 4px; font-size: 12px;">
-                                <strong><?php echo esc_html__( 'Next cron execution:', 'llm-visibility-monitor' ); ?></strong>
-                                <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time() ); ?></span>
+                                <div style="margin-bottom: 8px;">
+                                    <strong><?php echo esc_html__( 'Cron Frequency:', 'llm-visibility-monitor' ); ?></strong>
+                                    <select id="llmvm-cron-frequency-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" style="margin-left: 8px; font-size: 12px;">
+                                        <option value="daily" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'daily' ); ?>><?php echo esc_html__( 'Daily', 'llm-visibility-monitor' ); ?></option>
+                                        <option value="weekly" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'weekly' ); ?>><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
+                                        <option value="monthly" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'monthly' ); ?>><?php echo esc_html__( 'Monthly', 'llm-visibility-monitor' ); ?></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <strong><?php echo esc_html__( 'Next cron execution:', 'llm-visibility-monitor' ); ?></strong>
+                                    <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time( $prompt['cron_frequency'] ?? 'daily' ) ); ?></span>
+                                </div>
                             </div>
                             <br><br>
                             <div class="llmvm-all-buttons">
@@ -479,6 +591,7 @@ if ( $is_admin ) {
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_models[]" value="" />
                                     <input type="hidden" id="llmvm-web-search-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo ! empty( $prompt['web_search'] ) ? '1' : '0'; ?>" />
+                                    <input type="hidden" id="llmvm-cron-frequency-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="cron_frequency[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo esc_attr( $prompt['cron_frequency'] ?? 'daily' ); ?>" />
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">
@@ -616,7 +729,7 @@ jQuery(document).ready(function($) {
         console.log('Skipping jQuery UI Autocomplete, using custom dropdown only');
         
         // Create a simple custom dropdown for testing
-        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:2px solid red; max-height:400px; overflow-y:scroll; z-index:999999; margin-top:5px; width:100%;"></div>');
+        var $customDropdown = $('<div class="llmvm-custom-dropdown" style="display:none; position:relative; background:white; border:1px solid #c3c4c7; max-height:400px; overflow-y:scroll; z-index:999999; margin-top:5px; width:100%; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"></div>');
         $searchInput.after($customDropdown);
         
         // Helper function to populate dropdown with models
@@ -624,7 +737,7 @@ jQuery(document).ready(function($) {
             $customDropdown.empty();
             
             $.each(models, function(index, model) {
-                var $item = $('<div style="padding:5px; cursor:pointer; border-bottom:1px solid #eee;">' + model.name + ' (' + model.id + ')</div>');
+                var $item = $('<div style="padding:4px; cursor:pointer; border-bottom:1px solid #eee; font-size:11px; line-height:1.2;">' + model.name + ' (' + model.id + ')</div>');
                 $item.data('model', model);
                 $customDropdown.append($item);
             });
@@ -860,6 +973,14 @@ jQuery(document).ready(function($) {
             // Update hidden text field
             $form.find('input[name="prompt_text"]').val(currentText);
             
+            // Sync cron frequency dropdown value to hidden input
+            var $cronSelect = $form.closest('tr').find('[id^="llmvm-cron-frequency-"]');
+            var $cronHidden = $form.find('input[name^="cron_frequency"]');
+            if ($cronSelect.length && $cronHidden.length) {
+                $cronHidden.val($cronSelect.val());
+                console.log('Updated cron frequency:', $cronSelect.val());
+            }
+            
             // Get current models from the model selector
             var $modelContainer = $form.closest('tr').find('.llmvm-multi-model-container');
             var getSelectedModelsFunction = $modelContainer.data('getSelectedModels');
@@ -1058,6 +1179,19 @@ jQuery(document).ready(function($) {
             // Update hidden input when checkbox changes
             checkbox.addEventListener('change', function() {
                 hiddenInput.value = this.checked ? '1' : '0';
+            });
+        }
+    });
+    
+    // Sync cron frequency dropdown with hidden input field
+    document.querySelectorAll('[id^="llmvm-cron-frequency-"]').forEach(function(select) {
+        var promptId = select.id.replace('llmvm-cron-frequency-', '');
+        var hiddenInput = document.getElementById('llmvm-cron-frequency-hidden-' + promptId);
+        
+        if (hiddenInput) {
+            // Update hidden input when dropdown changes
+            select.addEventListener('change', function() {
+                hiddenInput.value = this.value;
             });
         }
     });

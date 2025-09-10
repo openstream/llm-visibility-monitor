@@ -32,7 +32,7 @@ class LLMVM_Database {
 	/**
 	 * Current DB schema version for this plugin.
 	 */
-	private const DB_VERSION = '1.4.0';
+	private const DB_VERSION = '1.5.0';
 
 	/**
 	 * Return the fully qualified table name.
@@ -90,6 +90,9 @@ class LLMVM_Database {
 		
 		// Migrate prompts to support web search (v1.4.0).
 		self::migrate_prompts_to_web_search();
+		
+		// Migrate prompts to support cron frequency (v1.5.0).
+		self::migrate_prompts_to_cron_frequency();
 	}
 
 	/**
@@ -207,6 +210,30 @@ class LLMVM_Database {
 			// If prompt doesn't have web_search field, add it as false
 			if ( ! isset( $prompt['web_search'] ) ) {
 				$prompt['web_search'] = false;
+				$migrated = true;
+			}
+		}
+		unset( $prompt );
+
+		if ( $migrated ) {
+			update_option( 'llmvm_prompts', $prompts, false );
+		}
+	}
+
+	/**
+	 * Migrate prompts to support cron frequency (v1.5.0).
+	 */
+	private static function migrate_prompts_to_cron_frequency(): void {
+		$prompts = get_option( 'llmvm_prompts', array() );
+		if ( ! is_array( $prompts ) ) {
+			return;
+		}
+
+		$migrated = false;
+		foreach ( $prompts as &$prompt ) {
+			// If prompt doesn't have cron_frequency field, add it as 'daily'
+			if ( ! isset( $prompt['cron_frequency'] ) ) {
+				$prompt['cron_frequency'] = 'daily';
 				$migrated = true;
 			}
 		}

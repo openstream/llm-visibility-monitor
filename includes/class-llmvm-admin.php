@@ -52,31 +52,26 @@ class LLMVM_Admin {
     /**
      * Get the next cron execution time for display.
      */
-    public static function get_next_cron_execution_time(): string {
-        // Try the correct hook name
-        $next_scheduled = wp_next_scheduled( 'llmvm_run_checks' );
+    public static function get_next_cron_execution_time( string $frequency = 'daily' ): string {
+        // Calculate next execution time based on frequency
+        $now = time();
         
-        // Debug logging to help identify issues
-        error_log( 'LLMVM: Checking cron for llmvm_run_checks: ' . ( $next_scheduled ? gmdate( 'Y-m-d H:i:s', $next_scheduled ) : 'false' ) );
-        
-        if ( false === $next_scheduled ) {
-            // Additional debugging: check if any LLMVM cron jobs exist
-            $cron_jobs = _get_cron_array();
-            $llmvm_crons = array();
-            foreach ( $cron_jobs as $timestamp => $hooks ) {
-                foreach ( $hooks as $hook => $events ) {
-                    if ( strpos( $hook, 'llmvm' ) !== false ) {
-                        $llmvm_crons[ $hook ] = $timestamp;
-                    }
-                }
-            }
-            error_log( 'LLMVM: Found LLMVM cron jobs: ' . print_r( $llmvm_crons, true ) );
-            
-            return __( 'Not scheduled', 'llm-visibility-monitor' );
+        switch ( $frequency ) {
+            case 'daily':
+                $next_run = strtotime( 'tomorrow 9:00 AM', $now );
+                break;
+            case 'weekly':
+                $next_run = strtotime( 'next monday 9:00 AM', $now );
+                break;
+            case 'monthly':
+                $next_run = strtotime( 'first day of next month 9:00 AM', $now );
+                break;
+            default:
+                $next_run = strtotime( 'tomorrow 9:00 AM', $now );
         }
         
         // Convert to user's timezone
-        return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_scheduled ) );
+        return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ) );
     }
 
     /**
@@ -328,7 +323,6 @@ class LLMVM_Admin {
 
         add_settings_field( 'llmvm_api_key', __( 'OpenRouter API Key', 'llm-visibility-monitor' ), [ $this, 'field_api_key' ], 'llmvm-settings', 'llmvm_section_main' );
 
-        add_settings_field( 'llmvm_cron_frequency', __( 'Cron Frequency', 'llm-visibility-monitor' ), [ $this, 'field_cron_frequency' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
@@ -389,13 +383,6 @@ class LLMVM_Admin {
             $new['api_key'] = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';
         }
 
-        $freq = isset( $input['cron_frequency'] ) ? sanitize_text_field( (string) $input['cron_frequency'] ) : ( $options['cron_frequency'] ?? 'daily' );
-        $freq = in_array( $freq, [ 'daily', 'weekly' ], true ) ? $freq : 'daily';
-        $new['cron_frequency'] = $freq;
-
-        if ( ( $options['cron_frequency'] ?? '' ) !== $freq ) {
-            ( new LLMVM_Cron() )->reschedule( $freq );
-        }
 
         $model           = isset( $input['model'] ) ? sanitize_text_field( (string) $input['model'] ) : ( $options['model'] ?? 'openrouter/stub-model-v1' );
         $new['model']    = $model;
@@ -454,19 +441,6 @@ class LLMVM_Admin {
         echo '<p class="description">' . esc_html__( 'Stored encrypted. Re-enter to change.', 'llm-visibility-monitor' ) . '</p>';
     }
 
-    /** Render cron frequency field */
-    public function field_cron_frequency(): void {
-        $options = get_option( 'llmvm_options', [] );
-        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
-        if ( ! is_array( $options ) ) {
-            $options = [];
-        }
-        $value   = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
-        echo '<select name="llmvm_options[cron_frequency]">';
-        echo '<option value="daily"' . selected( $value, 'daily', false ) . '>' . esc_html__( 'Daily', 'llm-visibility-monitor' ) . '</option>';
-        echo '<option value="weekly"' . selected( $value, 'weekly', false ) . '>' . esc_html__( 'Weekly', 'llm-visibility-monitor' ) . '</option>';
-        echo '</select>';
-    }
 
     /** Render model field */
     public function field_model(): void {
@@ -868,6 +842,10 @@ class LLMVM_Admin {
         // Handle web search option
         $web_search = isset( $_POST['web_search'] ) && '1' === $_POST['web_search']; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
         
+        // Handle cron frequency option
+        $cron_frequency = isset( $_POST['cron_frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ) ) : 'daily'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+        $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
+        
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
@@ -934,9 +912,14 @@ class LLMVM_Admin {
                     'text' => $text,
                     'models' => $models,
                     'user_id' => $current_user_id,
-                    'web_search' => $web_search
+                    'web_search' => $web_search,
+                    'cron_frequency' => $cron_frequency
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
+                
+                // Schedule cron job for this prompt
+                $cron = new LLMVM_Cron();
+                $cron->schedule_prompt_cron( $prompts[ count( $prompts ) - 1 ]['id'], $cron_frequency );
                 
                 // Track usage (increment prompts count)
                 LLMVM_Database::increment_usage( $current_user_id, 1, 0 );
@@ -999,6 +982,13 @@ class LLMVM_Admin {
         
         // Handle web search option
         $web_search = isset( $_POST['web_search'] ) && is_array( $_POST['web_search'] ) && isset( $_POST['web_search'][ $id ] ) && '1' === $_POST['web_search'][ $id ]; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+        
+        // Handle cron frequency option
+        $cron_frequency = 'daily'; // Default value
+        if ( isset( $_POST['cron_frequency'] ) && is_array( $_POST['cron_frequency'] ) && isset( $_POST['cron_frequency'][ $id ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+            $cron_frequency = sanitize_text_field( wp_unslash( $_POST['cron_frequency'][ $id ] ) );
+            $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
+        }
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -1051,6 +1041,7 @@ class LLMVM_Admin {
                         unset( $prompt['model'] );
                     }
                     $prompt['web_search'] = $web_search;
+                    $prompt['cron_frequency'] = $cron_frequency;
                     $prompt_updated = true;
                     set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt updated successfully.', 'llm-visibility-monitor' ) ], 60 );
                 } else {
@@ -1063,6 +1054,10 @@ class LLMVM_Admin {
         
         if ( $prompt_updated ) {
             update_option( 'llmvm_prompts', $prompts, false );
+            
+            // Reschedule cron job for this prompt with new frequency
+            $cron = new LLMVM_Cron();
+            $cron->schedule_prompt_cron( $id, $cron_frequency );
         }
 
         // Redirect back to the prompts page
@@ -1110,6 +1105,10 @@ class LLMVM_Admin {
         }
         
         update_option( 'llmvm_prompts', $filtered_prompts, false );
+        
+        // Unschedule cron job for deleted prompt
+        $cron = new LLMVM_Cron();
+        $cron->unschedule_prompt_cron( $id );
 
         // Redirect back to the prompts page
         wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );

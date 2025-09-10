@@ -26,7 +26,7 @@ class LLMVM_Cron {
 		// Re-enable cron with proper action.
 		add_action( self::HOOK, array( $this, 'run' ) );
 
-		// Add weekly schedule if not present.
+		// Add custom schedules if not present.
 		add_filter( 'cron_schedules', array( $this, 'register_schedules' ) );
 
 		// Admin-triggered run-now endpoint.
@@ -34,10 +34,15 @@ class LLMVM_Cron {
 
 		// Admin-triggered single prompt run endpoint.
 		add_action( 'admin_post_llmvm_run_single_prompt', array( $this, 'handle_run_single_prompt' ) );
+		
+		// Schedule individual prompt cron jobs when prompts are added/edited
+		add_action( 'llmvm_prompt_added', array( $this, 'schedule_prompt_cron' ), 10, 2 );
+		add_action( 'llmvm_prompt_updated', array( $this, 'schedule_prompt_cron' ), 10, 2 );
+		add_action( 'llmvm_prompt_deleted', array( $this, 'unschedule_prompt_cron' ), 10, 1 );
 	}
 
 	/**
-	 * Provide custom schedules (weekly).
+	 * Provide custom schedules (weekly and monthly).
 	 *
 	 * @param array $schedules Existing schedules.
 	 * @return array Modified schedules.
@@ -47,6 +52,12 @@ class LLMVM_Cron {
 			$schedules['weekly'] = array(
 				'interval' => DAY_IN_SECONDS * 7,
 				'display'  => __( 'Once Weekly', 'llm-visibility-monitor' ),
+			);
+		}
+		if ( ! isset( $schedules['monthly'] ) ) {
+			$schedules['monthly'] = array(
+				'interval' => DAY_IN_SECONDS * 30,
+				'display'  => __( 'Once Monthly', 'llm-visibility-monitor' ),
 			);
 		}
 		return $schedules;
@@ -67,12 +78,19 @@ class LLMVM_Cron {
 	 * @param string $frequency 'daily' or 'weekly'.
 	 */
 	public function reschedule( string $frequency ): void {
+		static $last_logged_time = 0;
+		
 		$frequency = in_array( $frequency, array( 'daily', 'weekly' ), true ) ? $frequency : 'daily';
 
 		// Check if cron is already scheduled with the same frequency.
 		$next_scheduled = wp_next_scheduled( self::HOOK );
 		if ( $next_scheduled ) {
-			LLMVM_Logger::log( 'Cron already scheduled', array( 'next_run' => gmdate( 'Y-m-d H:i:s', $next_scheduled ) ) );
+			// Only log once per minute to prevent log spam
+			$current_time = time();
+			if ( $current_time - $last_logged_time > 60 ) {
+				LLMVM_Logger::log( 'Cron already scheduled', array( 'next_run' => gmdate( 'Y-m-d H:i:s', $next_scheduled ) ) );
+				$last_logged_time = $current_time;
+			}
 			return;
 		}
 
@@ -86,21 +104,77 @@ class LLMVM_Cron {
 	/**
 	 * Calculate the next run time for the given frequency.
 	 *
-	 * @param string $frequency 'daily' or 'weekly'.
+	 * @param string $frequency 'daily', 'weekly', or 'monthly'.
 	 * @return int Unix timestamp for next run.
 	 */
 	private function calculate_next_run_time( string $frequency ): int {
 		$now = time();
 
-		if ( 'daily' === $frequency ) {
-			// Next run at 9:00 AM tomorrow.
-			$next_run = strtotime( 'tomorrow 9:00 AM', $now );
-		} else {
-			// Next run at 9:00 AM next Monday.
-			$next_run = strtotime( 'next monday 9:00 AM', $now );
+		switch ( $frequency ) {
+			case 'daily':
+				// Next run at 9:00 AM tomorrow.
+				$next_run = strtotime( 'tomorrow 9:00 AM', $now );
+				break;
+			case 'weekly':
+				// Next run at 9:00 AM next Monday.
+				$next_run = strtotime( 'next monday 9:00 AM', $now );
+				break;
+			case 'monthly':
+				// Next run at 9:00 AM first day of next month.
+				$next_run = strtotime( 'first day of next month 9:00 AM', $now );
+				break;
+			default:
+				$next_run = strtotime( 'tomorrow 9:00 AM', $now );
 		}
 
 		return $next_run;
+	}
+
+	/**
+	 * Schedule cron job for a specific prompt.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param string $frequency The cron frequency.
+	 */
+	public function schedule_prompt_cron( string $prompt_id, string $frequency ): void {
+		// Unschedule any existing cron for this prompt
+		$this->unschedule_prompt_cron( $prompt_id );
+
+		// Validate frequency
+		$frequency = in_array( $frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $frequency : 'daily';
+
+		// Calculate next run time
+		$next_run = $this->calculate_next_run_time( $frequency );
+
+		// Schedule the cron job with a unique hook for this prompt
+		$hook = 'llmvm_run_prompt_' . $prompt_id;
+		wp_schedule_event( $next_run, $frequency, $hook );
+
+		// Add action hook for this specific prompt
+		add_action( $hook, function() use ( $prompt_id ) {
+			$this->run_single_prompt( $prompt_id );
+		});
+
+		LLMVM_Logger::log( 'Scheduled prompt cron job', [
+			'prompt_id' => $prompt_id,
+			'frequency' => $frequency,
+			'next_run' => gmdate( 'Y-m-d H:i:s', $next_run )
+		] );
+	}
+
+	/**
+	 * Unschedule cron job for a specific prompt.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 */
+	public function unschedule_prompt_cron( string $prompt_id ): void {
+		$hook = 'llmvm_run_prompt_' . $prompt_id;
+		wp_clear_scheduled_hook( $hook );
+
+		LLMVM_Logger::log( 'Unscheduled prompt cron job', [
+			'prompt_id' => $prompt_id,
+			'hook' => $hook
+		] );
 	}
 
 	/**
@@ -534,6 +608,7 @@ class LLMVM_Cron {
 		// Process prompts for the current user
 		foreach ( $user_prompts as $prompt ) {
 			$prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
+			$prompt_text = isset( $prompt['text'] ) ? (string) $prompt['text'] : '';
 
 			// Get models for this prompt
 			$prompt_models = array();

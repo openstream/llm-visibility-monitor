@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.10.0
+ * Version: 0.11.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.10.0' );
+define( 'LLMVM_VERSION', '0.11.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 /**
@@ -175,7 +175,13 @@ function llmvm_init() {
 		$frequency = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
 		$cron->reschedule( $frequency );
 
-		LLMVM_Logger::log( 'Plugin initialized', array( 'frequency' => $frequency ) );
+		// Only log plugin initialization once per minute to prevent log spam
+		static $last_init_log_time = 0;
+		$current_time = time();
+		if ( $current_time - $last_init_log_time > 60 ) {
+			LLMVM_Logger::log( 'Plugin initialized', array( 'frequency' => $frequency ) );
+			$last_init_log_time = $current_time;
+		}
 	}
 
 	if ( class_exists( 'LLMVM_Email_Reporter' ) ) {

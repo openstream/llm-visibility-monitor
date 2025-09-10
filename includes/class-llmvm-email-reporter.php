@@ -296,9 +296,9 @@ class LLMVM_Email_Reporter {
         
         /* Column widths for desktop - optimized for content */
         .date-col { width: 15%; min-width: 150px; }
-        .prompt-col { width: 30%; min-width: 200px; }
+        .prompt-col { width: 35%; min-width: 250px; }
         .model-col { width: 20%; min-width: 160px; }
-        .answer-col { width: 55%; }
+        .answer-col { width: 65%; }
         .user-col { width: 10%; min-width: 100px; }
         
         /* Combined column styles for better space utilization */
@@ -391,8 +391,8 @@ class LLMVM_Email_Reporter {
             
             /* Optimized column widths for mobile */
             .combined-meta-col { width: 18%; min-width: 140px; }
-            .prompt-col { width: 32%; min-width: 180px; }
-            .answer-col { width: 50%; }
+            .prompt-col { width: 40%; min-width: 200px; }
+            .answer-col { width: 60%; }
             
             /* Alternative: Stack table columns on very small screens */
             @media only screen and (max-width: 600px) {
@@ -669,13 +669,12 @@ class LLMVM_Email_Reporter {
                 <tr>';
                 
             if ( $email_type === 'admin' ) {
-                $html .= '<th class="combined-meta-col">User & Date & Model</th>';
+                $html .= '<th class="prompt-col">User & Prompt</th>';
             } else {
-                $html .= '<th class="combined-meta-col">Date & Model</th>';
+                $html .= '<th class="prompt-col">Prompt</th>';
             }
             
-            $html .= '<th class="prompt-col">Prompt</th>
-                            <th class="answer-col">Answer</th>
+            $html .= '<th class="answer-col">Answer</th>
                 </tr>
             </thead>
             <tbody>';
@@ -694,19 +693,19 @@ class LLMVM_Email_Reporter {
                 $html .= '
                         <tr>';
                 
-                // Combined meta column
-                $html .= '<td class="combined-meta-col" data-label="Meta">';
+                // Prompt column with date and model info
+                $html .= '<td class="prompt-col" data-label="Prompt">';
                 
                 if ( $email_type === 'admin' ) {
                     $result_user = get_user_by( 'id', $result_user_id );
                     $user_display = $result_user ? $result_user->display_name : 'Unknown User';
-                    $html .= '<div class="meta-item">' . esc_html( $user_display ) . '</div>';
+                    $html .= '<div class="meta-item" style="margin-bottom: 8px;"><strong>User:</strong> ' . esc_html( $user_display ) . '</div>';
                 }
                 
-                $html .= '<div class="meta-item"><span class="date-badge">' . esc_html( $date ) . '</span></div>
+                $html .= '<div style="margin-bottom: 8px;">' . esc_html( $prompt ) . '</div>
+                            <div class="meta-item" style="margin-bottom: 3px;"><span class="date-badge">' . esc_html( $date ) . '</span></div>
                             <div class="meta-item"><span class="model-badge">' . esc_html( $model ) . '</span></div>
                         </td>
-                        <td class="prompt-col" data-label="Prompt">' . esc_html( $prompt ) . '</td>
                         <td class="answer-col" data-label="Answer">
                             <div class="answer-content">' . $formatted_answer . '</div>
                         </td>

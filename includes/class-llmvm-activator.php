@@ -26,16 +26,8 @@ class LLMVM_Activator {
 		// Create LLM Manager roles.
 		self::create_llm_manager_roles();
 
-		// Schedule cron based on current setting.
-		$options = get_option( 'llmvm_options', array() );
-		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
-		if ( ! is_array( $options ) ) {
-			$options = array();
-		}
-		$cron_frequency = isset( $options['cron_frequency'] ) ? sanitize_text_field( (string) $options['cron_frequency'] ) : 'daily';
-
-		$cron = new LLMVM_Cron();
-		$cron->reschedule( $cron_frequency );
+		// Schedule individual prompt cron jobs
+		self::schedule_all_prompt_crons();
 	}
 
 	/**
@@ -105,6 +97,23 @@ class LLMVM_Activator {
 				$role->add_cap( 'level_1' );
 				// Ensure they have edit_posts capability to bypass SureCart restrictions
 				$role->add_cap( 'edit_posts' );
+			}
+		}
+	}
+
+	/**
+	 * Schedule cron jobs for all existing prompts.
+	 */
+	private static function schedule_all_prompt_crons(): void {
+		$prompts = get_option( 'llmvm_prompts', array() );
+		if ( ! is_array( $prompts ) ) {
+			return;
+		}
+
+		$cron = new LLMVM_Cron();
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && isset( $prompt['cron_frequency'] ) ) {
+				$cron->schedule_prompt_cron( $prompt['id'], $prompt['cron_frequency'] );
 			}
 		}
 	}
