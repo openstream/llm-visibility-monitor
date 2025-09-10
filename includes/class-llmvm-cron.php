@@ -78,19 +78,12 @@ class LLMVM_Cron {
 	 * @param string $frequency 'daily' or 'weekly'.
 	 */
 	public function reschedule( string $frequency ): void {
-		static $last_logged_time = 0;
-		
 		$frequency = in_array( $frequency, array( 'daily', 'weekly' ), true ) ? $frequency : 'daily';
 
 		// Check if cron is already scheduled with the same frequency.
 		$next_scheduled = wp_next_scheduled( self::HOOK );
 		if ( $next_scheduled ) {
-			// Only log once per minute to prevent log spam
-			$current_time = time();
-			if ( $current_time - $last_logged_time > 60 ) {
-				LLMVM_Logger::log( 'Cron already scheduled', array( 'next_run' => gmdate( 'Y-m-d H:i:s', $next_scheduled ) ) );
-				$last_logged_time = $current_time;
-			}
+			// Cron is already scheduled, no need to log or reschedule
 			return;
 		}
 

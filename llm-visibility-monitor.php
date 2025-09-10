@@ -170,17 +170,14 @@ function llmvm_init() {
 		// Set up cron hooks
 		$cron->hooks();
 
-		// Schedule cron if not already scheduled
-		$options   = get_option( 'llmvm_options', array() );
-		$frequency = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
-		$cron->reschedule( $frequency );
-
-		// Only log plugin initialization once per minute to prevent log spam
-		static $last_init_log_time = 0;
+		// Schedule cron if not already scheduled (only check once per minute to prevent log spam)
+		static $last_cron_check_time = 0;
 		$current_time = time();
-		if ( $current_time - $last_init_log_time > 60 ) {
-			LLMVM_Logger::log( 'Plugin initialized', array( 'frequency' => $frequency ) );
-			$last_init_log_time = $current_time;
+		if ( $current_time - $last_cron_check_time > 60 ) {
+			$options   = get_option( 'llmvm_options', array() );
+			$frequency = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
+			$cron->reschedule( $frequency );
+			$last_cron_check_time = $current_time;
 		}
 	}
 
