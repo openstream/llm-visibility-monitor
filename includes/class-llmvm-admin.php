@@ -53,9 +53,25 @@ class LLMVM_Admin {
      * Get the next cron execution time for display.
      */
     public static function get_next_cron_execution_time(): string {
-        $next_scheduled = wp_next_scheduled( 'llmvm_cron_hook' );
+        // Try the correct hook name
+        $next_scheduled = wp_next_scheduled( 'llmvm_run_checks' );
+        
+        // Debug logging to help identify issues
+        error_log( 'LLMVM: Checking cron for llmvm_run_checks: ' . ( $next_scheduled ? gmdate( 'Y-m-d H:i:s', $next_scheduled ) : 'false' ) );
         
         if ( false === $next_scheduled ) {
+            // Additional debugging: check if any LLMVM cron jobs exist
+            $cron_jobs = _get_cron_array();
+            $llmvm_crons = array();
+            foreach ( $cron_jobs as $timestamp => $hooks ) {
+                foreach ( $hooks as $hook => $events ) {
+                    if ( strpos( $hook, 'llmvm' ) !== false ) {
+                        $llmvm_crons[ $hook ] = $timestamp;
+                    }
+                }
+            }
+            error_log( 'LLMVM: Found LLMVM cron jobs: ' . print_r( $llmvm_crons, true ) );
+            
             return __( 'Not scheduled', 'llm-visibility-monitor' );
         }
         
