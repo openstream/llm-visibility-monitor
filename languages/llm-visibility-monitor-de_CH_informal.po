@@ -557,15 +557,15 @@ msgstr "Prompt-Text"
 
 #: includes/views/prompts-page.php
 msgid "Enter your prompt text here..."
-msgstr "Geben Sie hier Ihren Prompt-Text ein..."
+msgstr "Gib hier deinen Prompt-Text ein..."
 
 #: includes/views/prompts-page.php
 msgid "Enter the prompt text that will be sent to the AI models."
-msgstr "Geben Sie den Prompt-Text ein, der an die KI-Modelle gesendet wird."
+msgstr "Gib den Prompt-Text ein, der an die KI-Modelle gesendet wird."
 
 #: includes/views/prompts-page.php
 msgid "Optional: Select specific models. If empty, the default model will be used."
-msgstr "Optional: Wählen Sie spezifische Modelle. Wenn leer, wird das Standardmodell verwendet."
+msgstr "Optional: Wähle spezifische Modelle. Wenn leer, wird das Standardmodell verwendet."
 
 #: includes/views/prompts-page.php
 msgid "Options"
