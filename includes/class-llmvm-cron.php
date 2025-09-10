@@ -483,46 +483,11 @@ class LLMVM_Cron {
 			$prompts = [];
 		}
 
-		// Calculate total steps for progress tracking
-		$total_steps = 0;
-		foreach ( $prompts as $prompt ) {
-			if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
-				$total_steps += count( $prompt['models'] );
-			} else {
-				$total_steps += 1; // Default to 1 if no models array
-			}
-		}
-
-		// Initialize progress tracking
-		LLMVM_Progress_Tracker::init_progress( $run_id, $total_steps, 'Starting prompt execution...' );
-
 		$current_user_id = get_current_user_id();
 		$is_admin = current_user_can( 'llmvm_manage_settings' );
 
-		// Check usage limits for non-admin users
-		if ( ! $is_admin ) {
-			$total_runs = 0;
-			foreach ( $prompts as $prompt ) {
-				if ( isset( $prompt['user_id'] ) && (int) $prompt['user_id'] === $current_user_id ) {
-					if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
-						$total_runs += count( $prompt['models'] );
-					} else {
-						$total_runs += 1;
-					}
-				}
-			}
-			
-			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
-				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Run aborted: insufficient runs remaining' );
-				return;
-			}
-		}
-
-		$client = new LLMVM_OpenRouter_Client();
-		$current_step = 0;
-		$current_run_results = [];
-
-		// Process prompts for the current user
+		// Filter prompts for the current user first
+		$user_prompts = array();
 		foreach ( $prompts as $prompt ) {
 			$prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
 			
@@ -535,6 +500,40 @@ class LLMVM_Cron {
 			if ( '' === trim( $prompt_text ) ) {
 				continue;
 			}
+
+			$user_prompts[] = $prompt;
+		}
+
+		// Calculate total steps for progress tracking based on filtered prompts
+		$total_steps = 0;
+		foreach ( $user_prompts as $prompt ) {
+			if ( isset( $prompt['models'] ) && is_array( $prompt['models'] ) ) {
+				$total_steps += count( $prompt['models'] );
+			} else {
+				$total_steps += 1; // Default to 1 if no models array
+			}
+		}
+
+		// Initialize progress tracking
+		LLMVM_Progress_Tracker::init_progress( $run_id, $total_steps, 'Starting prompt execution...' );
+
+		// Check usage limits for non-admin users
+		if ( ! $is_admin ) {
+			$total_runs = $total_steps; // Use the same calculation
+			
+			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
+				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Run aborted: insufficient runs remaining' );
+				return;
+			}
+		}
+
+		$client = new LLMVM_OpenRouter_Client();
+		$current_step = 0;
+		$current_run_results = [];
+
+		// Process prompts for the current user
+		foreach ( $user_prompts as $prompt ) {
+			$prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
 
 			// Get models for this prompt
 			$prompt_models = array();
