@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,6 +123,61 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.11.0 - 2025-09-10 =
+* **New Feature**: Per-Prompt Cron Frequency Settings
+  * Added cron frequency dropdown (daily/weekly/monthly) to "Add New Prompt" form
+  * Each prompt can now have its own individual cron schedule
+  * Updated "Your Prompts" section to show current cron frequency and allow changes
+  * Removed global cron frequency setting from Settings page
+  * Individual cron jobs are automatically scheduled for each prompt based on their frequency
+  * Enhanced cron scheduler to handle per-prompt frequencies with proper WordPress cron integration
+  * Database migration automatically adds cron_frequency field to existing prompts (defaults to daily)
+  * Improved user experience with granular control over prompt execution timing
+* **Enhancement**: Improved Cron Management
+  * Automatic scheduling/unscheduling of cron jobs when prompts are added, edited, or deleted
+  * Better cron job isolation with unique hooks per prompt
+  * Enhanced logging for cron job operations
+  * Proper cleanup of cron jobs when prompts are removed
+* **Technical Improvement**: Database Schema Update
+  * Updated database version to 1.5.0
+  * Added migration for existing prompts to include cron_frequency field
+  * Backward compatibility maintained for existing installations
+* **UI/UX Enhancement**: Optimized Admin Interface
+  * Reduced "Add New Prompt" form width to 45% for better desktop layout
+  * Added WordPress admin styling with background, border, and shadow for better visual separation
+  * Converted form structure to table layout for improved organization
+  * Reduced model selection font size to 11px to prevent line breaks in model names
+  * Updated model dropdown border color from red to standard WordPress admin color (#c3c4c7)
+  * Enhanced form usability with proper spacing and visual hierarchy
+* **Email Layout Optimization**: Improved Desktop Email Reports
+  * Removed separate "Date & Model" column from email report tables
+  * Integrated date and model information into the "Prompt" column as badges
+  * Increased "Answer" column width from 55% to 65% for better content display
+  * Enhanced mobile responsiveness with adjusted column widths (Answer: 50% → 60%)
+  * Improved email readability with better content organization
+* **Bug Fixes**: Critical Issues Resolved
+  * Fixed "Run All Prompts Now" bug where only the last prompt was processed
+  * Corrected run count discrepancies in dashboard and email reports
+  * Fixed missing prompt text extraction in cron execution loop
+  * Resolved incomplete dashboard and email reports for multi-prompt runs
+* **Performance & Reliability**: Execution Time Management
+  * Added execution time limit of 720 seconds (12 minutes) for all run operations
+  * Implemented large run warnings for operations with more than 10 models
+  * Added user-friendly warning dialogs to prevent server timeout issues
+  * Enhanced error handling for production server environments
+  * Improved user guidance for large batch operations
+* **Logging Optimization**: Reduced Log Spam
+  * Fixed repetitive logging of "Plugin initialized" and "Cron already scheduled" messages
+  * Implemented rate limiting to log initialization messages at most once per minute
+  * Moved cron checking logic to prevent excessive logging on every request
+  * Cleaner log files with only relevant operational information
+* **Internationalization**: German Translation Updates
+  * Added comprehensive German translations for all new UI elements
+  * Translated prompt management interface including cron frequency options
+  * Updated all German locale files (de_DE, de_CH, de_DE_formal, de_CH_informal)
+  * Fixed Swiss German informal translations to use proper "Du" forms instead of "Sie"
+  * Maintained consistency with existing translation patterns
 
 = 0.10.0 - 2025-09-09 =
 * **New Feature**: Web Search Integration with OpenRouter
