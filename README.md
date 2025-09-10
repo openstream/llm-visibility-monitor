@@ -152,7 +152,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
-### 0.10.0 - 2025-09-08
+### 0.10.0 - 2025-09-09
 - **New Feature**: Web Search Integration with OpenRouter
   - Added web search checkbox to "Add New Prompt" form
   - Added "Web Search" column to prompts table showing web search status
@@ -213,6 +213,12 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   - Email reports now display proper timestamps for all results
   - Fixed in both `run_with_progress()` and `run_single_prompt_with_progress()` methods
   - Enhanced result data structure with complete timestamp information
+- **Enhancement**: Customized admin bar for LLM Manager roles
+  - Cleaned up WordPress admin bar for LLM Manager Free and Pro users
+  - Removed comments/notifications icon and "New" button from admin bar
+  - Hidden updates notification and search box for cleaner interface
+  - Preserved WordPress logo, site name, and user profile menu
+  - Creates focused admin experience tailored for LLM management tasks
 
 ### 0.9.0 - 2025-09-08
 - **New Feature**: Model limit enforcement for free plan users
