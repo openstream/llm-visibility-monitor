@@ -466,6 +466,10 @@ if ( $is_admin ) {
                                     <?php echo esc_html__( 'Web Search', 'llm-visibility-monitor' ); ?>
                                 </label>
                             </div>
+                            <div style="margin-top: 10px; padding: 8px; background: #f0f0f1; border-radius: 4px; font-size: 12px;">
+                                <strong><?php echo esc_html__( 'Next cron execution:', 'llm-visibility-monitor' ); ?></strong>
+                                <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time() ); ?></span>
+                            </div>
                             <br><br>
                             <div class="llmvm-all-buttons">
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;">

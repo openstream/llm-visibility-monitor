@@ -50,6 +50,20 @@ class LLMVM_Admin {
     }
 
     /**
+     * Get the next cron execution time for display.
+     */
+    public static function get_next_cron_execution_time(): string {
+        $next_scheduled = wp_next_scheduled( 'llmvm_cron_hook' );
+        
+        if ( false === $next_scheduled ) {
+            return __( 'Not scheduled', 'llm-visibility-monitor' );
+        }
+        
+        // Convert to user's timezone
+        return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_scheduled ) );
+    }
+
+    /**
      * Constructor.
      */
     public function __construct() {
