@@ -1090,16 +1090,33 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Generate a unique run ID for progress tracking
-            var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            // Check if queue system is enabled
+               var queueEnabled = true; // Queue system is always enabled
             
-            // Show loading overlay with progress tracking
-            showLoadingOverlay('Running all prompts... This may take several minutes.', runId);
-            
-            // Add run ID to the URL
-            var url = new URL(originalHref, window.location.origin);
-            url.searchParams.set('run_id', runId);
-            window.location.href = url.toString();
+            if (queueEnabled) {
+                // Redirect immediately without showing popup
+                window.location.href = '<?php echo esc_url( admin_url( 'tools.php?page=llmvm-queue&llmvm_queued=1' ) ); ?>';
+                
+                // Submit the form in the background (this will happen after redirect)
+                fetch(originalHref, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                }).catch(function(error) {
+                    // Ignore errors, we're already redirected
+                    console.log('Background form submission error (ignored):', error);
+                });
+            } else {
+                // Generate a unique run ID for progress tracking
+                var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Show loading overlay with progress tracking
+                showLoadingOverlay('Running all prompts... This may take several minutes.', runId);
+                
+                // Add run ID to the URL
+                var url = new URL(originalHref, window.location.origin);
+                url.searchParams.set('run_id', runId);
+                window.location.href = url.toString();
+            }
         }
     });
     
@@ -1174,16 +1191,33 @@ jQuery(document).ready(function($) {
         <?php endif; ?>
         
         if (confirmed) {
-            // Generate a unique run ID for progress tracking
-            var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            // Check if queue system is enabled
+               var queueEnabled = true; // Queue system is always enabled
             
-            // Show loading overlay with progress tracking
-            showLoadingOverlay('Running prompt... Please wait.', runId);
-            
-            // Add run ID to the URL
-            var url = new URL(originalHref, window.location.origin);
-            url.searchParams.set('run_id', runId);
-            window.location.href = url.toString();
+            if (queueEnabled) {
+                // Redirect immediately without showing popup
+                window.location.href = '<?php echo esc_url( admin_url( 'tools.php?page=llmvm-queue&llmvm_queued=1' ) ); ?>';
+                
+                // Submit the form in the background (this will happen after redirect)
+                fetch(originalHref, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                }).catch(function(error) {
+                    // Ignore errors, we're already redirected
+                    console.log('Background form submission error (ignored):', error);
+                });
+            } else {
+                // Generate a unique run ID for progress tracking
+                var runId = 'run_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Show loading overlay with progress tracking
+                showLoadingOverlay('Running prompt... Please wait.', runId);
+                
+                // Add run ID to the URL
+                var url = new URL(originalHref, window.location.origin);
+                url.searchParams.set('run_id', runId);
+                window.location.href = url.toString();
+            }
         }
     });
     
@@ -1213,6 +1247,39 @@ jQuery(document).ready(function($) {
         }
     });
     
+    // Queue message function
+    function showQueueMessage(message) {
+        // Create overlay if it doesn't exist
+        if (!document.getElementById('llmvm-queue-overlay')) {
+            var overlay = document.createElement('div');
+            overlay.id = 'llmvm-queue-overlay';
+            overlay.innerHTML = 
+                '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 999999; display: flex; align-items: center; justify-content: center;">' +
+                    '<div style="background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); max-width: 450px; margin: 20px;">' +
+                        '<div style="margin-bottom: 20px;">' +
+                            '<div style="width: 40px; height: 40px; background: #00a32a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">' +
+                                '<span style="color: white; font-size: 20px; font-weight: bold;">✓</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<h3 style="margin: 0 0 10px 0; color: #333; font-size: 18px;">Queued Successfully!</h3>' +
+                        '<p style="margin: 0 0 15px 0; color: #666; font-size: 14px; line-height: 1.4;" id="llmvm-queue-message">' + message + '</p>' +
+                        '<p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">Redirecting to Queue Status page...</p>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+        } else {
+            // Update message if overlay exists
+            var messageEl = document.getElementById('llmvm-queue-message');
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+        }
+        
+        // Disable all interactive elements
+        document.body.style.pointerEvents = 'none';
+        document.body.style.userSelect = 'none';
+    }
+
     // Loading overlay functions
     function showLoadingOverlay(message, runId) {
         // Create overlay if it doesn't exist

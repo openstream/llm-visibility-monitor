@@ -152,6 +152,77 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.12.0 - 2025-01-12
+- **New Feature**: Enhanced Response Time Logging
+  - Added detailed response time tracking for all OpenRouter API requests
+  - Response times logged in milliseconds with model, prompt length, and body size information
+  - Enhanced error logging with response time context for better debugging
+  - Progress tracking now displays response times in completion messages
+  - Improved performance monitoring for production environments
+- **New Feature**: Queue System for Asynchronous Processing
+  - Implemented WordPress-based queue system to prevent timeout issues
+  - Queue system is now always enabled for all LLM requests (simplified architecture)
+  - Queue status display showing pending, processing, completed, and failed jobs
+  - Automatic cleanup of old completed jobs (7+ days old)
+  - Fallback to synchronous processing if queue system fails
+- **New Feature**: Queue Management Interface
+  - New "LLM Queue Status" page under Tools for monitoring queue operations
+  - Real-time queue status with auto-refresh every 30 seconds
+  - User-specific queue filtering (limited users see only their jobs, admins see all)
+  - Queue job details including model, status, creation time, and attempt counts
+  - Admin controls for clearing all queue jobs
+  - Visual status indicators with color-coded badges and cards
+  - Performance metrics display including response time, execution time, and queue overhead
+  - Detailed timing breakdown showing queue wait time vs processing time
+- **New Feature**: Configurable Concurrency Control
+  - Admin setting to control maximum concurrent jobs (1-5, default: 1 for shared hosting)
+  - Prevents server overload on shared hosting environments
+  - Automatic job queuing when concurrency limit is reached
+  - Enhanced queue processing with proper job prioritization
+- **Enhancement**: Improved Error Handling and Timeout Management
+  - Better handling of 500 internal server errors with detailed logging
+  - Enhanced timeout detection and queue-based processing for long-running operations
+  - Improved error messages with response time context for debugging
+  - Automatic retry mechanism for failed queue jobs (up to 3 attempts)
+- **Enhancement**: Production Environment Optimization
+  - Smart queue activation based on server execution time limits
+  - Automatic detection of production environments requiring asynchronous processing
+  - Enhanced logging for production debugging without exposing sensitive data
+  - Improved reliability for high-volume prompt processing
+- **Technical Improvement**: Database Schema Enhancement
+  - Added queue management table (`wp_llmvm_queue`) for asynchronous job processing
+  - Added current run results table (`wp_llmvm_current_run_results`) for email reporting
+  - Enhanced result tracking with response time data and detailed timing breakdown
+  - Improved data structure for better performance monitoring
+- **Enhancement**: Email Reporting System Overhaul
+  - Completely refactored email reporting to use database storage instead of transients
+  - Fixed email reporting for both single runs and "run all prompts now" operations
+  - Implemented batch run ID system to group all results from multi-prompt runs
+  - Email reports now correctly include all results from the current run only
+  - Enhanced email reliability with proper result collection and cleanup
+- **Enhancement**: Logging System Improvements
+  - Moved logging to WordPress root directory for easier access
+  - Implemented dual log file system: master log (all logs) and current run log (run-specific)
+  - Added log rotation for master log file (5MB limit)
+  - Enhanced log filtering for current run logs with relevant keywords
+  - Added .gitignore to prevent committing log files
+- **UI/UX Enhancement**: Queue Status Monitoring
+  - Real-time queue status display in plugin settings
+  - Enhanced progress messages with response time information
+  - Better visibility into system performance and processing status
+  - Improved admin interface for monitoring queue operations
+  - Optimized column widths in queue status table (narrower ID/Status, wider Model)
+  - Fixed model name font size to prevent text wrapping
+  - Added "Time Metrics Explained" section with detailed performance information
+- **Bug Fixes**: Critical Issues Resolved
+  - Fixed undefined variable `$job_update_time` PHP warning
+  - Fixed email reporting for batch runs to include all results instead of just the last prompt
+  - Fixed run ID generation to use consistent batch run IDs across all jobs
+  - Fixed email firing logic to use correct run_id (batch_run_id vs prompt_id)
+  - Fixed duplicate job processing race conditions with atomic updates
+  - Fixed popup display issues by removing progress popup for queue-based runs
+  - Fixed negative overhead calculations in queue status display
+
 ### 0.11.0 - 2025-09-10
 - **New Feature**: Per-Prompt Cron Frequency Settings
   - Added cron frequency dropdown (daily/weekly/monthly) to "Add New Prompt" form

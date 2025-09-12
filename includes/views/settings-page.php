@@ -33,6 +33,11 @@ if ( ! defined( 'ABSPATH' ) ) {
         ?>
     </form>
 
+    <?php
+    // Show queue status
+    $admin = new LLMVM_Admin();
+    $admin->show_queue_status();
+    ?>
 
     <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
         <hr />

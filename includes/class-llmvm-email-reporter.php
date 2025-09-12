@@ -22,7 +22,18 @@ class LLMVM_Email_Reporter {
      */
     public function send_report_after_run( $user_id = 0, $user_results_or_key = [] ): void {
         // Email reporter started
-        LLMVM_Logger::log( 'Email reporter called', [ 'user_id' => $user_id ] );
+        LLMVM_Logger::log( 'Email reporter called', [ 
+            'user_id' => $user_id,
+            'has_global_key' => isset( $GLOBALS['llmvm_current_run_transient_key'] ),
+            'global_key' => $GLOBALS['llmvm_current_run_transient_key'] ?? 'none',
+            'has_global_results' => isset( $GLOBALS['llmvm_current_run_results'] ),
+            'global_results_count' => isset( $GLOBALS['llmvm_current_run_results'] ) ? count( $GLOBALS['llmvm_current_run_results'] ) : 0,
+            'user_results_or_key_type' => gettype( $user_results_or_key ),
+            'user_results_or_key_value' => is_array( $user_results_or_key ) ? count( $user_results_or_key ) : $user_results_or_key,
+            'user_results_or_key_raw' => $user_results_or_key,
+            'func_num_args' => func_num_args(),
+            'func_get_args' => func_get_args()
+        ] );
         
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
@@ -37,12 +48,33 @@ class LLMVM_Email_Reporter {
         
         // Email reports enabled
         
-        // Get results from current run using global transient key
+        // Get results - new format passes results directly, old format uses transients
         $user_results = [];
-        if ( isset( $GLOBALS['llmvm_current_run_transient_key'] ) ) {
+        if ( is_array( $user_results_or_key ) && ! empty( $user_results_or_key ) ) {
+            // New format: results passed directly from queue manager
+            $user_results = $user_results_or_key;
+            LLMVM_Logger::log( 'Using results passed directly from queue manager', [ 
+                'results_count' => count( $user_results ),
+                'is_array' => is_array( $user_results ),
+                'is_empty' => empty( $user_results ),
+                'first_result' => ! empty( $user_results ) ? $user_results[0] : null
+            ] );
+        } elseif ( isset( $GLOBALS['llmvm_current_run_results'] ) ) {
+            // Fallback: results stored in global variable by queue manager
+            $user_results = $GLOBALS['llmvm_current_run_results'];
+            LLMVM_Logger::log( 'Using results from global variable', [ 
+                'results_count' => count( $user_results ),
+                'is_array' => is_array( $user_results ),
+                'is_empty' => empty( $user_results ),
+                'first_result' => ! empty( $user_results ) ? $user_results[0] : null
+            ] );
+            // Clean up global variable
+            unset( $GLOBALS['llmvm_current_run_results'] );
+        } elseif ( isset( $GLOBALS['llmvm_current_run_transient_key'] ) ) {
+            // Fallback: old format with global transient key
             $transient_key = $GLOBALS['llmvm_current_run_transient_key'];
             $user_results = get_transient( $transient_key );
-            LLMVM_Logger::log( 'Retrieved results from current run', [ 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
+            LLMVM_Logger::log( 'Retrieved results from current run transient', [ 'results_count' => is_array( $user_results ) ? count( $user_results ) : 0 ] );
             if ( $user_results !== false ) {
                 delete_transient( $transient_key ); // Clean up
                 unset( $GLOBALS['llmvm_current_run_transient_key'] ); // Clean up global
@@ -54,9 +86,6 @@ class LLMVM_Email_Reporter {
             if ( $user_results !== false ) {
                 delete_transient( $user_results_or_key ); // Clean up
             }
-        } elseif ( is_array( $user_results_or_key ) ) {
-            // Fallback: old format with direct array
-            $user_results = $user_results_or_key;
         }
         
         // If no user results provided, skip email (no results from current run)

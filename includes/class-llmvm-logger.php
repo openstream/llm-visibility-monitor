@@ -105,9 +105,11 @@ class LLMVM_Logger {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for plugin functionality.
 		error_log( $line );
 
-		$upload_dir = wp_upload_dir();
-		$log_dir    = $upload_dir['basedir'] . '/llm-visibility-monitor';
-		$log_file   = $log_dir . '/llmvm.log';
+		// Write to root folder for easier access
+		$root_dir = ABSPATH;
+		$log_dir  = $root_dir . 'llm-visibility-monitor-logs';
+		$log_file = $log_dir . '/llmvm-master.log';
+		$current_run_file = $log_dir . '/llmvm-current-run.log';
 
 		// Ensure the log directory exists with proper permissions.
 		if ( ! is_dir( $log_dir ) ) {
@@ -126,15 +128,14 @@ class LLMVM_Logger {
             return;
         }
         
-        // Rotate log file if it's too large (over 1MB)
-        if ( $wp_filesystem && $wp_filesystem->exists( $log_file ) && $wp_filesystem->size( $log_file ) > 1024 * 1024 ) {
-            $backup_file = $log_dir . '/llmvm-' . gmdate( 'Y-m-d-H-i-s' ) . '.log';
+        // Rotate master log file if it's too large (over 5MB)
+        if ( $wp_filesystem && $wp_filesystem->exists( $log_file ) && $wp_filesystem->size( $log_file ) > 5 * 1024 * 1024 ) {
+            $backup_file = $log_dir . '/llmvm-master-' . gmdate( 'Y-m-d-H-i-s' ) . '.log';
             $wp_filesystem->move( $log_file, $backup_file );
         }
         
-        // Write to log file using WordPress filesystem API
+        // Write to master log file
         if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
-            // Use a simple append approach with error suppression
             $result = @file_put_contents( $log_file, $line . PHP_EOL, LOCK_EX | FILE_APPEND );
             if ( false === $result ) {
                 // Fallback to WordPress filesystem if direct write fails
@@ -145,6 +146,37 @@ class LLMVM_Logger {
                 $new_content = $existing_content . $line . PHP_EOL;
                 $wp_filesystem->put_contents( $log_file, $new_content, FS_CHMOD_FILE );
             }
+        }
+
+        // Write to current run log file for specific events
+        $current_run_keywords = array(
+            'New run detected',
+            'Same run, keeping existing results',
+            'Added result to current run results',
+            'Using current run results for email',
+            'Firing email action for completed queue jobs',
+            'Email reporter called',
+            'Using results from global variable',
+            'Email report: sending',
+            'Email report: sent successfully'
+        );
+        
+        $is_current_run_log = false;
+        foreach ( $current_run_keywords as $keyword ) {
+            if ( strpos( $message, $keyword ) !== false ) {
+                $is_current_run_log = true;
+                break;
+            }
+        }
+        
+        if ( $is_current_run_log ) {
+            // Clear current run log file on new run detection
+            if ( strpos( $message, 'New run detected' ) !== false ) {
+                @file_put_contents( $current_run_file, '', LOCK_EX );
+            }
+            
+            // Write to current run log file
+            @file_put_contents( $current_run_file, $line . PHP_EOL, LOCK_EX | FILE_APPEND );
         }
     }
 }

@@ -282,6 +282,98 @@ class LLMVM_Cron {
 	}
 
 	/**
+	 * Add LLM request to queue for asynchronous processing.
+	 *
+	 * @param string $api_key API key.
+	 * @param string $prompt Prompt text.
+	 * @param string $model Model to use.
+	 * @param int    $user_id User ID.
+	 * @param string $prompt_id Prompt ID.
+	 * @param int    $priority Job priority.
+	 * @return int|false Job ID on success, false on failure.
+	 */
+	private function queue_llm_request( string $api_key, string $prompt, string $model, int $user_id, string $prompt_id = '', int $priority = 0, bool $is_batch_run = false ) {
+		if ( ! class_exists( 'LLMVM_Queue_Manager' ) ) {
+			return false;
+		}
+
+		$queue_manager = new LLMVM_Queue_Manager();
+		
+		$job_data = array(
+			'api_key'     => $api_key,
+			'prompt'      => $prompt,
+			'model'       => $model,
+			'user_id'     => $user_id,
+			'prompt_id'   => $prompt_id,
+			'is_batch_run' => $is_batch_run,
+		);
+
+		return $queue_manager->add_job( 'llm_request', $job_data, $priority );
+	}
+
+	// Queue system is now always enabled - no need for decision logic
+
+	/**
+	 * Process a single LLM request synchronously.
+	 *
+	 * @param string $api_key API key.
+	 * @param string $prompt_text Prompt text.
+	 * @param string $model_to_use Model to use.
+	 * @param int    $user_id User ID.
+	 * @param array  $prompt_item Prompt item data.
+	 * @param array  &$current_run_results Current run results array (passed by reference).
+	 */
+	private function process_single_llm_request( string $api_key, string $prompt_text, string $model_to_use, int $user_id, array $prompt_item, array &$current_run_results ): void {
+		$client = new LLMVM_OpenRouter_Client();
+		
+		LLMVM_Logger::log( 'Sending prompt', [ 
+			'model' => $model_to_use, 
+			'original_model' => $prompt_item['model'] ?? $model_to_use, 
+			'web_search' => ! empty( $prompt_item['web_search'] ), 
+			'prompt_text' => $prompt_text, 
+			'user_id' => $user_id 
+		] );
+		
+		$response = $client->query( $api_key, $prompt_text, $model_to_use );
+		$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
+		$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
+		$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
+		$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+		$response_time = isset( $response['response_time'] ) ? (float) $response['response_time'] : 0.0;
+
+		LLMVM_Logger::log( 'Inserting result', [ 
+			'prompt_text' => $prompt_text, 
+			'resp_model' => $resp_model, 
+			'answer_length' => strlen( $answer ), 
+			'user_id' => $user_id,
+			'response_time_ms' => round( $response_time * 1000, 2 )
+		] );
+		
+		$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+		
+		// Track this result for the current run
+		if ( $result_id ) {
+			$current_run_results[] = [
+				'id' => $result_id,
+				'prompt' => $prompt_text,
+				'model' => $resp_model,
+				'answer' => $answer,
+				'user_id' => $user_id,
+				'created_at' => current_time( 'mysql' ),
+				'response_time' => $response_time
+			];
+		}
+		
+		if ( $status && $status >= 400 ) {
+			LLMVM_Logger::log( 'OpenRouter error stored', [ 
+				'status' => $status, 
+				'error' => $error,
+				'response_time_ms' => round( $response_time * 1000, 2 )
+			] );
+		}
+	}
+
+	/**
 	 * Process prompts for a specific user.
 	 */
 	private function process_user_prompts( int $user_id, array $all_prompts, $client, string $api_key, string $model ): void {
@@ -310,6 +402,7 @@ class LLMVM_Cron {
 
 		// Track results from this run
 		$current_run_results = [];
+		$queued_jobs = [];
 
 		foreach ( $user_prompts as $prompt_item ) {
 			$prompt_text = isset( $prompt_item['text'] ) ? (string) $prompt_item['text'] : '';
@@ -335,30 +428,32 @@ class LLMVM_Cron {
 					$model_to_use = $prompt_model . ':online';
 				}
 				
-				LLMVM_Logger::log( 'Sending prompt', [ 'model' => $model_to_use, 'original_model' => $prompt_model, 'web_search' => ! empty( $prompt_item['web_search'] ), 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-				$response   = $client->query( $api_key, $prompt_text, $model_to_use );
-				$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-				$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
-				$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
-				$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
-
-				LLMVM_Logger::log( 'Inserting result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-				$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+				// Add to queue for asynchronous processing
+				$job_id = $this->queue_llm_request( 
+					$api_key, 
+					$prompt_text, 
+					$model_to_use, 
+					$user_id, 
+					$prompt_item['id'] ?? '',
+					0, // Normal priority
+					true // is_batch_run for "run all prompts now"
+				);
 				
-				// Track this result for the current run
-				if ( $result_id ) {
-					$current_run_results[] = [
-						'id' => $result_id,
-						'prompt' => $prompt_text,
-						'model' => $resp_model,
-						'answer' => $answer,
-						'user_id' => $user_id,
-						'created_at' => current_time( 'mysql' )
-					];
-				}
-				
-				if ( $status && $status >= 400 ) {
-					LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
+				if ( $job_id ) {
+					$queued_jobs[] = $job_id;
+					LLMVM_Logger::log( 'Queued LLM request', [ 
+						'job_id' => $job_id,
+						'model' => $model_to_use, 
+						'prompt_id' => $prompt_item['id'] ?? '',
+						'user_id' => $user_id 
+					] );
+					
+					// Trigger immediate queue processing
+					wp_schedule_single_event( time(), 'llmvm_process_queue' );
+				} else {
+					// Fallback to synchronous processing if queue fails
+					LLMVM_Logger::log( 'Queue failed, falling back to synchronous processing', [ 'model' => $model_to_use ] );
+					$this->process_single_llm_request( $api_key, $prompt_text, $model_to_use, $user_id, $prompt_item, $current_run_results );
 				}
 			}
 		}
@@ -378,21 +473,15 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for run', [ 'user_id' => $user_id, 'runs' => $total_runs ] );
 		}
 
-		// Store current run results in transient for email reporter
-		$transient_key = 'llmvm_current_run_results_' . $user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
-		
-		// Store the transient key in a global variable for the email reporter to access
-		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
-		
-		// Fire action hook for email reporter and other extensions with user context
-		do_action( 'llmvm_run_completed', $user_id );
+		// Queue system handles email reporting when all jobs complete
+		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $user_id ) );
 	}
 
 	/**
 	 * Run a single prompt by ID.
 	 */
 	public function run_single_prompt( string $prompt_id ): void {
+		LLMVM_Logger::log( 'run_single_prompt method called', array( 'prompt_id' => $prompt_id ) );
 		$options   = get_option( 'llmvm_options', [] );
 		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
 		if ( ! is_array( $options ) ) {
@@ -444,6 +533,14 @@ class LLMVM_Cron {
 		} else {
 			$prompt_models = array( $model ); // Fall back to global default
 		}
+		
+		LLMVM_Logger::log( 'Single prompt models extracted', array(
+			'prompt_id' => $prompt_id,
+			'prompt_models' => $prompt_models,
+			'has_models_array' => isset( $target_prompt['models'] ),
+			'has_model_single' => isset( $target_prompt['model'] ),
+			'target_prompt' => $target_prompt
+		) );
 
 		// Check usage limits for non-admin users
 		if ( ! $is_admin ) {
@@ -479,6 +576,14 @@ class LLMVM_Cron {
 		// Track results from this run
 		$current_run_results = [];
 
+		// Queue system is always enabled
+		$queued_jobs = [];
+		
+		LLMVM_Logger::log( 'Single prompt processing', array( 
+			'prompt_id' => $prompt_id, 
+			'prompt_models_count' => count( $prompt_models )
+		) );
+
 		// Process each model for this prompt
 		foreach ( $prompt_models as $prompt_model ) {
 			// Append :online to model if web search is enabled
@@ -487,34 +592,39 @@ class LLMVM_Cron {
 				$model_to_use = $prompt_model . ':online';
 			}
 			
-			LLMVM_Logger::log( 'Sending single prompt', [ 'model' => $model_to_use, 'original_model' => $prompt_model, 'web_search' => ! empty( $target_prompt['web_search'] ), 'prompt_text' => $prompt_text, 'user_id' => $user_id ] );
-			$response   = $client->query( $api_key, $prompt_text, $model_to_use );
-			$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
-			$answer     = isset( $response['answer'] ) ? (string) $response['answer'] : '';
-			$status     = isset( $response['status'] ) ? (int) $response['status'] : 0;
-			$error      = isset( $response['error'] ) ? (string) $response['error'] : '';
-
-			LLMVM_Logger::log( 'Inserting single prompt result', [ 'prompt_text' => $prompt_text, 'resp_model' => $resp_model, 'answer_length' => strlen( $answer ), 'user_id' => $user_id ] );
-			$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+			// Always use queue system
+			LLMVM_Logger::log( 'Attempting to queue single prompt model', array(
+				'model' => $model_to_use,
+				'prompt_id' => $prompt_id,
+				'user_id' => $user_id
+			) );
 			
-			// Track this result for the current run
-			LLMVM_Logger::log( 'Result tracking debug', [ 'result_id' => $result_id, 'current_run_results_count' => count( $current_run_results ) ] );
-			if ( $result_id ) {
-				$current_run_results[] = [
-					'id' => $result_id,
-					'prompt' => $prompt_text,
-					'model' => $resp_model,
-					'answer' => $answer,
-					'user_id' => $user_id,
-					'created_at' => current_time( 'mysql' )
-				];
-				LLMVM_Logger::log( 'Result added to current run', [ 'result_id' => $result_id, 'new_count' => count( $current_run_results ) ] );
+			// Add to queue for asynchronous processing
+			$job_id = $this->queue_llm_request( 
+				$api_key, 
+				$prompt_text, 
+				$model_to_use, 
+				$user_id, 
+				$prompt_id,
+				0, // Normal priority
+				false // is_batch_run for single prompt
+			);
+			
+			if ( $job_id ) {
+				$queued_jobs[] = $job_id;
+				LLMVM_Logger::log( 'Queued single prompt LLM request', [ 
+					'job_id' => $job_id,
+					'model' => $model_to_use, 
+					'prompt_id' => $prompt_id,
+					'user_id' => $user_id 
+				] );
+				
+				// Trigger immediate queue processing
+				wp_schedule_single_event( time(), 'llmvm_process_queue' );
 			} else {
-				LLMVM_Logger::log( 'Failed to track result - no result_id returned' );
-			}
-			
-			if ( $status && $status >= 400 ) {
-				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
+				// Fallback to synchronous processing if queue fails
+				LLMVM_Logger::log( 'Queue failed for single prompt, falling back to synchronous processing', [ 'model' => $model_to_use ] );
+				$this->process_single_llm_request( $api_key, $prompt_text, $model_to_use, $user_id, $target_prompt, $current_run_results );
 			}
 		}
 
@@ -527,15 +637,8 @@ class LLMVM_Cron {
 			LLMVM_Logger::log( 'Usage tracked for single prompt run', [ 'user_id' => $current_user_id, 'runs' => $runs_count ] );
 		}
 
-		// Store current run results in transient for email reporter
-		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 ); // 5 minutes
-		
-		// Store the transient key in a global variable for the email reporter to access
-		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
-		
-		// Fire action hook for email reporter and other extensions with user context
-		do_action( 'llmvm_run_completed', $current_user_id );
+		// Queue system handles email reporting when all jobs complete
+		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $current_user_id ) );
 	}
 	
 	/**
@@ -643,6 +746,7 @@ class LLMVM_Cron {
 			$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
 			$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
 			$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+			$response_time = isset( $response['response_time'] ) ? (float) $response['response_time'] : 0.0;
 
 			// Store result
 			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $prompt_user_id );
@@ -655,7 +759,8 @@ class LLMVM_Cron {
 					'user_id' => $prompt_user_id,
 					'created_at' => current_time( 'mysql' ),
 					'status' => $status,
-					'error' => $error
+					'error' => $error,
+					'response_time' => $response_time
 				];
 			}
 
@@ -663,9 +768,14 @@ class LLMVM_Cron {
 				LLMVM_Logger::log( 'OpenRouter error stored', [ 'status' => $status, 'error' => $error ] );
 			}
 			
-			// Update progress after model is completed
+			// Update progress after model is completed with response time info
 			$current_step++;
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $display_model );
+			$completion_message = sprintf( 
+				'Completed model: %s (%.2fs)', 
+				$display_model, 
+				$response_time 
+			);
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, $completion_message );
 		}
 		}
 
@@ -678,13 +788,8 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
-		// Store current run results in transient for email reporter
-		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 );
-		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
-
-		// Fire action hook for email reporter
-		do_action( 'llmvm_run_completed', $current_user_id );
+		// Queue system handles email reporting when all jobs complete
+		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $current_user_id ) );
 	}
 	
 	/**
@@ -780,6 +885,7 @@ class LLMVM_Cron {
 			$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
 			$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
 			$error = isset( $response['error'] ) ? (string) $response['error'] : '';
+			$response_time = isset( $response['response_time'] ) ? (float) $response['response_time'] : 0.0;
 
 			// Store result
 			$result = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $current_user_id );
@@ -792,7 +898,8 @@ class LLMVM_Cron {
 					'user_id' => $current_user_id,
 					'created_at' => current_time( 'mysql' ),
 					'status' => $status,
-					'error' => $error
+					'error' => $error,
+					'response_time' => $response_time
 				];
 			}
 
@@ -800,9 +907,14 @@ class LLMVM_Cron {
 				LLMVM_Logger::log( 'OpenRouter error stored for single prompt', [ 'status' => $status, 'error' => $error ] );
 			}
 			
-			// Update progress after model is completed
+			// Update progress after model is completed with response time info
 			$current_step++;
-			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, 'Completed model: ' . $display_model );
+			$completion_message = sprintf( 
+				'Completed model: %s (%.2fs)', 
+				$display_model, 
+				$response_time 
+			);
+			LLMVM_Progress_Tracker::update_progress( $run_id, $current_step, $completion_message );
 		}
 
 		// Complete progress tracking
@@ -814,13 +926,8 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
-		// Store current run results in transient for email reporter
-		$transient_key = 'llmvm_current_run_results_' . $current_user_id . '_' . time();
-		set_transient( $transient_key, $current_run_results, 300 );
-		$GLOBALS['llmvm_current_run_transient_key'] = $transient_key;
-
-		// Fire action hook for email reporter
-		do_action( 'llmvm_run_completed', $current_user_id );
+		// Queue system handles email reporting when all jobs complete
+		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $current_user_id ) );
 	}
 
 	/**
@@ -856,6 +963,8 @@ class LLMVM_Cron {
 	 * Handle manual run of a single prompt.
 	 */
 	public function handle_run_single_prompt(): void {
+		LLMVM_Logger::log( 'handle_run_single_prompt method called' );
+		
 		if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
 		}

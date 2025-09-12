@@ -104,6 +104,10 @@ class LLMVM_Admin {
         // AJAX handlers for progress tracking
         add_action( 'wp_ajax_llmvm_get_progress', [ $this, 'ajax_get_progress' ] );
         
+        // AJAX handlers for queue management
+        add_action( 'wp_ajax_llmvm_get_queue_status', [ $this, 'ajax_get_queue_status' ] );
+        add_action( 'wp_ajax_llmvm_clear_queue', [ $this, 'ajax_clear_queue' ] );
+        
         // Form handler for result deletion.
         add_action( 'admin_post_llmvm_delete_result', [ $this, 'handle_delete_result' ] );
         add_action( 'admin_post_llmvm_bulk_delete_results', [ $this, 'handle_bulk_delete' ] );
@@ -304,6 +308,19 @@ class LLMVM_Admin {
             $result_slug,
             $result_callback
         );
+
+        // Queue management page - for users with dashboard access
+        $queue_title = __( 'LLM Queue Status', 'llm-visibility-monitor' );
+        $queue_slug = 'llmvm-queue';
+        $queue_callback = [ $this, 'render_queue_page' ];
+
+        add_management_page(
+            $queue_title,
+            $queue_title,
+            'llmvm_view_dashboard',
+            $queue_slug,
+            $queue_callback
+        );
     }
 
 
@@ -326,6 +343,7 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_queue_concurrency', __( 'Queue Concurrency Limit', 'llm-visibility-monitor' ), [ $this, 'field_queue_concurrency' ], 'llmvm-settings', 'llmvm_section_main' );
 
         // Usage Limits Section
         add_settings_section( 'llmvm_section_limits', __( 'Usage Limits', 'llm-visibility-monitor' ), [ $this, 'section_limits_description' ], 'llmvm-settings' );
@@ -391,6 +409,8 @@ class LLMVM_Admin {
         
         $email_reports   = ! empty( $input['email_reports'] );
         $new['email_reports'] = $email_reports;
+        
+        // Queue system is now always enabled
 
         // Usage limits
         $new['free_max_prompts'] = isset( $input['free_max_prompts'] ) ? max( 1, (int) $input['free_max_prompts'] ) : 3;
@@ -502,6 +522,39 @@ class LLMVM_Admin {
         $value = ! empty( $options['email_reports'] );
         echo '<label><input type="checkbox" name="llmvm_options[email_reports]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Send email reports to admin after each cron run', 'llm-visibility-monitor' ) . '</label>';
         echo '<p class="description">' . esc_html__( 'Reports will be sent to the WordPress admin email address with a summary of the latest results.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /**
+     * Show queue status information.
+     */
+    public function show_queue_status(): void {
+        if ( class_exists( 'LLMVM_Queue_Manager' ) ) {
+            $queue_manager = new LLMVM_Queue_Manager();
+            $queue_status = $queue_manager->get_queue_status();
+            echo '<div class="notice notice-info"><p><strong>' . esc_html__( 'Queue System Status:', 'llm-visibility-monitor' ) . '</strong> ';
+            echo esc_html( sprintf( 
+                __( 'Pending: %d, Processing: %d, Completed: %d, Failed: %d', 'llm-visibility-monitor' ),
+                $queue_status['pending'],
+                $queue_status['processing'],
+                $queue_status['completed'],
+                $queue_status['failed']
+            ) );
+            echo '</p><p>' . esc_html__( 'All LLM requests are processed asynchronously through the queue system to prevent timeouts.', 'llm-visibility-monitor' ) . '</p></div>';
+        }
+    }
+
+    /**
+     * Render the queue concurrency field.
+     */
+    public function field_queue_concurrency(): void {
+        $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['queue_concurrency'] ) ? (int) $options['queue_concurrency'] : 1;
+        echo '<input type="number" name="llmvm_options[queue_concurrency]" value="' . esc_attr( $value ) . '" min="1" max="5" step="1" />';
+        echo '<p class="description">' . esc_html__( 'Maximum number of jobs to process simultaneously. Recommended: 1 for shared hosting, 2-3 for VPS/dedicated servers.', 'llm-visibility-monitor' ) . '</p>';
     }
 
     /** Render usage limits section description */
@@ -759,6 +812,175 @@ class LLMVM_Admin {
         if ( is_file( $dashboard_file ) && is_string( $dashboard_file ) ) {
             include $dashboard_file;
         }
+    }
+
+    /** Render queue management page */
+    public function render_queue_page(): void {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
+            return;
+        }
+
+        // Get current user info for filtering
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+
+        // Get queue manager
+        $queue_manager = class_exists( 'LLMVM_Queue_Manager' ) ? new LLMVM_Queue_Manager() : null;
+        
+        if ( ! $queue_manager ) {
+            echo '<div class="wrap"><h1>' . esc_html__( 'Queue Status', 'llm-visibility-monitor' ) . '</h1>';
+            echo '<div class="notice notice-error"><p>' . esc_html__( 'Queue system is not available.', 'llm-visibility-monitor' ) . '</p></div></div>';
+            return;
+        }
+
+        // Get queue status
+        $queue_status = $queue_manager->get_queue_status();
+        
+        // Get queue jobs (filtered by user if not admin)
+        $user_filter = $is_admin ? null : $current_user_id;
+        $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 100 );
+
+        if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
+            return;
+        }
+        
+        // Include the queue page view
+        $queue_file = LLMVM_PLUGIN_DIR . 'includes/views/queue-page.php';
+        if ( is_file( $queue_file ) && is_string( $queue_file ) ) {
+            include $queue_file;
+        } else {
+            // Fallback if view file doesn't exist
+            $this->render_queue_page_fallback( $queue_status, $queue_jobs, $is_admin );
+        }
+    }
+
+    /** Fallback queue page if view file doesn't exist */
+    private function render_queue_page_fallback( array $queue_status, array $queue_jobs, bool $is_admin ): void {
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'LLM Queue Status', 'llm-visibility-monitor' ) . '</h1>';
+        
+        // Queue status summary
+        echo '<div class="llmvm-queue-status">';
+        echo '<h2>' . esc_html__( 'Queue Status', 'llm-visibility-monitor' ) . '</h2>';
+        echo '<div class="llmvm-status-cards">';
+        echo '<div class="llmvm-status-card pending"><strong>' . esc_html__( 'Pending:', 'llm-visibility-monitor' ) . '</strong> ' . esc_html( $queue_status['pending'] ) . '</div>';
+        echo '<div class="llmvm-status-card processing"><strong>' . esc_html__( 'Processing:', 'llm-visibility-monitor' ) . '</strong> ' . esc_html( $queue_status['processing'] ) . '</div>';
+        echo '<div class="llmvm-status-card completed"><strong>' . esc_html__( 'Completed:', 'llm-visibility-monitor' ) . '</strong> ' . esc_html( $queue_status['completed'] ) . '</div>';
+        echo '<div class="llmvm-status-card failed"><strong>' . esc_html__( 'Failed:', 'llm-visibility-monitor' ) . '</strong> ' . esc_html( $queue_status['failed'] ) . '</div>';
+        echo '</div>';
+        echo '</div>';
+
+        // Queue jobs table
+        echo '<h2>' . esc_html__( 'Recent Jobs', 'llm-visibility-monitor' ) . '</h2>';
+        if ( empty( $queue_jobs ) ) {
+            echo '<p>' . esc_html__( 'No jobs in queue.', 'llm-visibility-monitor' ) . '</p>';
+        } else {
+            echo '<table class="wp-list-table widefat fixed striped">';
+            echo '<thead><tr>';
+            echo '<th>' . esc_html__( 'ID', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Status', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Model', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Response Time', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Execution Time', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Created', 'llm-visibility-monitor' ) . '</th>';
+            echo '<th>' . esc_html__( 'Attempts', 'llm-visibility-monitor' ) . '</th>';
+            if ( $is_admin ) {
+                echo '<th>' . esc_html__( 'User', 'llm-visibility-monitor' ) . '</th>';
+            }
+            echo '</tr></thead>';
+            echo '<tbody>';
+            
+            foreach ( $queue_jobs as $job ) {
+                $job_data = $job['job_data'] ?? array();
+                $model = $job_data['model'] ?? 'Unknown';
+                $user_id = $job_data['user_id'] ?? 0;
+                $user_name = $user_id ? get_user_by( 'id', $user_id )->display_name ?? 'User ' . $user_id : 'Unknown';
+                
+                // Calculate execution time
+                $execution_time = '';
+                if ( $job['status'] === 'completed' && ! empty( $job['completed_at'] ) ) {
+                    $start_time = strtotime( $job['created_at'] );
+                    $end_time = strtotime( $job['completed_at'] );
+                    $execution_seconds = $end_time - $start_time;
+                    $execution_time = $execution_seconds . 's';
+                } elseif ( $job['status'] === 'processing' && ! empty( $job['started_at'] ) ) {
+                    $start_time = strtotime( $job['started_at'] );
+                    $current_time = current_time( 'timestamp' );
+                    $execution_seconds = $current_time - $start_time;
+                    $execution_time = $execution_seconds . 's (running)';
+                } else {
+                    $execution_time = '-';
+                }
+                
+                // Get response time from job data
+                $response_time = '';
+                if ( isset( $job_data['response_time'] ) && is_numeric( $job_data['response_time'] ) ) {
+                    $response_time = round( $job_data['response_time'] * 1000, 0 ) . 'ms';
+                } else {
+                    $response_time = '-';
+                }
+                
+                echo '<tr>';
+                echo '<td>' . esc_html( $job['id'] ) . '</td>';
+                echo '<td><span class="llmvm-status-' . esc_attr( $job['status'] ) . '">' . esc_html( ucfirst( $job['status'] ) ) . '</span></td>';
+                echo '<td>' . esc_html( $model ) . '</td>';
+                echo '<td><span class="llmvm-metric-value">' . esc_html( $response_time ) . '</span></td>';
+                echo '<td><span class="llmvm-metric-value">' . esc_html( $execution_time ) . '</span></td>';
+                echo '<td>' . esc_html( $job['created_at'] ) . '</td>';
+                echo '<td>' . esc_html( $job['attempts'] . '/' . $job['max_attempts'] ) . '</td>';
+                if ( $is_admin ) {
+                    echo '<td>' . esc_html( $user_name ) . '</td>';
+                }
+                echo '</tr>';
+            }
+            
+            echo '</tbody></table>';
+        }
+        
+        echo '</div>';
+    }
+
+    /** AJAX handler for getting queue status */
+    public function ajax_get_queue_status(): void {
+        if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+
+        if ( ! class_exists( 'LLMVM_Queue_Manager' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Queue system not available', 'llm-visibility-monitor' ) ) );
+        }
+
+        $queue_manager = new LLMVM_Queue_Manager();
+        $queue_status = $queue_manager->get_queue_status();
+        
+        // Get current user info for filtering
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can( 'llmvm_manage_settings' );
+        
+        // Get queue jobs (filtered by user if not admin)
+        $user_filter = $is_admin ? null : $current_user_id;
+        $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 50 );
+
+        wp_send_json_success( array(
+            'status' => $queue_status,
+            'jobs' => $queue_jobs
+        ) );
+    }
+
+    /** AJAX handler for clearing queue */
+    public function ajax_clear_queue(): void {
+        if ( ! current_user_can( 'llmvm_manage_settings' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
+        }
+
+        if ( ! class_exists( 'LLMVM_Queue_Manager' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Queue system not available', 'llm-visibility-monitor' ) ) );
+        }
+
+        $queue_manager = new LLMVM_Queue_Manager();
+        $queue_manager->clear_queue();
+
+        wp_send_json_success( array( 'message' => __( 'Queue cleared successfully', 'llm-visibility-monitor' ) ) );
     }
 
     /** Render single result page */

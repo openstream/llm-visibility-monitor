@@ -15,14 +15,21 @@ class LLMVM_OpenRouter_Client {
      * @param string $api_key API key from settings.
      * @param string $prompt  Prompt to send.
      * @param string $model   Model id (e.g. 'openrouter/stub-model-v1' for tests or 'openai/gpt-4o-mini').
-     * @return array{model:string,answer:string,status:int,error:string}
+     * @return array{model:string,answer:string,status:int,error:string,response_time:float}
      */
     public function query( string $api_key, string $prompt, string $model ): array {
         $model = $model ?: 'openrouter/stub-model-v1';
+        $start_time = microtime( true );
 
         if ( 'openrouter/stub-model-v1' === $model ) {
             $answer = sprintf( 'Stub: %s', wp_strip_all_tags( $prompt ) ?: '' );
-            return [ 'model' => $model, 'answer' => $answer, 'status' => 200, 'error' => '' ];
+            $response_time = microtime( true ) - $start_time;
+            LLMVM_Logger::log( 'Stub model response time', [ 
+                'model' => $model, 
+                'response_time_ms' => round( $response_time * 1000, 2 ),
+                'prompt_length' => strlen( $prompt )
+            ] );
+            return [ 'model' => $model, 'answer' => $answer, 'status' => 200, 'error' => '', 'response_time' => $response_time ];
         }
 
         // Real request to OpenRouter.
@@ -71,14 +78,31 @@ class LLMVM_OpenRouter_Client {
         ];
 
         // Only log the model being used, not the full request
+        $api_start_time = microtime( true );
         $resp = wp_remote_post( $url, $args );
+        $api_end_time = microtime( true );
+        $api_response_time = $api_end_time - $api_start_time;
+        
         if ( is_wp_error( $resp ) ) {
-            LLMVM_Logger::log( 'OpenRouter error', [ 'error' => $resp->get_error_message() ] );
-            return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $resp->get_error_message() ];
+            LLMVM_Logger::log( 'OpenRouter error', [ 
+                'error' => $resp->get_error_message(),
+                'response_time_ms' => round( $api_response_time * 1000, 2 ),
+                'model' => $model,
+                'prompt_length' => strlen( $prompt )
+            ] );
+            return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $resp->get_error_message(), 'response_time' => $api_response_time ];
         }
         $code = wp_remote_retrieve_response_code( $resp );
         $body = wp_remote_retrieve_body( $resp ) ?: '';
-        LLMVM_Logger::log( 'OpenRouter response', [ 'status' => $code ] );
+        
+        // Log detailed response time information
+        LLMVM_Logger::log( 'OpenRouter response', [ 
+            'status' => $code,
+            'response_time_ms' => round( $api_response_time * 1000, 2 ),
+            'model' => $model,
+            'prompt_length' => strlen( $prompt ),
+            'body_size_bytes' => strlen( $body )
+        ] );
 
         // Clean up the raw body preview for better logging - only log if there's meaningful content
         $raw_preview = substr( (string) $body, 0, 300 ) ?: '';
@@ -113,7 +137,12 @@ class LLMVM_OpenRouter_Client {
         }
         $json = json_decode( (string) $body, true );
         if ( ! is_array( $json ) ) {
-            return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => 'Invalid JSON from API' ];
+            LLMVM_Logger::log( 'OpenRouter JSON parse error', [ 
+                'response_time_ms' => round( $api_response_time * 1000, 2 ),
+                'model' => $model,
+                'body_preview' => substr( $body, 0, 200 )
+            ] );
+            return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => 'Invalid JSON from API', 'response_time' => $api_response_time ];
         }
         if ( $code < 200 || $code >= 300 ) {
             $msg = (string) ( $json['error']['message'] ?? '' );
@@ -129,7 +158,13 @@ class LLMVM_OpenRouter_Client {
             } elseif ( $code >= 500 ) {
                 $msg = 'OpenRouter server error - try again later (status ' . $code . ')';
             }
-            return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg ];
+            LLMVM_Logger::log( 'OpenRouter API error', [ 
+                'status' => $code,
+                'error_message' => $msg,
+                'response_time_ms' => round( $api_response_time * 1000, 2 ),
+                'model' => $model
+            ] );
+            return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg, 'response_time' => $api_response_time ];
         }
         $answer = $json['choices'][0]['message']['content'] ?? '';
         
@@ -149,7 +184,16 @@ class LLMVM_OpenRouter_Client {
             $preview = preg_replace( '/\s+/', ' ', trim( $preview ) );
             LLMVM_Logger::log( 'Answer preview', [ 'preview' => $preview ] );
         }
-        return [ 'model' => $model, 'answer' => (string) $answer, 'status' => (int) $code, 'error' => '' ];
+        
+        // Log successful response with timing details
+        LLMVM_Logger::log( 'OpenRouter success', [ 
+            'model' => $model,
+            'response_time_ms' => round( $api_response_time * 1000, 2 ),
+            'answer_length' => strlen( $answer ),
+            'prompt_length' => strlen( $prompt )
+        ] );
+        
+        return [ 'model' => $model, 'answer' => (string) $answer, 'status' => (int) $code, 'error' => '', 'response_time' => $api_response_time ];
     }
 }
 

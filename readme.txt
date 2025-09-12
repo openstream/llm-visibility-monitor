@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.11.0
+Stable tag: 0.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,6 +123,54 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.12.0 - 2025-01-12 =
+* **New Feature**: Enhanced Response Time Logging
+  * Added detailed response time tracking for all OpenRouter API requests
+  * Response times logged in milliseconds with model, prompt length, and body size information
+  * Enhanced error logging with response time context for better debugging
+  * Progress tracking now displays response times in completion messages
+  * Improved performance monitoring for production environments
+* **New Feature**: Queue System for Asynchronous Processing
+  * Implemented WordPress-based queue system to prevent timeout issues
+  * Queue system is now always enabled for all LLM requests (simplified architecture)
+  * Queue status display showing pending, processing, completed, and failed jobs
+  * Automatic cleanup of old completed jobs (7+ days old)
+  * Fallback to synchronous processing if queue system fails
+* **New Feature**: Queue Management Interface
+  * New "LLM Queue Status" page under Tools for monitoring queue operations
+  * Real-time queue status with auto-refresh every 30 seconds
+  * User-specific queue filtering (limited users see only their jobs, admins see all)
+  * Queue job details including model, status, creation time, and attempt counts
+  * Admin controls for clearing all queue jobs
+  * Visual status indicators with color-coded badges and cards
+  * Performance metrics display including response time, execution time, and queue overhead
+  * Detailed timing breakdown showing queue wait time vs processing time
+* **New Feature**: Configurable Concurrency Control
+  * Admin setting to control maximum concurrent jobs (1-5, default: 1 for shared hosting)
+  * Prevents server overload on shared hosting environments
+  * Automatic job queuing when concurrency limit is reached
+  * Enhanced queue processing with proper job prioritization
+* **Enhancement**: Email Reporting System Overhaul
+  * Completely refactored email reporting to use database storage instead of transients
+  * Fixed email reporting for both single runs and "run all prompts now" operations
+  * Implemented batch run ID system to group all results from multi-prompt runs
+  * Email reports now correctly include all results from the current run only
+  * Enhanced email reliability with proper result collection and cleanup
+* **Enhancement**: Logging System Improvements
+  * Moved logging to WordPress root directory for easier access
+  * Implemented dual log file system: master log (all logs) and current run log (run-specific)
+  * Added log rotation for master log file (5MB limit)
+  * Enhanced log filtering for current run logs with relevant keywords
+  * Added .gitignore to prevent committing log files
+* **Bug Fixes**: Critical Issues Resolved
+  * Fixed undefined variable `$job_update_time` PHP warning
+  * Fixed email reporting for batch runs to include all results instead of just the last prompt
+  * Fixed run ID generation to use consistent batch run IDs across all jobs
+  * Fixed email firing logic to use correct run_id (batch_run_id vs prompt_id)
+  * Fixed duplicate job processing race conditions with atomic updates
+  * Fixed popup display issues by removing progress popup for queue-based runs
+  * Fixed negative overhead calculations in queue status display
 
 = 0.11.0 - 2025-09-10 =
 * **New Feature**: Per-Prompt Cron Frequency Settings
