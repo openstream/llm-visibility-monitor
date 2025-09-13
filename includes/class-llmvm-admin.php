@@ -787,6 +787,11 @@ class LLMVM_Admin {
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can( 'llmvm_manage_settings' );
 
+        // Set page title to prevent WordPress from using null values
+        add_filter( 'admin_title', function( $title ) {
+            return 'LLM Visibility Dashboard - ' . get_bloginfo( 'name' );
+        } );
+
         // Get sorting parameters
         $orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
         $order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
@@ -1002,15 +1007,45 @@ class LLMVM_Admin {
     public function hide_available_tools_section(): void {
         ?>
         <style>
+            /* Hide the "Available Tools" section and related elements */
             .tools-php .wrap h1 + p,
             .tools-php .wrap h1 + .wp-list-table,
-            .tools-php .wrap h1 + .wp-list-table + p {
+            .tools-php .wrap h1 + .wp-list-table + p,
+            .tools-php .wrap h1 + .wp-list-table + p + p,
+            .tools-php .wrap h1 + p + .wp-list-table,
+            .tools-php .wrap h1 + p + .wp-list-table + p,
+            .tools-php .wrap h1 + p + .wp-list-table + p + p {
                 display: none !important;
             }
             .tools-php .wrap h1 {
                 margin-bottom: 20px;
             }
+            /* Also hide any paragraph that contains "Available Tools" text */
+            .tools-php .wrap p:contains("Available Tools") {
+                display: none !important;
+            }
         </style>
+        <script>
+        // Additional JavaScript to hide "Available Tools" section
+        document.addEventListener('DOMContentLoaded', function() {
+            const wrap = document.querySelector('.tools-php .wrap');
+            if (wrap) {
+                const h1 = wrap.querySelector('h1');
+                if (h1) {
+                    let nextElement = h1.nextElementSibling;
+                    while (nextElement) {
+                        if (nextElement.tagName === 'P' || nextElement.classList.contains('wp-list-table')) {
+                            if (nextElement.textContent.includes('Available Tools') || 
+                                nextElement.classList.contains('wp-list-table')) {
+                                nextElement.style.display = 'none';
+                            }
+                        }
+                        nextElement = nextElement.nextElementSibling;
+                    }
+                }
+            }
+        });
+        </script>
         <?php
     }
 
@@ -1048,6 +1083,11 @@ class LLMVM_Admin {
         if ( ! is_array( $row ) ) {
             $row = null;
         }
+        
+        // Set page title to prevent WordPress from using null values
+        add_filter( 'admin_title', function( $title ) {
+            return 'LLM Visibility Result - ' . get_bloginfo( 'name' );
+        } );
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
         }
