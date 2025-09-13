@@ -111,6 +111,7 @@ class LLMVM_Admin {
         
         // Hide WordPress logo from admin bar for LLM Manager users
         add_action( 'init', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
+        add_action( 'wp_before_admin_bar_render', [ $this, 'hide_wordpress_logo_css' ] );
 
 
         // Form handlers for prompts CRUD.
@@ -1224,8 +1225,52 @@ class LLMVM_Admin {
         $removed = remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 10 );
         error_log( 'LLMVM: WordPress logo removal result: ' . ( $removed ? 'success' : 'failed' ) );
         
-        // Add custom branding instead
-        add_action( 'admin_bar_menu', [ $this, 'add_custom_admin_bar_branding' ], 10 );
+        // Just hide the WordPress logo, don't add custom branding
+    }
+    
+    /**
+     * Hide WordPress logo using CSS for LLM Manager users.
+     */
+    public function hide_wordpress_logo_css(): void {
+        // Only hide for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only hide for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Add CSS to hide WordPress logo
+        add_action( 'admin_head', function() {
+            ?>
+            <style>
+            /* Hide WordPress logo and its dropdown for LLM Manager users */
+            #wp-admin-bar-wp-logo,
+            #wp-admin-bar-wp-logo > .ab-item,
+            #wp-admin-bar-wp-logo > .ab-item:before {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            /* Also hide the dropdown menu */
+            #wp-admin-bar-wp-logo .ab-sub-wrapper {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            </style>
+            <?php
+        } );
     }
     
     /**
@@ -1252,34 +1297,9 @@ class LLMVM_Admin {
             return;
         }
         
-        // Add custom LLM Visibility Monitor branding
-        $wp_admin_bar->add_node( array(
-            'id'    => 'llmvm-branding',
-            'title' => '<span class="ab-icon"></span><span class="ab-label">' . __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ) . '</span>',
-            'href'  => admin_url( 'tools.php?page=llmvm-prompts' ),
-            'meta'  => array(
-                'title' => __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
-            ),
-        ) );
+        // Don't add custom branding - it's already in the sidebar
         
-        // Add custom CSS for the branding and hide WordPress logo
-        add_action( 'admin_head', function() {
-            ?>
-            <style>
-            #wp-admin-bar-llmvm-branding .ab-icon:before {
-                content: "\f321";
-                top: 2px;
-            }
-            #wp-admin-bar-llmvm-branding .ab-label {
-                font-weight: 600;
-            }
-            /* Hide WordPress logo for LLM Manager users */
-            #wp-admin-bar-wp-logo {
-                display: none !important;
-            }
-            </style>
-            <?php
-        } );
+        // No custom branding needed - already in sidebar
     }
 
     /**
