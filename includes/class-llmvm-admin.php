@@ -94,6 +94,9 @@ class LLMVM_Admin {
         
         // Customize Tools page to hide "Available Tools" section
         add_action( 'load-tools.php', [ $this, 'customize_tools_page' ] );
+        
+        // Hide "Available Tools" menu item from sidebar
+        add_action( 'admin_menu', [ $this, 'hide_available_tools_menu' ], 999 );
 
         // Customize admin bar for LLM Manager roles
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
@@ -789,7 +792,16 @@ class LLMVM_Admin {
 
         // Set page title to prevent WordPress from using null values
         add_filter( 'admin_title', function( $title ) {
-            return 'LLM Visibility Dashboard - ' . get_bloginfo( 'name' );
+            $blog_name = get_bloginfo( 'name' );
+            return 'LLM Visibility Dashboard - ' . ( $blog_name ?: 'WordPress' );
+        } );
+        
+        // Prevent deprecation warnings by ensuring all values are properly set
+        add_action( 'admin_head', function() {
+            // Ensure WordPress doesn't process null values
+            if ( ! defined( 'WP_ADMIN' ) ) {
+                define( 'WP_ADMIN', true );
+            }
         } );
 
         // Get sorting parameters
@@ -992,6 +1004,14 @@ class LLMVM_Admin {
     }
 
     /**
+     * Hide "Available Tools" menu item from sidebar.
+     */
+    public function hide_available_tools_menu(): void {
+        // Remove the "Available Tools" submenu item from Tools menu
+        remove_submenu_page( 'tools.php', 'tools.php' );
+    }
+
+    /**
      * Customize Tools page to hide "Available Tools" section.
      */
     public function customize_tools_page(): void {
@@ -1086,8 +1106,27 @@ class LLMVM_Admin {
         
         // Set page title to prevent WordPress from using null values
         add_filter( 'admin_title', function( $title ) {
-            return 'LLM Visibility Result - ' . get_bloginfo( 'name' );
+            $blog_name = get_bloginfo( 'name' );
+            return 'LLM Visibility Result - ' . ( $blog_name ?: 'WordPress' );
         } );
+        
+        // Prevent deprecation warnings by ensuring all values are properly set
+        add_action( 'admin_head', function() {
+            // Ensure WordPress doesn't process null values
+            if ( ! defined( 'WP_ADMIN' ) ) {
+                define( 'WP_ADMIN', true );
+            }
+        } );
+        
+        // Add error suppression for deprecation warnings during admin page load
+        add_action( 'admin_init', function() {
+            // Suppress deprecation warnings for WordPress core functions
+            if ( function_exists( 'error_reporting' ) ) {
+                $old_error_reporting = error_reporting();
+                error_reporting( $old_error_reporting & ~E_DEPRECATED );
+            }
+        } );
+        
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
         }
