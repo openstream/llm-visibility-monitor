@@ -100,6 +100,7 @@ class LLMVM_Queue_Manager {
 
 		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) NOT NULL DEFAULT 0,
 			job_type varchar(50) NOT NULL,
 			job_data longtext NOT NULL,
 			status varchar(20) NOT NULL DEFAULT 'pending',
@@ -112,6 +113,7 @@ class LLMVM_Queue_Manager {
 			completed_at datetime NULL,
 			error_message text NULL,
 			PRIMARY KEY (id),
+			KEY user_id (user_id),
 			KEY status (status),
 			KEY priority (priority),
 			KEY created_at (created_at)
@@ -119,6 +121,34 @@ class LLMVM_Queue_Manager {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
+		
+		// Check if user_id column exists, if not add it (migration)
+		$this->migrate_add_user_id_column();
+	}
+
+	/**
+	 * Migrate existing queue table to add user_id column.
+	 */
+	private function migrate_add_user_id_column(): void {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . self::QUEUE_TABLE;
+		
+		// Check if user_id column exists
+		$column_exists = $wpdb->get_results( $wpdb->prepare(
+			"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+			WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'user_id'",
+			DB_NAME,
+			$table_name
+		) );
+		
+		if ( empty( $column_exists ) ) {
+			// Add user_id column
+			$wpdb->query( "ALTER TABLE $table_name ADD COLUMN user_id bigint(20) NOT NULL DEFAULT 0 AFTER id" );
+			$wpdb->query( "ALTER TABLE $table_name ADD KEY user_id (user_id)" );
+			
+			LLMVM_Logger::log( 'Added user_id column to queue table', array( 'table' => $table_name ) );
+		}
 	}
 
 	/**
@@ -234,13 +264,14 @@ class LLMVM_Queue_Manager {
 		$result = $wpdb->insert(
 			$table_name,
 			array(
+				'user_id'      => $user_id,
 				'job_type'     => $job_type,
 				'job_data'     => wp_json_encode( $job_data ),
 				'priority'     => $priority,
 				'status'       => 'pending',
 				'max_attempts' => self::MAX_RETRIES,
 			),
-			array( '%s', '%s', '%d', '%s', '%d' )
+			array( '%d', '%s', '%s', '%d', '%s', '%d' )
 		);
 
 		if ( $result === false ) {
