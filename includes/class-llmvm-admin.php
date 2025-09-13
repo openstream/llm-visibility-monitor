@@ -1252,23 +1252,55 @@ class LLMVM_Admin {
             return;
         }
         
+        // Debug: Log that we're adding CSS
+        error_log( 'LLMVM: Adding CSS to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
+        
         // Add CSS to hide WordPress logo
         add_action( 'admin_head', function() {
             ?>
             <style>
             /* Hide WordPress logo and its dropdown for LLM Manager users */
-            #wp-admin-bar-wp-logo,
-            #wp-admin-bar-wp-logo > .ab-item,
-            #wp-admin-bar-wp-logo > .ab-item:before {
+            #wp-admin-bar-wp-logo {
+                display: none !important;
+                visibility: hidden !important;
+                width: 0 !important;
+                height: 0 !important;
+                overflow: hidden !important;
+            }
+            /* Hide the logo item and icon */
+            #wp-admin-bar-wp-logo .ab-item,
+            #wp-admin-bar-wp-logo .ab-item:before,
+            #wp-admin-bar-wp-logo .ab-icon {
                 display: none !important;
                 visibility: hidden !important;
             }
-            /* Also hide the dropdown menu */
+            /* Hide the dropdown menu */
             #wp-admin-bar-wp-logo .ab-sub-wrapper {
                 display: none !important;
                 visibility: hidden !important;
             }
+            /* Debug: Add a red border to see if our CSS is working */
+            body.wp-admin {
+                border-top: 3px solid red !important;
+            }
             </style>
+            <script>
+            // JavaScript fallback to hide WordPress logo
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('LLMVM: JavaScript hiding WordPress logo');
+                var logo = document.getElementById('wp-admin-bar-wp-logo');
+                if (logo) {
+                    console.log('LLMVM: Found WordPress logo, hiding it');
+                    logo.style.display = 'none';
+                    logo.style.visibility = 'hidden';
+                    logo.style.width = '0';
+                    logo.style.height = '0';
+                    logo.style.overflow = 'hidden';
+                } else {
+                    console.log('LLMVM: WordPress logo not found');
+                }
+            });
+            </script>
             <?php
         } );
     }
