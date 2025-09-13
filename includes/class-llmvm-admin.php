@@ -113,6 +113,9 @@ class LLMVM_Admin {
         add_action( 'init', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
         add_action( 'wp_before_admin_bar_render', [ $this, 'hide_wordpress_logo_css' ] );
         
+        // Try removing the WordPress logo action even earlier
+        add_action( 'wp_loaded', [ $this, 'remove_wordpress_logo_early' ] );
+        
         // Test: Always add red border to see if our hooks are working
         add_action( 'admin_head', function() {
             error_log( 'LLMVM: Test admin_head hook fired' );
@@ -1241,6 +1244,38 @@ class LLMVM_Admin {
     }
     
     /**
+     * Remove WordPress logo action early for LLM Manager users.
+     */
+    public function remove_wordpress_logo_early(): void {
+        // Only hide for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only hide for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Try removing the WordPress logo action with different priorities
+        $removed1 = remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 10 );
+        $removed2 = remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 0 );
+        $removed3 = remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 999 );
+        
+        error_log( 'LLMVM: Early removal attempts - priority 10: ' . ( $removed1 ? 'success' : 'failed' ) . ', priority 0: ' . ( $removed2 ? 'success' : 'failed' ) . ', priority 999: ' . ( $removed3 ? 'success' : 'failed' ) );
+    }
+    
+    /**
      * Hide WordPress logo using CSS for LLM Manager users.
      */
     public function hide_wordpress_logo_css(): void {
@@ -1278,9 +1313,9 @@ class LLMVM_Admin {
         // Debug: Log that we're adding CSS
         error_log( 'LLMVM: Adding CSS to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
         
-        // Add CSS to hide WordPress logo
-        add_action( 'admin_head', function() {
-            error_log( 'LLMVM: admin_head action fired, adding CSS and JavaScript' );
+        // Add CSS to hide WordPress logo - use wp_head instead of admin_head
+        add_action( 'wp_head', function() {
+            error_log( 'LLMVM: wp_head action fired, adding CSS and JavaScript' );
             ?>
             <style>
             /* Hide WordPress logo and its dropdown for LLM Manager users */
