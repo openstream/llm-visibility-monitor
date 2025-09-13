@@ -110,7 +110,7 @@ class LLMVM_Admin {
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
         
         // Hide WordPress logo from admin bar for LLM Manager users
-        add_action( 'wp_before_admin_bar_render', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
+        add_action( 'init', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
 
 
         // Form handlers for prompts CRUD.
@@ -1217,8 +1217,12 @@ class LLMVM_Admin {
             return;
         }
         
-        // Remove WordPress logo from admin bar
-        remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 10 );
+        // Debug: Log that we're trying to hide the logo
+        error_log( 'LLMVM: Attempting to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
+        
+        // Remove WordPress logo from admin bar (it's added with priority 10)
+        $removed = remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 10 );
+        error_log( 'LLMVM: WordPress logo removal result: ' . ( $removed ? 'success' : 'failed' ) );
         
         // Add custom branding instead
         add_action( 'admin_bar_menu', [ $this, 'add_custom_admin_bar_branding' ], 10 );
@@ -1258,7 +1262,7 @@ class LLMVM_Admin {
             ),
         ) );
         
-        // Add custom CSS for the branding
+        // Add custom CSS for the branding and hide WordPress logo
         add_action( 'admin_head', function() {
             ?>
             <style>
@@ -1268,6 +1272,10 @@ class LLMVM_Admin {
             }
             #wp-admin-bar-llmvm-branding .ab-label {
                 font-weight: 600;
+            }
+            /* Hide WordPress logo for LLM Manager users */
+            #wp-admin-bar-wp-logo {
+                display: none !important;
             }
             </style>
             <?php
