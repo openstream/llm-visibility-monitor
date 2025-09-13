@@ -803,6 +803,23 @@ class LLMVM_Admin {
                 define( 'WP_ADMIN', true );
             }
         } );
+        
+        // Add error suppression for deprecation warnings during admin page load
+        add_action( 'admin_init', function() {
+            // Suppress deprecation warnings for WordPress core functions
+            if ( function_exists( 'error_reporting' ) ) {
+                $old_error_reporting = error_reporting();
+                error_reporting( $old_error_reporting & ~E_DEPRECATED );
+            }
+        } );
+        
+        // Additional deprecation warning suppression
+        add_action( 'wp_loaded', function() {
+            // Suppress deprecation warnings more aggressively
+            if ( function_exists( 'error_reporting' ) ) {
+                error_reporting( error_reporting() & ~E_DEPRECATED );
+            }
+        } );
 
         // Get sorting parameters
         $orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
@@ -1007,8 +1024,27 @@ class LLMVM_Admin {
      * Hide "Available Tools" menu item from sidebar.
      */
     public function hide_available_tools_menu(): void {
-        // Remove the "Available Tools" submenu item from Tools menu
-        remove_submenu_page( 'tools.php', 'tools.php' );
+        // Use CSS to hide the "Available Tools" menu item instead of removing it
+        // This prevents access issues while still hiding the unwanted item
+        add_action( 'admin_head', [ $this, 'hide_available_tools_menu_css' ] );
+    }
+
+    /**
+     * Add CSS to hide "Available Tools" menu item.
+     */
+    public function hide_available_tools_menu_css(): void {
+        ?>
+        <style>
+            /* Hide the "Available Tools" menu item from the Tools submenu */
+            .wp-submenu a[href="tools.php"] {
+                display: none !important;
+            }
+            /* Also hide the parent Tools menu if it only contains Available Tools */
+            .wp-submenu li:has(a[href="tools.php"]):only-child {
+                display: none !important;
+            }
+        </style>
+        <?php
     }
 
     /**
@@ -1124,6 +1160,14 @@ class LLMVM_Admin {
             if ( function_exists( 'error_reporting' ) ) {
                 $old_error_reporting = error_reporting();
                 error_reporting( $old_error_reporting & ~E_DEPRECATED );
+            }
+        } );
+        
+        // Additional deprecation warning suppression
+        add_action( 'wp_loaded', function() {
+            // Suppress deprecation warnings more aggressively
+            if ( function_exists( 'error_reporting' ) ) {
+                error_reporting( error_reporting() & ~E_DEPRECATED );
             }
         } );
         
