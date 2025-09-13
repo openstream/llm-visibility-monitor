@@ -112,6 +112,18 @@ class LLMVM_Admin {
         // Hide WordPress logo from admin bar for LLM Manager users
         add_action( 'init', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
         add_action( 'wp_before_admin_bar_render', [ $this, 'hide_wordpress_logo_css' ] );
+        
+        // Test: Always add red border to see if our hooks are working
+        add_action( 'admin_head', function() {
+            error_log( 'LLMVM: Test admin_head hook fired' );
+            ?>
+            <style>
+            body.wp-admin {
+                border-top: 5px solid blue !important;
+            }
+            </style>
+            <?php
+        } );
 
 
         // Form handlers for prompts CRUD.
@@ -1232,11 +1244,18 @@ class LLMVM_Admin {
      * Hide WordPress logo using CSS for LLM Manager users.
      */
     public function hide_wordpress_logo_css(): void {
+        // Debug: Always log this method is called
+        error_log( 'LLMVM: hide_wordpress_logo_css() method called' );
+        
         // Only hide for LLM Manager users
         $current_user = wp_get_current_user();
         if ( ! $current_user ) {
+            error_log( 'LLMVM: No current user found' );
             return;
         }
+        
+        // Debug: Log user info
+        error_log( 'LLMVM: Current user ID: ' . $current_user->ID . ', roles: ' . implode( ', ', $current_user->roles ) );
         
         // Check if user has any LLM Manager role
         $has_llm_role = false;
@@ -1247,8 +1266,12 @@ class LLMVM_Admin {
             }
         }
         
+        // Debug: Log role check result
+        error_log( 'LLMVM: Has LLM role: ' . ( $has_llm_role ? 'yes' : 'no' ) );
+        
         // Only hide for LLM Manager users
         if ( ! $has_llm_role ) {
+            error_log( 'LLMVM: User does not have LLM role, skipping logo hiding' );
             return;
         }
         
@@ -1257,6 +1280,7 @@ class LLMVM_Admin {
         
         // Add CSS to hide WordPress logo
         add_action( 'admin_head', function() {
+            error_log( 'LLMVM: admin_head action fired, adding CSS and JavaScript' );
             ?>
             <style>
             /* Hide WordPress logo and its dropdown for LLM Manager users */
