@@ -98,6 +98,9 @@ class LLMVM_Admin {
         // Hide "Available Tools" menu item from sidebar
         add_action( 'admin_menu', [ $this, 'hide_available_tools_menu' ], 999 );
         
+        // Fix WordPress core deprecation warnings
+        add_action( 'init', [ $this, 'fix_wordpress_deprecation_warnings' ], 1 );
+        
 
         // Customize admin bar for LLM Manager roles
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
@@ -797,6 +800,14 @@ class LLMVM_Admin {
             return 'LLM Visibility Dashboard - ' . ( $blog_name ?: 'WordPress' );
         } );
         
+        // Ensure page title is never null
+        add_filter( 'admin_title', function( $title ) {
+            if ( $title === null || $title === '' ) {
+                return 'LLM Visibility Dashboard - WordPress';
+            }
+            return $title;
+        }, 1 );
+        
         // Ensure WordPress constants are properly set
         if ( ! defined( 'WP_ADMIN' ) ) {
             define( 'WP_ADMIN', true );
@@ -1014,6 +1025,41 @@ class LLMVM_Admin {
 
 
     /**
+     * Fix WordPress core deprecation warnings by ensuring functions receive valid values.
+     */
+    public function fix_wordpress_deprecation_warnings(): void {
+        // Only run on admin pages
+        if ( ! is_admin() ) {
+            return;
+        }
+        
+        // Ensure get_bloginfo returns valid values
+        add_filter( 'option_blogname', function( $value ) {
+            return $value ?: 'WordPress';
+        } );
+        
+        add_filter( 'option_blogdescription', function( $value ) {
+            return $value ?: '';
+        } );
+        
+        // Ensure admin_title never returns null
+        add_filter( 'admin_title', function( $title ) {
+            if ( $title === null || $title === '' ) {
+                return 'WordPress';
+            }
+            return $title;
+        }, 1 );
+        
+        // Ensure page title is never null
+        add_filter( 'wp_title', function( $title ) {
+            if ( $title === null || $title === '' ) {
+                return 'WordPress';
+            }
+            return $title;
+        }, 1 );
+    }
+
+    /**
      * Hide "Available Tools" menu item from sidebar.
      */
     public function hide_available_tools_menu(): void {
@@ -1138,6 +1184,14 @@ class LLMVM_Admin {
             $blog_name = get_bloginfo( 'name' );
             return 'LLM Visibility Result - ' . ( $blog_name ?: 'WordPress' );
         } );
+        
+        // Ensure page title is never null
+        add_filter( 'admin_title', function( $title ) {
+            if ( $title === null || $title === '' ) {
+                return 'LLM Visibility Result - WordPress';
+            }
+            return $title;
+        }, 1 );
         
         // Ensure WordPress constants are properly set
         if ( ! defined( 'WP_ADMIN' ) ) {
