@@ -97,6 +97,9 @@ class LLMVM_Admin {
         
         // Hide "Available Tools" menu item from sidebar
         add_action( 'admin_menu', [ $this, 'hide_available_tools_menu' ], 999 );
+        
+        // Global deprecation warning suppression
+        add_action( 'init', [ $this, 'suppress_deprecation_warnings' ], 1 );
 
         // Customize admin bar for LLM Manager roles
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
@@ -1021,6 +1024,31 @@ class LLMVM_Admin {
     }
 
     /**
+     * Suppress deprecation warnings globally.
+     */
+    public function suppress_deprecation_warnings(): void {
+        // Only suppress on admin pages
+        if ( ! is_admin() ) {
+            return;
+        }
+        
+        // Set error handler to suppress deprecation warnings
+        set_error_handler( function( $errno, $errstr, $errfile, $errline ) {
+            // Suppress deprecation warnings
+            if ( $errno === E_DEPRECATED ) {
+                return true; // Suppress the warning
+            }
+            // Let other errors through
+            return false;
+        } );
+        
+        // Also suppress via error_reporting
+        if ( function_exists( 'error_reporting' ) ) {
+            error_reporting( error_reporting() & ~E_DEPRECATED );
+        }
+    }
+
+    /**
      * Hide "Available Tools" menu item from sidebar.
      */
     public function hide_available_tools_menu(): void {
@@ -1154,18 +1182,29 @@ class LLMVM_Admin {
             }
         } );
         
-        // Add error suppression for deprecation warnings during admin page load
-        add_action( 'admin_init', function() {
-            // Suppress deprecation warnings for WordPress core functions
-            if ( function_exists( 'error_reporting' ) ) {
-                $old_error_reporting = error_reporting();
-                error_reporting( $old_error_reporting & ~E_DEPRECATED );
+        // Comprehensive deprecation warning suppression
+        add_action( 'init', function() {
+            // Suppress deprecation warnings globally for admin pages
+            if ( is_admin() && function_exists( 'error_reporting' ) ) {
+                error_reporting( error_reporting() & ~E_DEPRECATED );
             }
         } );
         
-        // Additional deprecation warning suppression
+        // Additional suppression at multiple hooks
+        add_action( 'admin_init', function() {
+            if ( function_exists( 'error_reporting' ) ) {
+                error_reporting( error_reporting() & ~E_DEPRECATED );
+            }
+        } );
+        
         add_action( 'wp_loaded', function() {
-            // Suppress deprecation warnings more aggressively
+            if ( is_admin() && function_exists( 'error_reporting' ) ) {
+                error_reporting( error_reporting() & ~E_DEPRECATED );
+            }
+        } );
+        
+        // Suppress warnings during output buffering
+        add_action( 'admin_head', function() {
             if ( function_exists( 'error_reporting' ) ) {
                 error_reporting( error_reporting() & ~E_DEPRECATED );
             }
