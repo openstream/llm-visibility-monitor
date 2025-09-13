@@ -116,6 +116,9 @@ class LLMVM_Admin {
         // Try removing the WordPress logo action even earlier
         add_action( 'wp_loaded', [ $this, 'remove_wordpress_logo_early' ] );
         
+        // Try removing it after admin bar is set up
+        add_action( 'admin_bar_menu', [ $this, 'remove_wordpress_logo_from_admin_bar' ], 1 );
+        
         // Test: Always add red border to see if our hooks are working
         add_action( 'admin_head', function() {
             error_log( 'LLMVM: Test admin_head hook fired' );
@@ -1276,6 +1279,35 @@ class LLMVM_Admin {
     }
     
     /**
+     * Remove WordPress logo from admin bar directly.
+     */
+    public function remove_wordpress_logo_from_admin_bar( $wp_admin_bar ): void {
+        // Only hide for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only hide for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Try to remove the WordPress logo node directly
+        $wp_admin_bar->remove_node( 'wp-logo' );
+        error_log( 'LLMVM: Attempted to remove wp-logo node directly from admin bar' );
+    }
+    
+    /**
      * Hide WordPress logo using CSS for LLM Manager users.
      */
     public function hide_wordpress_logo_css(): void {
@@ -1313,9 +1345,9 @@ class LLMVM_Admin {
         // Debug: Log that we're adding CSS
         error_log( 'LLMVM: Adding CSS to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
         
-        // Add CSS to hide WordPress logo - use wp_head instead of admin_head
-        add_action( 'wp_head', function() {
-            error_log( 'LLMVM: wp_head action fired, adding CSS and JavaScript' );
+        // Add CSS to hide WordPress logo - use admin_head
+        add_action( 'admin_head', function() {
+            error_log( 'LLMVM: admin_head action fired, adding CSS and JavaScript' );
             ?>
             <style>
             /* Hide WordPress logo and its dropdown for LLM Manager users */
@@ -1344,19 +1376,51 @@ class LLMVM_Admin {
             }
             </style>
             <script>
-            // JavaScript fallback to hide WordPress logo
+            // JavaScript to hide WordPress logo immediately
+            console.log('LLMVM: JavaScript hiding WordPress logo');
+            
+            // Try to hide immediately
+            var logo = document.getElementById('wp-admin-bar-wp-logo');
+            if (logo) {
+                console.log('LLMVM: Found WordPress logo immediately, hiding it');
+                logo.style.display = 'none';
+                logo.style.visibility = 'hidden';
+                logo.style.width = '0';
+                logo.style.height = '0';
+                logo.style.overflow = 'hidden';
+            } else {
+                console.log('LLMVM: WordPress logo not found immediately, trying DOMContentLoaded');
+            }
+            
+            // Also try on DOMContentLoaded as fallback
             document.addEventListener('DOMContentLoaded', function() {
-                console.log('LLMVM: JavaScript hiding WordPress logo');
+                console.log('LLMVM: DOMContentLoaded - hiding WordPress logo');
                 var logo = document.getElementById('wp-admin-bar-wp-logo');
                 if (logo) {
-                    console.log('LLMVM: Found WordPress logo, hiding it');
+                    console.log('LLMVM: Found WordPress logo on DOMContentLoaded, hiding it');
                     logo.style.display = 'none';
                     logo.style.visibility = 'hidden';
                     logo.style.width = '0';
                     logo.style.height = '0';
                     logo.style.overflow = 'hidden';
                 } else {
-                    console.log('LLMVM: WordPress logo not found');
+                    console.log('LLMVM: WordPress logo not found on DOMContentLoaded');
+                }
+            });
+            
+            // Also try on window load as final fallback
+            window.addEventListener('load', function() {
+                console.log('LLMVM: Window load - hiding WordPress logo');
+                var logo = document.getElementById('wp-admin-bar-wp-logo');
+                if (logo) {
+                    console.log('LLMVM: Found WordPress logo on window load, hiding it');
+                    logo.style.display = 'none';
+                    logo.style.visibility = 'hidden';
+                    logo.style.width = '0';
+                    logo.style.height = '0';
+                    logo.style.overflow = 'hidden';
+                } else {
+                    console.log('LLMVM: WordPress logo not found on window load');
                 }
             });
             </script>
