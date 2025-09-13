@@ -1123,6 +1123,7 @@ class LLMVM_Admin {
         remove_meta_box( 'dashboard_secondary', 'dashboard', 'side' );
         remove_meta_box( 'dashboard_site_health', 'dashboard', 'normal' );
         remove_meta_box( 'dashboard_activity', 'dashboard', 'normal' );
+        remove_meta_box( 'dashboard_right_now', 'dashboard', 'normal' ); // "At a Glance" widget
         
         // Add custom LLM Visibility Monitor widget
         wp_add_dashboard_widget(
@@ -1130,6 +1131,9 @@ class LLMVM_Admin {
             __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
             [ $this, 'render_llmvm_dashboard_widget' ]
         );
+        
+        // Add CSS to clean up the dashboard
+        add_action( 'admin_head', [ $this, 'add_dashboard_cleanup_css' ] );
     }
     
     /**
@@ -1184,6 +1188,70 @@ class LLMVM_Admin {
             margin-right: 10px;
         }
         </style>';
+    }
+
+    /**
+     * Add CSS to clean up the dashboard for LLM Manager users.
+     */
+    public function add_dashboard_cleanup_css(): void {
+        // Only add CSS for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only add CSS for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        ?>
+        <style>
+        /* Hide the "Drag boxes here" areas */
+        .postbox-container .empty-container {
+            display: none !important;
+        }
+        
+        /* Hide empty meta boxes */
+        .meta-box-sortables .empty-container {
+            display: none !important;
+        }
+        
+        /* Hide the "Welcome to WordPress" panel if it exists */
+        .welcome-panel {
+            display: none !important;
+        }
+        
+        /* Make the dashboard layout cleaner */
+        .dashboard-widgets-wrap .postbox-container {
+            width: 100% !important;
+        }
+        
+        /* Hide any remaining empty containers */
+        .postbox-container:empty {
+            display: none !important;
+        }
+        
+        /* Ensure our widget takes full width */
+        #llmvm_dashboard_widget {
+            width: 100% !important;
+        }
+        
+        /* Hide the "Screen Options" and "Help" tabs for cleaner look */
+        .screen-meta-toggle {
+            display: none !important;
+        }
+        </style>
+        <?php
     }
 
     /**
