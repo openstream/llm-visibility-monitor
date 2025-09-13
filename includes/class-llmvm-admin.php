@@ -119,17 +119,6 @@ class LLMVM_Admin {
         // Try removing it after admin bar is set up
         add_action( 'admin_bar_menu', [ $this, 'remove_wordpress_logo_node' ], 1 );
         
-        // Test: Always add red border to see if our hooks are working
-        add_action( 'admin_head', function() {
-            error_log( 'LLMVM: Test admin_head hook fired' );
-            ?>
-            <style>
-            body.wp-admin {
-                border-top: 5px solid blue !important;
-            }
-            </style>
-            <?php
-        } );
 
 
         // Form handlers for prompts CRUD.
@@ -1342,11 +1331,7 @@ class LLMVM_Admin {
             return;
         }
         
-        // Debug: Log that we're adding CSS
-        error_log( 'LLMVM: Adding CSS to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
-        
         // Add CSS and JavaScript directly using output buffering
-        error_log( 'LLMVM: Adding CSS and JavaScript directly' );
         
         // Use output buffering to add CSS and JavaScript
         ob_start();
@@ -1372,57 +1357,39 @@ class LLMVM_Admin {
             display: none !important;
             visibility: hidden !important;
         }
-        /* Debug: Add a red border to see if our CSS is working */
-        body.wp-admin {
-            border-top: 3px solid red !important;
-        }
         </style>
         <script>
         // JavaScript to hide WordPress logo immediately
-        console.log('LLMVM: JavaScript hiding WordPress logo');
-        
-        // Try to hide immediately
         var logo = document.getElementById('wp-admin-bar-wp-logo');
         if (logo) {
-            console.log('LLMVM: Found WordPress logo immediately, hiding it');
             logo.style.display = 'none';
             logo.style.visibility = 'hidden';
             logo.style.width = '0';
             logo.style.height = '0';
             logo.style.overflow = 'hidden';
-        } else {
-            console.log('LLMVM: WordPress logo not found immediately, trying DOMContentLoaded');
         }
         
         // Also try on DOMContentLoaded as fallback
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('LLMVM: DOMContentLoaded - hiding WordPress logo');
             var logo = document.getElementById('wp-admin-bar-wp-logo');
             if (logo) {
-                console.log('LLMVM: Found WordPress logo on DOMContentLoaded, hiding it');
                 logo.style.display = 'none';
                 logo.style.visibility = 'hidden';
                 logo.style.width = '0';
                 logo.style.height = '0';
                 logo.style.overflow = 'hidden';
-            } else {
-                console.log('LLMVM: WordPress logo not found on DOMContentLoaded');
             }
         });
         
         // Also try on window load as final fallback
         window.addEventListener('load', function() {
-            console.log('LLMVM: Window load - hiding WordPress logo');
             var logo = document.getElementById('wp-admin-bar-wp-logo');
             if (logo) {
-                console.log('LLMVM: Found WordPress logo on window load, hiding it');
                 logo.style.display = 'none';
                 logo.style.visibility = 'hidden';
                 logo.style.width = '0';
                 logo.style.height = '0';
                 logo.style.overflow = 'hidden';
-            } else {
-                console.log('LLMVM: WordPress logo not found on window load');
             }
         });
         </script>
@@ -1431,13 +1398,11 @@ class LLMVM_Admin {
         
         // Add CSS to admin_head specifically
         add_action( 'admin_head', function() use ( $output ) {
-            error_log( 'LLMVM: admin_head action fired, outputting CSS and JavaScript' );
             echo $output;
         } );
         
         // Add JavaScript to admin_footer (where it's working)
         add_action( 'admin_footer', function() use ( $output ) {
-            error_log( 'LLMVM: admin_footer action fired, outputting JavaScript' );
             // Extract only the JavaScript part
             if ( preg_match( '/<script>(.*?)<\/script>/s', $output, $matches ) ) {
                 echo '<script>' . $matches[1] . '</script>';
