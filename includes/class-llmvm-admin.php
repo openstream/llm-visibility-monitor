@@ -108,6 +108,9 @@ class LLMVM_Admin {
 
         // Customize admin bar for LLM Manager roles
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
+        
+        // Hide WordPress logo from admin bar for LLM Manager users
+        add_action( 'wp_before_admin_bar_render', [ $this, 'hide_wordpress_logo_from_admin_bar' ] );
 
 
         // Form handlers for prompts CRUD.
@@ -1188,6 +1191,87 @@ class LLMVM_Admin {
             margin-right: 10px;
         }
         </style>';
+    }
+
+    /**
+     * Hide WordPress logo from admin bar for LLM Manager users.
+     */
+    public function hide_wordpress_logo_from_admin_bar(): void {
+        // Only hide for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only hide for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Remove WordPress logo from admin bar
+        remove_action( 'admin_bar_menu', 'wp_admin_bar_wp_menu', 10 );
+        
+        // Add custom branding instead
+        add_action( 'admin_bar_menu', [ $this, 'add_custom_admin_bar_branding' ], 10 );
+    }
+    
+    /**
+     * Add custom branding to admin bar for LLM Manager users.
+     */
+    public function add_custom_admin_bar_branding( $wp_admin_bar ): void {
+        // Only add for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only add for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Add custom LLM Visibility Monitor branding
+        $wp_admin_bar->add_node( array(
+            'id'    => 'llmvm-branding',
+            'title' => '<span class="ab-icon"></span><span class="ab-label">' . __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ) . '</span>',
+            'href'  => admin_url( 'tools.php?page=llmvm-prompts' ),
+            'meta'  => array(
+                'title' => __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
+            ),
+        ) );
+        
+        // Add custom CSS for the branding
+        add_action( 'admin_head', function() {
+            ?>
+            <style>
+            #wp-admin-bar-llmvm-branding .ab-icon:before {
+                content: "\f321";
+                top: 2px;
+            }
+            #wp-admin-bar-llmvm-branding .ab-label {
+                font-weight: 600;
+            }
+            </style>
+            <?php
+        } );
     }
 
     /**
