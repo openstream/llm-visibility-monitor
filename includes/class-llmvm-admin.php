@@ -1429,22 +1429,19 @@ class LLMVM_Admin {
         <?php
         $output = ob_get_clean();
         
-        // Add the output to admin head
+        // Add CSS to admin_head specifically
         add_action( 'admin_head', function() use ( $output ) {
             error_log( 'LLMVM: admin_head action fired, outputting CSS and JavaScript' );
             echo $output;
         } );
         
-        // Also try adding it to wp_head as backup
-        add_action( 'wp_head', function() use ( $output ) {
-            error_log( 'LLMVM: wp_head action fired, outputting CSS and JavaScript' );
-            echo $output;
-        } );
-        
-        // And try admin_footer as another backup
+        // Add JavaScript to admin_footer (where it's working)
         add_action( 'admin_footer', function() use ( $output ) {
-            error_log( 'LLMVM: admin_footer action fired, outputting CSS and JavaScript' );
-            echo $output;
+            error_log( 'LLMVM: admin_footer action fired, outputting JavaScript' );
+            // Extract only the JavaScript part
+            if ( preg_match( '/<script>(.*?)<\/script>/s', $output, $matches ) ) {
+                echo '<script>' . $matches[1] . '</script>';
+            }
         } );
     }
     
