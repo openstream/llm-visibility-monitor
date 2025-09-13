@@ -251,6 +251,34 @@ class LLMVM_Cron {
 			
 			// Process each user individually
 			foreach ( $user_ids as $user_id ) {
+				// Check usage limits for each user before processing
+				$user_prompts = array_filter( $prompts, function( $prompt ) use ( $user_id ) {
+					return ( isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1 ) === $user_id;
+				} );
+				
+				$total_runs = 0;
+				foreach ( $user_prompts as $prompt_item ) {
+					if ( isset( $prompt_item['models'] ) && is_array( $prompt_item['models'] ) ) {
+						$total_runs += count( $prompt_item['models'] );
+					} else {
+						$total_runs += 1; // Fallback for single model
+					}
+				}
+				
+				// Check if user has enough runs (skip admin users)
+				$user_obj = get_user_by( 'id', $user_id );
+				if ( $user_obj && ! current_user_can( 'llmvm_manage_settings', $user_id ) ) {
+					if ( ! LLMVM_Usage_Manager::can_run_prompts( $user_id, $total_runs ) ) {
+						LLMVM_Logger::log( 'System cron: user limit reached, sending notification', [ 'user_id' => $user_id, 'runs_needed' => $total_runs ] );
+						
+						// Send limit notification email
+						$email_reporter = new LLMVM_Email_Reporter();
+						$email_reporter->send_limit_notification( $user_id );
+						
+						continue; // Skip processing this user
+					}
+				}
+				
 				$this->process_user_prompts( $user_id, $prompts, $client, $api_key, $model );
 			}
 			
@@ -273,6 +301,11 @@ class LLMVM_Cron {
 			// Check if user has enough runs
 			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
 				LLMVM_Logger::log( 'Run aborted: insufficient runs remaining', [ 'user_id' => $current_user_id, 'runs_needed' => $total_runs ] );
+				
+				// Send limit notification email
+				$email_reporter = new LLMVM_Email_Reporter();
+				$email_reporter->send_limit_notification( $current_user_id );
+				
 				return;
 			}
 		}
@@ -551,6 +584,11 @@ class LLMVM_Cron {
 					'runs_needed' => $runs_needed,
 					'prompt_id' => $prompt_id
 				] );
+				
+				// Send limit notification email
+				$email_reporter = new LLMVM_Email_Reporter();
+				$email_reporter->send_limit_notification( $current_user_id );
+				
 				return;
 			}
 		}
@@ -701,6 +739,11 @@ class LLMVM_Cron {
 			
 			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $total_runs ) ) {
 				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Run aborted: insufficient runs remaining' );
+				
+				// Send limit notification email
+				$email_reporter = new LLMVM_Email_Reporter();
+				$email_reporter->send_limit_notification( $current_user_id );
+				
 				return;
 			}
 		}
@@ -851,6 +894,11 @@ class LLMVM_Cron {
 			$runs_needed = count( $prompt_models );
 			if ( ! LLMVM_Usage_Manager::can_run_prompts( $current_user_id, $runs_needed ) ) {
 				LLMVM_Progress_Tracker::complete_progress( $run_id, 'Error: Insufficient runs remaining' );
+				
+				// Send limit notification email
+				$email_reporter = new LLMVM_Email_Reporter();
+				$email_reporter->send_limit_notification( $current_user_id );
+				
 				return;
 			}
 		}
