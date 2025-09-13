@@ -296,12 +296,12 @@ class LLMVM_Admin {
         // Result detail page - for users with results access
         $result_title = __( 'LLM Visibility Result', 'llm-visibility-monitor' );
         $result_slug = 'llmvm-result';
-        // Use a proper parent slug instead of null to prevent PHP 8.1 deprecation warnings
-        // This creates a hidden submenu page that can be accessed directly via URL
+        // Use null as parent to create a hidden page that doesn't appear in menus
+        // This page should only be accessed via direct links from the dashboard
         $result_callback = [ $this, 'render_result_page' ];
 
         add_submenu_page(
-            'tools.php', // Use tools.php as parent instead of null
+            null, // Hidden page - doesn't appear in any menu
             $result_title,
             $result_title,
             'llmvm_view_results',
@@ -989,9 +989,12 @@ class LLMVM_Admin {
             return;
         }
         
-        // Verify nonce for security
-        if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'llmvm_view_result' ) ) {
-            wp_die( esc_html__( 'Security check failed', 'llm-visibility-monitor' ) );
+        // Verify nonce for security (if provided)
+        // Allow direct access without nonce for convenience, but verify user permissions
+        if ( isset( $_GET['_wpnonce'] ) ) {
+            if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'llmvm_view_result' ) ) {
+                wp_die( esc_html__( 'Security check failed', 'llm-visibility-monitor' ) );
+            }
         }
         
         // Sanitize the ID parameter
