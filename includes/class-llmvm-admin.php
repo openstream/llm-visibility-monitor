@@ -98,6 +98,12 @@ class LLMVM_Admin {
         // Hide "Available Tools" menu item from sidebar
         add_action( 'admin_menu', [ $this, 'hide_available_tools_menu' ], 999 );
         
+        // Redirect non-admin users away from WordPress dashboard
+        add_action( 'admin_init', [ $this, 'redirect_non_admin_from_dashboard' ] );
+        
+        // Customize dashboard for LLM Manager users
+        add_action( 'wp_dashboard_setup', [ $this, 'customize_dashboard_for_llm_managers' ] );
+        
         
 
         // Customize admin bar for LLM Manager roles
@@ -1022,6 +1028,163 @@ class LLMVM_Admin {
     }
 
 
+
+    /**
+     * Redirect non-admin users away from WordPress dashboard to LLM Prompts page.
+     */
+    public function redirect_non_admin_from_dashboard(): void {
+        // Only run on admin pages
+        if ( ! is_admin() ) {
+            return;
+        }
+        
+        // Get current screen
+        $current_screen = get_current_screen();
+        if ( ! $current_screen ) {
+            return;
+        }
+        
+        // Only redirect from the main dashboard (index.php)
+        if ( $current_screen->id !== 'dashboard' ) {
+            return;
+        }
+        
+        // Check if user is administrator
+        if ( current_user_can( 'manage_options' ) ) {
+            return; // Administrators can access the dashboard
+        }
+        
+        // Check if user has any LLM Manager role
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only redirect LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Check if user can access prompts page
+        if ( ! current_user_can( 'llmvm_manage_prompts' ) ) {
+            // If they can't access prompts, redirect to dashboard page instead
+            if ( current_user_can( 'llmvm_view_dashboard' ) ) {
+                $redirect_url = admin_url( 'tools.php?page=llmvm-dashboard' );
+            } else {
+                // If they can't access anything, let them stay on dashboard
+                return;
+            }
+        } else {
+            // Redirect to prompts page
+            $redirect_url = admin_url( 'tools.php?page=llmvm-prompts' );
+        }
+        
+        // Perform the redirect
+        wp_redirect( $redirect_url );
+        exit;
+    }
+
+    /**
+     * Customize dashboard for LLM Manager users.
+     */
+    public function customize_dashboard_for_llm_managers(): void {
+        // Only customize for LLM Manager users
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        // Check if user has any LLM Manager role
+        $has_llm_role = false;
+        foreach ( $current_user->roles as $role ) {
+            if ( in_array( $role, [ 'llm_manager_free', 'llm_manager_pro', 'sc_customer' ], true ) ) {
+                $has_llm_role = true;
+                break;
+            }
+        }
+        
+        // Only customize for LLM Manager users
+        if ( ! $has_llm_role ) {
+            return;
+        }
+        
+        // Remove WordPress default widgets that aren't relevant
+        remove_meta_box( 'dashboard_quick_press', 'dashboard', 'side' );
+        remove_meta_box( 'dashboard_recent_drafts', 'dashboard', 'side' );
+        remove_meta_box( 'dashboard_primary', 'dashboard', 'side' );
+        remove_meta_box( 'dashboard_secondary', 'dashboard', 'side' );
+        remove_meta_box( 'dashboard_site_health', 'dashboard', 'normal' );
+        remove_meta_box( 'dashboard_activity', 'dashboard', 'normal' );
+        
+        // Add custom LLM Visibility Monitor widget
+        wp_add_dashboard_widget(
+            'llmvm_dashboard_widget',
+            __( 'LLM Visibility Monitor', 'llm-visibility-monitor' ),
+            [ $this, 'render_llmvm_dashboard_widget' ]
+        );
+    }
+    
+    /**
+     * Render custom LLM Visibility Monitor dashboard widget.
+     */
+    public function render_llmvm_dashboard_widget(): void {
+        $current_user = wp_get_current_user();
+        if ( ! $current_user ) {
+            return;
+        }
+        
+        echo '<div class="llmvm-dashboard-widget">';
+        echo '<h3>' . esc_html__( 'Welcome to LLM Visibility Monitor', 'llm-visibility-monitor' ) . '</h3>';
+        echo '<p>' . esc_html__( 'Manage your LLM prompts and monitor their visibility across different models.', 'llm-visibility-monitor' ) . '</p>';
+        
+        echo '<div class="llmvm-dashboard-actions">';
+        
+        // Show appropriate actions based on user capabilities
+        if ( current_user_can( 'llmvm_manage_prompts' ) ) {
+            echo '<p><a href="' . esc_url( admin_url( 'tools.php?page=llmvm-prompts' ) ) . '" class="button button-primary">';
+            echo esc_html__( 'Manage Prompts', 'llm-visibility-monitor' );
+            echo '</a></p>';
+        }
+        
+        if ( current_user_can( 'llmvm_view_dashboard' ) ) {
+            echo '<p><a href="' . esc_url( admin_url( 'tools.php?page=llmvm-dashboard' ) ) . '" class="button">';
+            echo esc_html__( 'View Results', 'llm-visibility-monitor' );
+            echo '</a></p>';
+        }
+        
+        if ( current_user_can( 'llmvm_view_dashboard' ) ) {
+            echo '<p><a href="' . esc_url( admin_url( 'tools.php?page=llmvm-queue' ) ) . '" class="button">';
+            echo esc_html__( 'Queue Status', 'llm-visibility-monitor' );
+            echo '</a></p>';
+        }
+        
+        echo '</div>';
+        echo '</div>';
+        
+        // Add some basic styling
+        echo '<style>
+        .llmvm-dashboard-widget {
+            padding: 10px 0;
+        }
+        .llmvm-dashboard-widget h3 {
+            margin-top: 0;
+        }
+        .llmvm-dashboard-actions p {
+            margin: 10px 0;
+        }
+        .llmvm-dashboard-actions .button {
+            margin-right: 10px;
+        }
+        </style>';
+    }
 
     /**
      * Hide "Available Tools" menu item from sidebar.
