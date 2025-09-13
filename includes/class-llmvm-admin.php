@@ -117,7 +117,7 @@ class LLMVM_Admin {
         add_action( 'wp_loaded', [ $this, 'remove_wordpress_logo_early' ] );
         
         // Try removing it after admin bar is set up
-        add_action( 'admin_bar_menu', [ $this, 'remove_wordpress_logo_from_admin_bar' ], 1 );
+        add_action( 'admin_bar_menu', [ $this, 'remove_wordpress_logo_node' ], 1 );
         
         // Test: Always add red border to see if our hooks are working
         add_action( 'admin_head', function() {
@@ -1279,9 +1279,9 @@ class LLMVM_Admin {
     }
     
     /**
-     * Remove WordPress logo from admin bar directly.
+     * Remove WordPress logo node from admin bar directly.
      */
-    public function remove_wordpress_logo_from_admin_bar( $wp_admin_bar ): void {
+    public function remove_wordpress_logo_node( $wp_admin_bar ): void {
         // Only hide for LLM Manager users
         $current_user = wp_get_current_user();
         if ( ! $current_user ) {
@@ -1346,6 +1346,7 @@ class LLMVM_Admin {
         error_log( 'LLMVM: Adding CSS to hide WordPress logo for user with roles: ' . implode( ', ', $current_user->roles ) );
         
         // Add CSS to hide WordPress logo - use admin_head
+        error_log( 'LLMVM: About to add admin_head action for CSS' );
         add_action( 'admin_head', function() {
             error_log( 'LLMVM: admin_head action fired, adding CSS and JavaScript' );
             ?>
