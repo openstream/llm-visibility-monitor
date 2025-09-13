@@ -98,8 +98,6 @@ class LLMVM_Admin {
         // Hide "Available Tools" menu item from sidebar
         add_action( 'admin_menu', [ $this, 'hide_available_tools_menu' ], 999 );
         
-        // Fix WordPress core deprecation warnings
-        add_action( 'init', [ $this, 'fix_wordpress_deprecation_warnings' ], 1 );
         
 
         // Customize admin bar for LLM Manager roles
@@ -311,7 +309,7 @@ class LLMVM_Admin {
         $result_callback = [ $this, 'render_result_page' ];
 
         add_submenu_page(
-            null, // Hidden page - doesn't appear in any menu
+            'tools.php', // Use tools.php as parent to avoid null issues
             $result_title,
             $result_title,
             'llmvm_view_results',
@@ -1024,108 +1022,6 @@ class LLMVM_Admin {
     }
 
 
-    /**
-     * Debug WordPress core deprecation warnings by logging all function calls.
-     */
-    public function fix_wordpress_deprecation_warnings(): void {
-        // Only run on admin pages
-        if ( ! is_admin() ) {
-            return;
-        }
-        
-        // Set up comprehensive debugging
-        $this->setup_deprecation_debugging();
-    }
-    
-    /**
-     * Set up comprehensive debugging for deprecation warnings.
-     */
-    private function setup_deprecation_debugging(): void {
-        // Log all admin_title filter calls
-        add_filter( 'admin_title', function( $title ) {
-            error_log( 'LLMVM Debug: admin_title filter called with: ' . var_export( $title, true ) . ' (type: ' . gettype( $title ) . ')' );
-            if ( $title === null || $title === '' ) {
-                error_log( 'LLMVM Debug: admin_title is null/empty, returning fallback' );
-                return 'WordPress';
-            }
-            return $title;
-        }, 1 );
-        
-        // Log all get_bloginfo calls
-        add_filter( 'option_blogname', function( $value ) {
-            error_log( 'LLMVM Debug: option_blogname called with: ' . var_export( $value, true ) . ' (type: ' . gettype( $value ) . ')' );
-            return $value ?: 'WordPress';
-        } );
-        
-        add_filter( 'option_blogdescription', function( $value ) {
-            error_log( 'LLMVM Debug: option_blogdescription called with: ' . var_export( $value, true ) . ' (type: ' . gettype( $value ) . ')' );
-            return $value ?: '';
-        } );
-        
-        // Log wp_title calls
-        add_filter( 'wp_title', function( $title ) {
-            error_log( 'LLMVM Debug: wp_title filter called with: ' . var_export( $title, true ) . ' (type: ' . gettype( $title ) . ')' );
-            if ( $title === null || $title === '' ) {
-                error_log( 'LLMVM Debug: wp_title is null/empty, returning fallback' );
-                return 'WordPress';
-            }
-            return $title;
-        }, 1 );
-        
-        // Set up error handler to catch deprecation warnings
-        set_error_handler( function( $errno, $errstr, $errfile, $errline ) {
-            if ( $errno === E_DEPRECATED ) {
-                error_log( 'LLMVM Debug: Deprecation warning caught: ' . $errstr );
-                error_log( 'LLMVM Debug: File: ' . $errfile . ' Line: ' . $errline );
-                error_log( 'LLMVM Debug: Call stack: ' . wp_debug_backtrace_summary() );
-                
-                // Log current request info
-                error_log( 'LLMVM Debug: Current request URI: ' . ( $_SERVER['REQUEST_URI'] ?? 'unknown' ) );
-                error_log( 'LLMVM Debug: Current user ID: ' . get_current_user_id() );
-                error_log( 'LLMVM Debug: Is admin: ' . ( is_admin() ? 'yes' : 'no' ) );
-                error_log( 'LLMVM Debug: Current screen: ' . ( get_current_screen() ? get_current_screen()->id : 'unknown' ) );
-                
-                // Log WordPress state
-                error_log( 'LLMVM Debug: Blog name: ' . var_export( get_bloginfo( 'name' ), true ) );
-                error_log( 'LLMVM Debug: Blog description: ' . var_export( get_bloginfo( 'description' ), true ) );
-                error_log( 'LLMVM Debug: Site URL: ' . var_export( get_site_url(), true ) );
-                error_log( 'LLMVM Debug: Home URL: ' . var_export( get_home_url(), true ) );
-                
-                // Don't suppress the warning, just log it
-                return false;
-            }
-            return false;
-        } );
-        
-        // Log all option calls that might be null
-        add_filter( 'option_blogname', function( $value ) {
-            if ( $value === null ) {
-                error_log( 'LLMVM Debug: option_blogname is null!' );
-            }
-            return $value;
-        } );
-        
-        add_filter( 'option_blogdescription', function( $value ) {
-            if ( $value === null ) {
-                error_log( 'LLMVM Debug: option_blogdescription is null!' );
-            }
-            return $value;
-        } );
-        
-        add_filter( 'option_siteurl', function( $value ) {
-            if ( $value === null ) {
-                error_log( 'LLMVM Debug: option_siteurl is null!' );
-            }
-            return $value;
-        } );
-        
-        add_filter( 'option_home', function( $value ) {
-            if ( $value === null ) {
-                error_log( 'LLMVM Debug: option_home is null!' );
-            }
-            return $value;
-        } );
-    }
 
     /**
      * Hide "Available Tools" menu item from sidebar.
@@ -1144,6 +1040,10 @@ class LLMVM_Admin {
         <style>
             /* Hide the "Available Tools" menu item from the Tools submenu */
             .wp-submenu a[href="tools.php"] {
+                display: none !important;
+            }
+            /* Hide the "LLM Visibility Result" menu item from the Tools submenu */
+            .wp-submenu a[href="tools.php?page=llmvm-result"] {
                 display: none !important;
             }
             /* Also hide the parent Tools menu if it only contains Available Tools */
