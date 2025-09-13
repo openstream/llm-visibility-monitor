@@ -91,6 +91,9 @@ class LLMVM_Admin {
 
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
+        
+        // Customize Tools page to hide "Available Tools" section
+        add_action( 'load-tools.php', [ $this, 'customize_tools_page' ] );
 
         // Customize admin bar for LLM Manager roles
         add_action( 'wp_before_admin_bar_render', [ $this, 'customize_admin_bar_for_llm_managers' ] );
@@ -983,6 +986,34 @@ class LLMVM_Admin {
         wp_send_json_success( array( 'message' => __( 'Queue cleared successfully', 'llm-visibility-monitor' ) ) );
     }
 
+    /**
+     * Customize Tools page to hide "Available Tools" section.
+     */
+    public function customize_tools_page(): void {
+        // Only customize if we're on the main Tools page (not a sub-page)
+        if ( ! isset( $_GET['page'] ) ) {
+            add_action( 'admin_footer', [ $this, 'hide_available_tools_section' ] );
+        }
+    }
+
+    /**
+     * Hide the "Available Tools" section via CSS.
+     */
+    public function hide_available_tools_section(): void {
+        ?>
+        <style>
+            .tools-php .wrap h1 + p,
+            .tools-php .wrap h1 + .wp-list-table,
+            .tools-php .wrap h1 + .wp-list-table + p {
+                display: none !important;
+            }
+            .tools-php .wrap h1 {
+                margin-bottom: 20px;
+            }
+        </style>
+        <?php
+    }
+
     /** Render single result page */
     public function render_result_page(): void {
         if ( ! current_user_can( 'llmvm_view_results' ) ) {
@@ -1000,13 +1031,18 @@ class LLMVM_Admin {
         // Sanitize the ID parameter
         $id = isset( $_GET['id'] ) ? (int) sanitize_text_field( wp_unslash( $_GET['id'] ) ) : 0;
         
+        // Validate ID parameter
+        if ( $id <= 0 ) {
+            wp_die( esc_html__( 'Invalid result ID', 'llm-visibility-monitor' ) );
+        }
+        
         // Get current user ID for ownership verification
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can( 'llmvm_manage_settings' );
         
         // Get result with user filtering (unless admin)
         $user_filter = $is_admin ? 0 : $current_user_id;
-        $row = $id ? LLMVM_Database::get_result_by_id( $id, $user_filter ) : null;
+        $row = LLMVM_Database::get_result_by_id( $id, $user_filter );
         
         // Ensure $row is always an array or null for the view.
         if ( ! is_array( $row ) ) {
