@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.12.0
+ * Version: 0.13.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.12.0' );
+define( 'LLMVM_VERSION', '0.13.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 // Load text domain immediately for this plugin

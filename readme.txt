@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.12.0
+Stable tag: 0.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,6 +123,16 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.13.0 - 2025-01-12 =
+* **UI Improvements**: Enhanced Admin Interface
+  * Added collapsible "Add New Prompt" form that starts collapsed for cleaner interface
+  * Implemented click-to-expand functionality with smooth CSS transitions
+  * Improved textarea alignment between "Add New Prompt" and "Your Prompts" sections
+  * Ensured consistent width (589px) and left margin alignment across all textareas
+  * Added proper internal padding to textareas for better text spacing
+  * Fixed "Prompt" header padding in "Your Prompts" section for visual consistency
+  * Enhanced overall user experience with progressive disclosure design
 
 = 0.12.0 - 2025-01-12 =
 * **New Feature**: Enhanced Response Time Logging

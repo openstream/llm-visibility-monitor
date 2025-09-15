@@ -2,6 +2,14 @@
 
 Monitor LLM responses on a schedule and store/export results.
 
+## Version 0.13.0
+
+### UI Improvements
+- **Collapsible Add New Prompt Form**: Form now starts collapsed showing only a textarea, expanding when clicked
+- **Improved Textarea Alignment**: Consistent width and left margin alignment between "Add New Prompt" and "Your Prompts" sections
+- **Better Visual Consistency**: Enhanced spacing, padding, and overall layout for improved user experience
+- **Smooth Transitions**: Added CSS transitions for form expansion with visual feedback
+
 ## Requirements
 
 - WordPress 6.4+
