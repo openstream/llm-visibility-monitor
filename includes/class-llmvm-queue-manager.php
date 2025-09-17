@@ -1100,15 +1100,26 @@ class LLMVM_Queue_Manager {
 			return;
 		}
 
-		// Check if summary already exists for the same content
+		// Check if summary already exists and if it's up to date
 		$prompt_text = $target_prompt['text'] ?? '';
 		if ( $this->prompt_summary_exists( $prompt_id, $prompt_text, $expected_answer ) ) {
-			LLMVM_Logger::log( 'Summary already exists for prompt content', array( 
-				'prompt_id' => $prompt_id,
-				'prompt_text' => substr( $prompt_text, 0, 50 ) . '...',
-				'expected_answer' => $expected_answer
-			) );
-			return;
+			// Check if there are newer results than the existing summary
+			if ( ! $this->has_newer_results_than_summary( $prompt_id, $prompt_text, $expected_answer ) ) {
+				LLMVM_Logger::log( 'Summary already exists and is up to date', array( 
+					'prompt_id' => $prompt_id,
+					'prompt_text' => substr( $prompt_text, 0, 50 ) . '...',
+					'expected_answer' => $expected_answer
+				) );
+				return;
+			} else {
+				LLMVM_Logger::log( 'Summary exists but newer results found, regenerating', array( 
+					'prompt_id' => $prompt_id,
+					'prompt_text' => substr( $prompt_text, 0, 50 ) . '...',
+					'expected_answer' => $expected_answer
+				) );
+				// Delete the old summary so we can create a new one
+				$this->delete_prompt_summary( $prompt_id, $prompt_text, $expected_answer );
+			}
 		}
 
 		// Get all results for this prompt with the same expected answer
@@ -1203,5 +1214,68 @@ class LLMVM_Queue_Manager {
 		) );
 
 		return $exists > 0;
+	}
+
+	/**
+	 * Check if there are newer results than the existing summary.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param string $prompt_text The current prompt text.
+	 * @param string $expected_answer The current expected answer.
+	 * @return bool True if there are newer results than the summary.
+	 */
+	private function has_newer_results_than_summary( string $prompt_id, string $prompt_text = '', string $expected_answer = '' ): bool {
+		global $wpdb;
+
+		$summaries_table = LLMVM_Database::prompt_summaries_table_name();
+		$results_table = LLMVM_Database::table_name();
+		
+		// Get the latest summary completion time
+		$summary_time = $wpdb->get_var( $wpdb->prepare(
+			"SELECT completed_at FROM {$summaries_table} WHERE prompt_id = %s AND prompt_text = %s AND expected_answer = %s ORDER BY completed_at DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string
+			$prompt_id,
+			$prompt_text,
+			$expected_answer
+		) );
+		
+		if ( ! $summary_time ) {
+			return true; // No summary exists, so we need to create one
+		}
+		
+		// Check if there are any results newer than the summary
+		$newer_results = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$results_table} WHERE prompt = %s AND expected_answer = %s AND created_at > %s", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string
+			$prompt_text,
+			$expected_answer,
+			$summary_time
+		) );
+		
+		return $newer_results > 0;
+	}
+
+	/**
+	 * Delete a prompt summary.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param string $prompt_text The current prompt text.
+	 * @param string $expected_answer The current expected answer.
+	 * @return bool True if summary was deleted.
+	 */
+	private function delete_prompt_summary( string $prompt_id, string $prompt_text = '', string $expected_answer = '' ): bool {
+		global $wpdb;
+
+		$table_name = LLMVM_Database::prompt_summaries_table_name();
+		
+		$deleted = $wpdb->delete(
+			$table_name,
+			array(
+				'prompt_id' => $prompt_id,
+				'prompt_text' => $prompt_text,
+				'expected_answer' => $expected_answer
+			),
+			array( '%s', '%s', '%s' )
+		);
+		
+		return $deleted > 0;
 	}
 }
