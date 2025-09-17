@@ -87,7 +87,6 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                             <th><?php esc_html_e( 'Overhead Breakdown', 'llm-visibility-monitor' ); ?></th>
                             <th><?php esc_html_e( 'DB Operations', 'llm-visibility-monitor' ); ?></th>
                             <th><?php esc_html_e( 'Created', 'llm-visibility-monitor' ); ?></th>
-                            <th><?php esc_html_e( 'Attempts', 'llm-visibility-monitor' ); ?></th>
                             <?php if ( $is_admin ) : ?>
                                 <th><?php esc_html_e( 'User', 'llm-visibility-monitor' ); ?></th>
                             <?php endif; ?>
@@ -210,7 +209,6 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                                 <td title="<?php echo esc_attr( $job['created_at'] ); ?>">
                                     <?php echo esc_html( $time_ago . ' ago' ); ?>
                                 </td>
-                                <td><?php echo esc_html( $job['attempts'] . '/' . $job['max_attempts'] ); ?></td>
                                 <?php if ( $is_admin ) : ?>
                                     <td><?php echo esc_html( $user_name ); ?></td>
                                 <?php endif; ?>
@@ -399,11 +397,6 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
 
 .llmvm-queue-table th:nth-child(10),
 .llmvm-queue-table td:nth-child(10) {
-    width: 80px; /* Attempts column */
-}
-
-.llmvm-queue-table th:nth-child(11),
-.llmvm-queue-table td:nth-child(11) {
     width: 100px; /* User column (admin only) */
 }
 </style>
