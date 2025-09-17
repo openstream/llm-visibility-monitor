@@ -109,10 +109,9 @@ class LLMVM_Comparison {
 	 */
 	private static function build_comparison_prompt( string $actual_response, string $expected_answer, string $original_prompt ): string {
 		return sprintf(
-			"Compare this response: %s\n\nwith this expected answer: %s\n\nfor this prompt: %s\n\nRate the match from 0-10 using this strict scoring system:\n\n0: Expected entity/answer not mentioned at all\n1-3: Expected entity mentioned briefly or incorrectly\n4-7: Expected entity mentioned correctly but not prominently\n8-10: Expected entity mentioned correctly and prominently\n\nPriority: First check if the expected answer appears in the response. If not, score should be 0-3. Focus on exact entity matching over general response quality.\n\nRespond with only the number (0-10).",
+			"Rate how well this response matches the expected answer. Respond with only a number 0-10.\n\nResponse: %s\nExpected: %s\n\n0=not mentioned, 10=perfectly mentioned\n\nScore:",
 			$actual_response,
-			$expected_answer,
-			$original_prompt
+			$expected_answer
 		);
 	}
 
@@ -134,11 +133,24 @@ class LLMVM_Comparison {
 		$status = $response['status'] ?? 0;
 		$error = $response['error'] ?? '';
 		
+		LLMVM_Logger::log( 'Comparison model response debug', array(
+			'status' => $status,
+			'error' => $error,
+			'model' => $model,
+			'score_text' => $score_text,
+			'score_text_length' => strlen( $score_text ),
+			'is_empty' => empty( $score_text ),
+			'score_text_hex' => bin2hex( $score_text ),
+			'trimmed_length' => strlen( trim( $score_text ) )
+		) );
+		
 		if ( $status >= 400 || empty( $score_text ) ) {
 			LLMVM_Logger::log( 'Comparison model call failed', array(
 				'status' => $status,
 				'error' => $error,
-				'model' => $model
+				'model' => $model,
+				'score_text' => $score_text,
+				'score_text_length' => strlen( $score_text )
 			) );
 			return null;
 		}
