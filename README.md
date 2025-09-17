@@ -179,7 +179,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 - **Enhanced Logging**: Comprehensive logging for comparison and summary generation processes
 - **Summary Accuracy Fix**: Fixed issue where summaries mixed results from different expected answers
 
-### 0.12.0 - 2025-01-12
+### 0.12.0 - 2025-09-12
 - **New Feature**: Enhanced Response Time Logging
   - Added detailed response time tracking for all OpenRouter API requests
   - Response times logged in milliseconds with model, prompt length, and body size information
