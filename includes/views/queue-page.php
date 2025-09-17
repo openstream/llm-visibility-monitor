@@ -287,11 +287,12 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
 }
 
 .llmvm-status-badge {
-    padding: 4px 8px;
+    padding: 4px 6px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .llmvm-status-badge.llmvm-status-pending {

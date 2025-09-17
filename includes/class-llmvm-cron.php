@@ -325,7 +325,7 @@ class LLMVM_Cron {
 	 * @param int    $priority Job priority.
 	 * @return int|false Job ID on success, false on failure.
 	 */
-	private function queue_llm_request( string $api_key, string $prompt, string $model, int $user_id, string $prompt_id = '', int $priority = 0, bool $is_batch_run = false ) {
+	private function queue_llm_request( string $api_key, string $prompt, string $model, int $user_id, string $prompt_id = '', int $priority = 0, bool $is_batch_run = false, string $expected_answer = '' ) {
 		if ( ! class_exists( 'LLMVM_Queue_Manager' ) ) {
 			return false;
 		}
@@ -339,6 +339,7 @@ class LLMVM_Cron {
 			'user_id'     => $user_id,
 			'prompt_id'   => $prompt_id,
 			'is_batch_run' => $is_batch_run,
+			'expected_answer' => $expected_answer,
 		);
 
 		return $queue_manager->add_job( 'llm_request', $job_data, $priority );
@@ -374,15 +375,24 @@ class LLMVM_Cron {
 		$error = isset( $response['error'] ) ? (string) $response['error'] : '';
 		$response_time = isset( $response['response_time'] ) ? (float) $response['response_time'] : 0.0;
 
+		// Perform comparison if expected answer is provided
+		$expected_answer = isset( $prompt_item['expected_answer'] ) ? (string) $prompt_item['expected_answer'] : '';
+		$comparison_score = null;
+		
+		if ( ! empty( $expected_answer ) && ! empty( $answer ) ) {
+			$comparison_score = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt_text );
+		}
+		
 		LLMVM_Logger::log( 'Inserting result', [ 
 			'prompt_text' => $prompt_text, 
 			'resp_model' => $resp_model, 
 			'answer_length' => strlen( $answer ), 
 			'user_id' => $user_id,
-			'response_time_ms' => round( $response_time * 1000, 2 )
+			'response_time_ms' => round( $response_time * 1000, 2 ),
+			'comparison_score' => $comparison_score
 		] );
 		
-		$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id );
+		$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id, $expected_answer, $comparison_score );
 		
 		// Track this result for the current run
 		if ( $result_id ) {
@@ -392,8 +402,10 @@ class LLMVM_Cron {
 				'model' => $resp_model,
 				'answer' => $answer,
 				'user_id' => $user_id,
-				'created_at' => current_time( 'mysql' ),
-				'response_time' => $response_time
+				'created_at' => gmdate( 'Y-m-d H:i:s' ),
+				'response_time' => $response_time,
+				'expected_answer' => $expected_answer,
+				'comparison_score' => $comparison_score
 			];
 		}
 		
@@ -469,7 +481,8 @@ class LLMVM_Cron {
 					$user_id, 
 					$prompt_item['id'] ?? '',
 					0, // Normal priority
-					true // is_batch_run for "run all prompts now"
+					true, // is_batch_run for "run all prompts now"
+					$prompt_item['expected_answer'] ?? ''
 				);
 				
 				if ( $job_id ) {
@@ -645,7 +658,8 @@ class LLMVM_Cron {
 				$user_id, 
 				$prompt_id,
 				0, // Normal priority
-				false // is_batch_run for single prompt
+				false, // is_batch_run for single prompt
+				$target_prompt['expected_answer'] ?? ''
 			);
 			
 			if ( $job_id ) {
@@ -800,7 +814,7 @@ class LLMVM_Cron {
 					'model' => $resp_model,
 					'answer' => $answer,
 					'user_id' => $prompt_user_id,
-					'created_at' => current_time( 'mysql' ),
+					'created_at' => gmdate( 'Y-m-d H:i:s' ),
 					'status' => $status,
 					'error' => $error,
 					'response_time' => $response_time
@@ -944,7 +958,7 @@ class LLMVM_Cron {
 					'model' => $resp_model,
 					'answer' => $answer,
 					'user_id' => $current_user_id,
-					'created_at' => current_time( 'mysql' ),
+					'created_at' => gmdate( 'Y-m-d H:i:s' ),
 					'status' => $status,
 					'error' => $error,
 					'response_time' => $response_time

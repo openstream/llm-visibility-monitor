@@ -19,9 +19,11 @@ LLM Visibility Monitor is a comprehensive WordPress plugin that allows you to mo
 * **OpenRouter Integration**: Connect to 300+ AI models through OpenRouter's unified API
 * **Scheduled Monitoring**: Set up daily or weekly cron jobs to automatically send prompts
 * **Prompt Management**: Create, edit, and delete prompts with multi-model selection
-* **Results Dashboard**: View all LLM responses in a sortable, searchable table
+* **LLM Response Comparison**: Compare model responses against expected answers with automated scoring
+* **AI-Generated Summaries**: Get intelligent summaries of how well responses matched expectations
+* **Results Dashboard**: View all LLM responses in a sortable, searchable table with comparison scores
 * **CSV Export**: Export results for external analysis
-* **Email Reports**: Receive email notifications with formatted results
+* **Email Reports**: Receive email notifications with formatted results including comparison summaries
 * **Role-Based Access Control**: Assign "LLM Manager Free" or "LLM Manager Pro" roles with configurable usage limits
 * **User-Specific Data**: Secure isolation between user prompts, results, and exports
 * **Multi-Model Selection**: Select multiple AI models from 300+ available models for each prompt to compare responses
@@ -124,7 +126,17 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 == Changelog ==
 
-= 0.13.0 - 2025-01-12 =
+= 0.13.0 - 2025-01-17 =
+* **Major Feature**: LLM Response Comparison System
+  * Added optional "Expected Answer" field to prompts for defining target responses
+  * Implemented automated LLM-powered comparison scoring (0-10 scale) of actual vs expected answers
+  * Added configurable comparison model selection in settings (default: openai/gpt-4o-mini)
+  * Intelligent prompt summaries generated after all models complete processing
+  * Comparison scores and summaries integrated into email reports
+  * Dashboard display enhanced with comparison scores and prompt summaries
+  * Added comprehensive scoring legend explaining 0-10 ranges in emails and dashboard
+  * Strict entity matching prioritized over general response quality for accurate scoring
+  * Smart summary logic handles mixed success/failure scenarios
 * **UI Improvements**: Enhanced Admin Interface
   * Added collapsible "Add New Prompt" form that starts collapsed for cleaner interface
   * Implemented click-to-expand functionality with smooth CSS transitions
@@ -132,7 +144,14 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * Ensured consistent width (589px) and left margin alignment across all textareas
   * Added proper internal padding to textareas for better text spacing
   * Fixed "Prompt" header padding in "Your Prompts" section for visual consistency
+  * Reduced queue status badge font size to prevent text wrapping
   * Enhanced overall user experience with progressive disclosure design
+* **Technical Improvements**: Enhanced Reliability
+  * Fixed timezone handling - all timestamps properly stored in UTC and converted to user timezone
+  * Improved summary generation - summaries regenerated when prompt content changes
+  * Better error handling - NULL comparison scores treated as 0 for accurate averages
+  * Enhanced logging system for comparison and summary generation processes
+  * Fixed summary caching issues where old summaries were reused for different content
 
 = 0.12.0 - 2025-01-12 =
 * **New Feature**: Enhanced Response Time Logging
@@ -168,7 +187,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * Email reports now correctly include all results from the current run only
   * Enhanced email reliability with proper result collection and cleanup
 * **Enhancement**: Logging System Improvements
-  * Moved logging to WordPress root directory for easier access
+  * Moved logging to plugin root directory for easier access
   * Implemented dual log file system: master log (all logs) and current run log (run-specific)
   * Added log rotation for master log file (5MB limit)
   * Enhanced log filtering for current run logs with relevant keywords

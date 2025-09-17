@@ -105,16 +105,9 @@ class LLMVM_Logger {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for plugin functionality.
 		error_log( $line );
 
-		// Write to root folder for easier access
-		$root_dir = ABSPATH;
-		$log_dir  = $root_dir . 'llm-visibility-monitor-logs';
-		$log_file = $log_dir . '/llmvm-master.log';
-		$current_run_file = $log_dir . '/llmvm-current-run.log';
-
-		// Ensure the log directory exists with proper permissions.
-		if ( ! is_dir( $log_dir ) ) {
-			wp_mkdir_p( $log_dir );
-		}
+		// Write to plugin root directory for easier access
+		$log_file = LLMVM_PLUGIN_DIR . 'llmvm-master.log';
+		$current_run_file = LLMVM_PLUGIN_DIR . 'llmvm-current-run.log';
         
         // Use WordPress filesystem API for file operations
         global $wp_filesystem;
@@ -130,22 +123,20 @@ class LLMVM_Logger {
         
         // Rotate master log file if it's too large (over 5MB)
         if ( $wp_filesystem && $wp_filesystem->exists( $log_file ) && $wp_filesystem->size( $log_file ) > 5 * 1024 * 1024 ) {
-            $backup_file = $log_dir . '/llmvm-master-' . gmdate( 'Y-m-d-H-i-s' ) . '.log';
+            $backup_file = LLMVM_PLUGIN_DIR . 'llmvm-master-' . gmdate( 'Y-m-d-H-i-s' ) . '.log';
             $wp_filesystem->move( $log_file, $backup_file );
         }
         
         // Write to master log file
-        if ( $wp_filesystem && $wp_filesystem->is_writable( $log_dir ) ) {
-            $result = @file_put_contents( $log_file, $line . PHP_EOL, LOCK_EX | FILE_APPEND );
-            if ( false === $result ) {
-                // Fallback to WordPress filesystem if direct write fails
-                $existing_content = '';
-                if ( $wp_filesystem->exists( $log_file ) ) {
-                    $existing_content = $wp_filesystem->get_contents( $log_file );
-                }
-                $new_content = $existing_content . $line . PHP_EOL;
-                $wp_filesystem->put_contents( $log_file, $new_content, FS_CHMOD_FILE );
+        $result = @file_put_contents( $log_file, $line . PHP_EOL, LOCK_EX | FILE_APPEND );
+        if ( false === $result ) {
+            // Fallback to WordPress filesystem if direct write fails
+            $existing_content = '';
+            if ( $wp_filesystem->exists( $log_file ) ) {
+                $existing_content = $wp_filesystem->get_contents( $log_file );
             }
+            $new_content = $existing_content . $line . PHP_EOL;
+            $wp_filesystem->put_contents( $log_file, $new_content, FS_CHMOD_FILE );
         }
 
         // Write to current run log file for specific events

@@ -82,6 +82,7 @@ function llmvm_load_includes() {
 			'class-llmvm-logger.php',
 			'class-llmvm-database.php',
 			'class-llmvm-usage-manager.php',
+			'class-llmvm-comparison.php',
 			'class-llmvm-openrouter-client.php',
 			'class-llmvm-queue-manager.php',
 			'class-llmvm-cron.php',

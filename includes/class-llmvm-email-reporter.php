@@ -188,12 +188,21 @@ class LLMVM_Email_Reporter {
         $error_count = 0;
 
         // Count successes and errors
+        $comparison_scores = array();
+        $has_comparison_scores = false;
+        
         foreach ( $results as $result ) {
             $answer = isset( $result['answer'] ) ? (string) $result['answer'] : '';
             if ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false ) {
                 $error_count++;
             } else {
                 $success_count++;
+            }
+            
+            // Collect comparison scores
+            if ( isset( $result['comparison_score'] ) && $result['comparison_score'] !== null ) {
+                $comparison_scores[] = (int) $result['comparison_score'];
+                $has_comparison_scores = true;
             }
         }
 
@@ -411,6 +420,42 @@ class LLMVM_Email_Reporter {
             margin-top: 2px;
         }
         
+        .score-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            min-width: 40px;
+        }
+        
+        .score-high {
+            background: #28a745;
+            color: white;
+        }
+        
+        .score-medium {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .score-low {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .score-none {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .score-col {
+            width: 80px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
         /* Mobile responsive styles */
         @media only screen and (max-width: 768px) {
             .email-container {
@@ -522,6 +567,18 @@ class LLMVM_Email_Reporter {
                 
                 .answer-content {
                     max-height: 300px;
+                }
+                
+                .score-col {
+                    width: 100%;
+                    text-align: left;
+                }
+                
+                .score-badge {
+                    font-size: 12px;
+                    padding: 3px 6px;
+                    min-width: 35px;
+                }
                     overflow-y: auto;
                     border: 1px solid #e9ecef;
                     border-radius: 4px;
@@ -732,8 +789,45 @@ class LLMVM_Email_Reporter {
                         <span class="stat-number error-stat">' . esc_html( (string) $error_count ) . '</span>
                         <span class="stat-label">Errors</span>
                     </div>
+                </div>';
+        
+        // Add comparison score summary if available
+        if ( $has_comparison_scores && ! empty( $comparison_scores ) ) {
+            $avg_score = round( array_sum( $comparison_scores ) / count( $comparison_scores ), 1 );
+            $min_score = min( $comparison_scores );
+            $max_score = max( $comparison_scores );
+            
+            $html .= '
+            <div class="summary-card">
+                <h2>🎯 Comparison Scores</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number">' . esc_html( (string) $avg_score ) . '</span>
+                        <span class="stat-label">Average Score</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">' . esc_html( (string) $min_score ) . '</span>
+                        <span class="stat-label">Lowest Score</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">' . esc_html( (string) $max_score ) . '</span>
+                        <span class="stat-label">Highest Score</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">' . esc_html( (string) count( $comparison_scores ) ) . '</span>
+                        <span class="stat-label">Scored Results</span>
+                    </div>
                 </div>
-        </div>';
+            </div>';
+        }
+        
+        // Add prompt summaries section
+        $prompt_summaries = $this->get_relevant_prompt_summaries( $results, $user );
+        if ( ! empty( $prompt_summaries ) ) {
+            $html .= $this->generate_prompt_summaries_section( $prompt_summaries );
+        }
+        
+        $html .= '</div>';
 
         if ( ! empty( $results ) ) {
             $html .= '
@@ -750,8 +844,14 @@ class LLMVM_Email_Reporter {
                 $html .= '<th class="prompt-col">Prompt</th>';
             }
             
-            $html .= '<th class="answer-col">Answer</th>
-                </tr>
+            $html .= '<th class="answer-col">Answer</th>';
+            
+            // Add comparison score column if we have comparison scores
+            if ( $has_comparison_scores ) {
+                $html .= '<th class="score-col">Score</th>';
+            }
+            
+            $html .= '</tr>
             </thead>
             <tbody>';
 
@@ -784,8 +884,24 @@ class LLMVM_Email_Reporter {
                         </td>
                         <td class="answer-col" data-label="Answer">
                             <div class="answer-content">' . $formatted_answer . '</div>
-                        </td>
-                </tr>';
+                        </td>';
+                
+                // Add comparison score cell if we have comparison scores
+                if ( $has_comparison_scores ) {
+                    $comparison_score = isset( $result['comparison_score'] ) ? (int) $result['comparison_score'] : null;
+                    if ( $comparison_score !== null ) {
+                        $score_class = $comparison_score >= 8 ? 'score-high' : ( $comparison_score >= 6 ? 'score-medium' : 'score-low' );
+                        $html .= '<td class="score-col" data-label="Score">
+                            <span class="score-badge ' . $score_class . '">' . esc_html( (string) $comparison_score ) . '/10</span>
+                        </td>';
+                    } else {
+                        $html .= '<td class="score-col" data-label="Score">
+                            <span class="score-badge score-none">N/A</span>
+                        </td>';
+                    }
+                }
+                
+                $html .= '</tr>';
             }
 
             $html .= '
@@ -1334,5 +1450,170 @@ class LLMVM_Email_Reporter {
             // Return HTML link with email-friendly styling
             return '<a href="' . $escaped_url . '" style="color: #0073aa; text-decoration: underline; word-break: break-all;">' . $escaped_text . '</a>';
         }, $text );
+    }
+
+    /**
+     * Get relevant prompt summaries for the email report.
+     *
+     * @param array $results Array of results.
+     * @param object|null $user User object.
+     * @return array Array of prompt summaries.
+     */
+    private function get_relevant_prompt_summaries( array $results, $user = null ): array {
+        if ( empty( $results ) ) {
+            return array();
+        }
+
+		// Extract unique prompt texts from results and check if all answers are valid
+		$prompt_texts = array();
+		$prompt_validity = array(); // Track if all answers for each prompt are valid
+		
+		foreach ( $results as $result ) {
+			$prompt_text = isset( $result['prompt'] ) ? (string) $result['prompt'] : '';
+			if ( ! empty( $prompt_text ) ) {
+				$prompt_texts[] = $prompt_text;
+				
+				// Check if this result has a valid answer
+				$answer = trim( $result['answer'] ?? '' );
+				$is_valid = ! empty( $answer ) && $answer !== 'No answer received';
+				
+				// Track validity per prompt
+				if ( ! isset( $prompt_validity[ $prompt_text ] ) ) {
+					$prompt_validity[ $prompt_text ] = array();
+				}
+				$prompt_validity[ $prompt_text ][] = $is_valid;
+			}
+		}
+
+		if ( empty( $prompt_texts ) ) {
+			return array();
+		}
+
+		// Remove duplicates and filter to only prompts where at least some answers are valid
+		$prompt_texts = array_unique( $prompt_texts );
+		$valid_prompt_texts = array();
+		
+		foreach ( $prompt_texts as $prompt_text ) {
+			$has_any_valid = in_array( true, $prompt_validity[ $prompt_text ], true );
+			if ( $has_any_valid ) {
+				$valid_prompt_texts[] = $prompt_text;
+			}
+		}
+		
+		// If no prompts have any valid answers, don't show any summaries
+		if ( empty( $valid_prompt_texts ) ) {
+			return array();
+		}
+		
+		$prompt_texts = $valid_prompt_texts;
+
+		// Get summaries for these prompt texts
+		global $wpdb;
+		$table_name = LLMVM_Database::prompt_summaries_table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $prompt_texts ), '%s' ) );
+
+		$summaries = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
+			"SELECT * FROM {$table_name} WHERE prompt_text IN ({$placeholders}) ORDER BY completed_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
+			...$prompt_texts
+		), ARRAY_A );
+
+        // If user-specific report, filter by user
+        if ( $user && ! current_user_can( 'llmvm_manage_settings' ) ) {
+            $summaries = array_filter( $summaries, function( $summary ) use ( $user ) {
+                return isset( $summary['user_id'] ) && (int) $summary['user_id'] === $user->ID;
+            } );
+        }
+
+        return $summaries ? $summaries : array();
+    }
+
+    /**
+     * Generate the prompt summaries section for email reports.
+     *
+     * @param array $summaries Array of prompt summaries.
+     * @return string HTML content for the summaries section.
+     */
+    private function generate_prompt_summaries_section( array $summaries ): string {
+        if ( empty( $summaries ) ) {
+            return '';
+        }
+
+        $html = '
+        <div class="summary-card">
+            <h2>💬 Prompt Summaries</h2>
+            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
+                AI-generated summaries of how well responses matched your expected answers.
+            </p>';
+
+        foreach ( $summaries as $summary ) {
+            $prompt_text = isset( $summary['prompt_text'] ) ? (string) $summary['prompt_text'] : '';
+            $expected_answer = isset( $summary['expected_answer'] ) ? (string) $summary['expected_answer'] : '';
+            $comparison_summary = isset( $summary['comparison_summary'] ) ? (string) $summary['comparison_summary'] : '';
+            $average_score = isset( $summary['average_score'] ) ? (float) $summary['average_score'] : null;
+            $min_score = isset( $summary['min_score'] ) ? (int) $summary['min_score'] : null;
+            $max_score = isset( $summary['max_score'] ) ? (int) $summary['max_score'] : null;
+            $total_models = isset( $summary['total_models'] ) ? (int) $summary['total_models'] : 0;
+
+            // Truncate prompt for display
+            $display_prompt = strlen( $prompt_text ) > 100 ? substr( $prompt_text, 0, 100 ) . '...' : $prompt_text;
+
+            $html .= '
+            <div style="background: #f8f9fa; border-left: 4px solid #0073aa; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #495057;">Prompt:</strong> ' . esc_html( $display_prompt ) . '
+                </div>';
+
+            if ( ! empty( $expected_answer ) ) {
+                $display_expected = strlen( $expected_answer ) > 50 ? substr( $expected_answer, 0, 50 ) . '...' : $expected_answer;
+                $html .= '
+                <div style="margin-bottom: 10px; font-size: 14px; color: #6c757d;">
+                    <strong>Expected:</strong> ' . esc_html( $display_expected ) . '
+                </div>';
+            }
+
+            // Score statistics
+            if ( $average_score !== null ) {
+                $score_color = $average_score >= 8 ? '#28a745' : ( $average_score >= 6 ? '#ffc107' : '#dc3545' );
+                $html .= '
+                <div style="margin-bottom: 10px; font-size: 14px;">
+                    <span style="background: ' . $score_color . '; color: ' . ( $average_score >= 6 && $average_score < 8 ? '#000' : '#fff' ) . '; padding: 2px 6px; border-radius: 3px; font-weight: bold;">
+                        ' . esc_html( (string) $average_score ) . '/10 avg
+                    </span>';
+
+                if ( $total_models > 1 ) {
+                    $html .= ' <span style="color: #6c757d; font-size: 12px;">
+                        (Range: ' . esc_html( (string) $min_score ) . '-' . esc_html( (string) $max_score ) . ', ' . esc_html( (string) $total_models ) . ' models)
+                    </span>';
+                }
+
+                $html .= '</div>';
+            }
+
+            // Summary text
+            if ( ! empty( $comparison_summary ) ) {
+                $html .= '
+                <div style="font-style: italic; color: #495057; line-height: 1.5;">
+                    ' . esc_html( $comparison_summary ) . '
+                </div>';
+            }
+
+            $html .= '</div>';
+        }
+
+        // Add scoring legend
+        $html .= '
+        <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 Scoring Legend</h4>
+            <div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
+                <strong>0:</strong> Expected answer not mentioned at all<br>
+                <strong>1-3:</strong> Expected answer mentioned briefly or incorrectly<br>
+                <strong>4-7:</strong> Expected answer mentioned correctly but not prominently<br>
+                <strong>8-10:</strong> Expected answer mentioned correctly and prominently
+            </div>
+        </div>';
+
+        $html .= '</div>';
+
+        return $html;
     }
 }

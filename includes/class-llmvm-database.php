@@ -32,7 +32,7 @@ class LLMVM_Database {
 	/**
 	 * Current DB schema version for this plugin.
 	 */
-	private const DB_VERSION = '1.5.0';
+	private const DB_VERSION = '1.7.0';
 
 	/**
 	 * Return the fully qualified table name.
@@ -59,6 +59,14 @@ class LLMVM_Database {
 	}
 
 	/**
+	 * Return the fully qualified prompt summaries table name.
+	 */
+	public static function prompt_summaries_table_name(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'llm_visibility_prompt_summaries';
+	}
+
+	/**
 	 * Create or upgrade the custom table.
 	 */
 	public static function maybe_upgrade(): void {
@@ -77,6 +85,7 @@ class LLMVM_Database {
 		self::create_table();
 		self::create_usage_table();
 		self::create_queue_table();
+		self::create_prompt_summaries_table();
 		update_option( 'llmvm_db_version', self::DB_VERSION );
 
 		// Migrate existing prompts to include model field.
@@ -93,6 +102,12 @@ class LLMVM_Database {
 		
 		// Migrate prompts to support cron frequency (v1.5.0).
 		self::migrate_prompts_to_cron_frequency();
+		
+		// Migrate results table to support comparison fields (v1.6.0).
+		self::migrate_results_to_comparison_fields();
+		
+		// Create prompt summaries table (v1.7.0).
+		self::migrate_to_prompt_summaries();
 	}
 
 	/**
@@ -262,9 +277,12 @@ class LLMVM_Database {
             model VARCHAR(191) NOT NULL,
             answer LONGTEXT NOT NULL,
             user_id BIGINT UNSIGNED NOT NULL DEFAULT 1,
+            expected_answer LONGTEXT NULL,
+            comparison_score TINYINT UNSIGNED NULL,
             PRIMARY KEY  (id),
             KEY created_at (created_at),
-            KEY user_id (user_id)
+            KEY user_id (user_id),
+            KEY comparison_score (comparison_score)
         ) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -357,7 +375,7 @@ class LLMVM_Database {
 	 * @param int    $user_id  The user ID who owns this result.
 	 * @return int The ID of the inserted result, or 0 if insertion failed.
 	 */
-	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1 ): int {
+	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1, string $expected_answer = null, int $comparison_score = null ): int {
 		global $wpdb;
 
 		// Log the insert attempt.
@@ -375,11 +393,13 @@ class LLMVM_Database {
 		self::ensure_table_exists();
 
 		$insert_data = array(
-			'created_at' => current_time( 'mysql', true ),
+			'created_at' => gmdate( 'Y-m-d H:i:s' ),
 			'prompt'     => $prompt,
 			'model'      => $model,
 			'answer'     => $answer,
 			'user_id'    => $user_id,
+			'expected_answer' => $expected_answer,
+			'comparison_score' => $comparison_score,
 		);
 
 		LLMVM_Logger::log( 'Insert data prepared', array( 'data' => $insert_data ) );
@@ -388,7 +408,7 @@ class LLMVM_Database {
 		$result = $wpdb->insert(
 			self::table_name(),
 			$insert_data,
-			array( '%s', '%s', '%s', '%s', '%d' )
+			array( '%s', '%s', '%s', '%s', '%d', '%s', '%d' )
 		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
 
 		if ( false === $result ) {
@@ -456,7 +476,7 @@ class LLMVM_Database {
 				case 'id':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -465,7 +485,7 @@ class LLMVM_Database {
 				case 'created_at':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -474,7 +494,7 @@ class LLMVM_Database {
 				case 'prompt':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY prompt ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY prompt ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -483,7 +503,7 @@ class LLMVM_Database {
 				case 'model':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY model ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY model ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -492,7 +512,7 @@ class LLMVM_Database {
 				case 'user_id':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY user_id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY user_id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -501,7 +521,7 @@ class LLMVM_Database {
 				default:
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE user_id = %d ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$user_id,
 						$limit,
 						$offset
@@ -512,7 +532,7 @@ class LLMVM_Database {
 				case 'id':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -520,7 +540,7 @@ class LLMVM_Database {
 				case 'created_at':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -528,7 +548,7 @@ class LLMVM_Database {
 				case 'prompt':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY prompt ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY prompt ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -536,7 +556,7 @@ class LLMVM_Database {
 				case 'model':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY model ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY model ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -544,7 +564,7 @@ class LLMVM_Database {
 				case 'user_id':
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY user_id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY user_id ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -552,7 +572,7 @@ class LLMVM_Database {
 				default:
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries using proper WordPress $wpdb->get_results() method with prepared statements.
 					$rows = $wpdb->get_results( $wpdb->prepare(
-						'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
+						'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' ORDER BY created_at ' . $order . ', id DESC LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::table_name() returns constant string, $order is validated to be ASC/DESC only.
 						$limit,
 						$offset
 					), ARRAY_A );
@@ -643,9 +663,9 @@ class LLMVM_Database {
 		self::ensure_table_exists();
 		
 		if ( $user_id > 0 ) {
-			$row = $wpdb->get_row( $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE id = %d AND user_id = %d', $id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb->get_row() method with prepared statements. self::table_name() returns constant string.
+			$row = $wpdb->get_row( $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE id = %d AND user_id = %d', $id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb->get_row() method with prepared statements. self::table_name() returns constant string.
 		} else {
-			$row = $wpdb->get_row( $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id FROM ' . self::table_name() . ' WHERE id = %d', $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb->get_row() method with prepared statements. self::table_name() returns constant string.
+			$row = $wpdb->get_row( $wpdb->prepare( 'SELECT id, created_at, prompt, model, answer, user_id, expected_answer, comparison_score FROM ' . self::table_name() . ' WHERE id = %d', $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Custom table queries using proper WordPress $wpdb->get_row() method with prepared statements. self::table_name() returns constant string.
 		}
 		
 		// Ensure we return null if $wpdb->get_row() returns null, false, or non-array.
@@ -714,7 +734,7 @@ class LLMVM_Database {
 		
 		$month_year = gmdate( 'Y-m' );
 		$table_name = self::usage_table_name();
-		$now = current_time( 'mysql' );
+		$now = gmdate( 'Y-m-d H:i:s' );
 		
 		// Try to update existing record
 		$updated = $wpdb->query( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->query() is the proper WordPress method for custom table updates.
@@ -750,7 +770,7 @@ class LLMVM_Database {
 		global $wpdb;
 		
 		$table_name = self::queue_table_name();
-		$now = current_time( 'mysql' );
+		$now = gmdate( 'Y-m-d H:i:s' );
 		
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
 			$table_name,
@@ -805,7 +825,7 @@ class LLMVM_Database {
 		global $wpdb;
 		
 		$table_name = self::queue_table_name();
-		$now = current_time( 'mysql' );
+		$now = gmdate( 'Y-m-d H:i:s' );
 		
 		$update_data = array( 'status' => $status );
 		$update_format = array( '%s' );
@@ -868,5 +888,164 @@ class LLMVM_Database {
 			'completed_jobs' => (int) $status['completed_jobs'],
 			'failed_jobs' => (int) $status['failed_jobs']
 		);
+	}
+
+	/**
+	 * Migrate results table to support comparison fields (v1.6.0).
+	 */
+	private static function migrate_results_to_comparison_fields(): void {
+		global $wpdb;
+		
+		$table_name = self::table_name();
+		
+		// Check if expected_answer column exists
+		$expected_answer_exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+			WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'expected_answer'",
+			DB_NAME,
+			$table_name
+		) );
+		
+		// Add expected_answer column if it doesn't exist
+		if ( ! $expected_answer_exists ) {
+			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN expected_answer LONGTEXT NULL" );
+		}
+		
+		// Check if comparison_score column exists
+		$comparison_score_exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+			WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'comparison_score'",
+			DB_NAME,
+			$table_name
+		) );
+		
+		// Add comparison_score column if it doesn't exist
+		if ( ! $comparison_score_exists ) {
+			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN comparison_score TINYINT UNSIGNED NULL" );
+		}
+		
+		// Add index for comparison_score if it doesn't exist
+		$index_exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+			WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = 'comparison_score'",
+			DB_NAME,
+			$table_name
+		) );
+		
+		if ( ! $index_exists ) {
+			$wpdb->query( "ALTER TABLE {$table_name} ADD KEY comparison_score (comparison_score)" );
+		}
+	}
+
+	/**
+	 * Create prompt summaries table.
+	 */
+	private static function create_prompt_summaries_table(): void {
+		global $wpdb;
+
+		$table_name      = self::prompt_summaries_table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			prompt_id VARCHAR(191) NOT NULL,
+			prompt_text TEXT NOT NULL,
+			expected_answer LONGTEXT NULL,
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			completed_at DATETIME NOT NULL,
+			comparison_summary LONGTEXT NULL,
+			average_score DECIMAL(3,1) NULL,
+			min_score TINYINT UNSIGNED NULL,
+			max_score TINYINT UNSIGNED NULL,
+			total_models INT UNSIGNED NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY prompt_id (prompt_id),
+			KEY user_id (user_id),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Migrate to prompt summaries table (v1.7.0).
+	 */
+	private static function migrate_to_prompt_summaries(): void {
+		// Check if the table already exists
+		global $wpdb;
+		$table_name = self::prompt_summaries_table_name();
+		
+		$table_exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+			WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+			DB_NAME,
+			$table_name
+		) );
+
+		if ( ! $table_exists ) {
+			self::create_prompt_summaries_table();
+			LLMVM_Logger::log( 'Created prompt summaries table', array( 'table_name' => $table_name ) );
+		}
+	}
+
+	/**
+	 * Insert a prompt summary.
+	 */
+	public static function insert_prompt_summary( string $prompt_id, string $prompt_text, string $expected_answer, int $user_id, array $comparison_data ): int {
+		global $wpdb;
+
+		$insert_data = array(
+			'prompt_id'          => $prompt_id,
+			'prompt_text'        => $prompt_text,
+			'expected_answer'    => $expected_answer,
+			'user_id'            => $user_id,
+			'created_at'         => gmdate( 'Y-m-d H:i:s' ),
+			'completed_at'       => gmdate( 'Y-m-d H:i:s' ),
+			'comparison_summary' => $comparison_data['summary'] ?? null,
+			'average_score'      => $comparison_data['average_score'] ?? null,
+			'min_score'          => $comparison_data['min_score'] ?? null,
+			'max_score'          => $comparison_data['max_score'] ?? null,
+			'total_models'       => $comparison_data['total_models'] ?? 0,
+		);
+
+		$result = $wpdb->insert(
+			self::prompt_summaries_table_name(),
+			$insert_data,
+			array( '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%f', '%d', '%d', '%d' )
+		);
+
+		if ( false === $result ) {
+			LLMVM_Logger::log( 'Failed to insert prompt summary', array( 'wpdb_error' => $wpdb->last_error ) );
+			return 0;
+		}
+
+		return $wpdb->insert_id;
+	}
+
+	/**
+	 * Get latest prompt summaries for a user.
+	 */
+	public static function get_latest_prompt_summaries( int $user_id = 0, int $limit = 10 ): array {
+		global $wpdb;
+
+		$table_name = self::prompt_summaries_table_name();
+		
+		if ( $user_id > 0 ) {
+			$results = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_results() is the proper WordPress method for custom table queries.
+				'SELECT * FROM ' . $table_name . ' WHERE user_id = %d ORDER BY completed_at DESC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::prompt_summaries_table_name() returns constant string
+				$user_id,
+				$limit
+			), ARRAY_A );
+		} else {
+			$results = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->get_results() is the proper WordPress method for custom table queries.
+				'SELECT * FROM ' . $table_name . ' ORDER BY completed_at DESC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- self::prompt_summaries_table_name() returns constant string
+				$limit
+			), ARRAY_A );
+		}
+
+		return $results ? $results : array();
 	}
 }

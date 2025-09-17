@@ -494,6 +494,15 @@ if ( $is_admin ) {
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="llmvm-new-prompt-expected-answer"><?php echo esc_html__( 'Expected Answer', 'llm-visibility-monitor' ); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="llmvm-new-prompt-expected-answer" name="expected_answer" class="llmvm-prompt-textarea" rows="3" placeholder="<?php echo esc_attr__( 'Optional: Enter the expected answer for comparison scoring...', 'llm-visibility-monitor' ); ?>"></textarea>
+                            <p class="description"><?php echo esc_html__( 'Optional: Enter the expected answer to enable automatic comparison scoring (1-10 scale).', 'llm-visibility-monitor' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="llmvm-new-prompt-cron-frequency"><?php echo esc_html__( 'Cron Frequency', 'llm-visibility-monitor' ); ?></label>
                         </th>
                         <td>
@@ -534,10 +543,22 @@ if ( $is_admin ) {
                     <tr>
                         <td class="llmvm-prompt-cell">
                             <?php if ( $is_owner ) : ?>
-                                <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
+                                <div style="margin-bottom: 10px;">
+                                    <label style="font-weight: bold; display: block; margin-bottom: 5px;"><?php echo esc_html__( 'Prompt:', 'llm-visibility-monitor' ); ?></label>
+                                    <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
+                                </div>
+                                <div>
+                                    <label style="font-weight: bold; display: block; margin-bottom: 5px;"><?php echo esc_html__( 'Expected Answer:', 'llm-visibility-monitor' ); ?></label>
+                                    <textarea name="expected_answer" rows="2" class="large-text" placeholder="<?php echo esc_attr__( 'Optional: Enter expected answer for comparison scoring...', 'llm-visibility-monitor' ); ?>"><?php echo esc_textarea( (string) ( $prompt['expected_answer'] ?? '' ) ); ?></textarea>
+                                </div>
                             <?php else : ?>
                                 <div class="llmvm-prompt-display">
+                                    <p><strong><?php echo esc_html__( 'Prompt:', 'llm-visibility-monitor' ); ?></strong></p>
                                     <p><?php echo esc_html( (string) ( $prompt['text'] ?? '' ) ); ?></p>
+                                    <?php if ( ! empty( $prompt['expected_answer'] ) ) : ?>
+                                        <p><strong><?php echo esc_html__( 'Expected Answer:', 'llm-visibility-monitor' ); ?></strong></p>
+                                        <p><?php echo esc_html( (string) $prompt['expected_answer'] ); ?></p>
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -622,7 +643,14 @@ if ( $is_admin ) {
                     ?>
                     <tr>
                         <td class="llmvm-prompt-cell">
-                            <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-weight: bold; display: block; margin-bottom: 5px;"><?php echo esc_html__( 'Prompt:', 'llm-visibility-monitor' ); ?></label>
+                                <textarea name="prompt_text" rows="3" class="large-text"><?php echo esc_textarea( (string) ( $prompt['text'] ?? '' ) ); ?></textarea>
+                            </div>
+                            <div>
+                                <label style="font-weight: bold; display: block; margin-bottom: 5px;"><?php echo esc_html__( 'Expected Answer:', 'llm-visibility-monitor' ); ?></label>
+                                <textarea name="expected_answer" rows="2" class="large-text" placeholder="<?php echo esc_attr__( 'Optional: Enter expected answer for comparison scoring...', 'llm-visibility-monitor' ); ?>"><?php echo esc_textarea( (string) ( $prompt['expected_answer'] ?? '' ) ); ?></textarea>
+                            </div>
                         </td>
                         <td>
                             <label for="llmvm-prompt-models-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>"><?php echo esc_html__( 'Models:', 'llm-visibility-monitor' ); ?></label>
@@ -797,6 +825,13 @@ jQuery(document).ready(function($) {
             $collapsedTextarea.val($(this).val());
         });
         
+        // Sync expected answer field
+        var $expectedAnswerField = $('#llmvm-new-prompt-expected-answer');
+        $expectedAnswerField.on('input', function() {
+            // Store in a data attribute for form submission
+            $expanded.data('expected-answer', $(this).val());
+        });
+        
         function expandForm() {
             isExpanded = true;
             $collapsed.hide();
@@ -815,6 +850,9 @@ jQuery(document).ready(function($) {
         $expanded.find('form').on('submit', function() {
             // Ensure content is synced
             $expandedTextarea.val($collapsedTextarea.val());
+            // Sync expected answer field
+            var expectedAnswer = $expanded.data('expected-answer') || '';
+            $expectedAnswerField.val(expectedAnswer);
         });
     }
     
@@ -1108,8 +1146,20 @@ jQuery(document).ready(function($) {
             var currentText = $textarea.val();
             console.log('Current text:', currentText);
             
+            // Get current expected answer from textarea
+            var $expectedAnswerTextarea = $form.closest('tr').find('textarea[name="expected_answer"]');
+            var currentExpectedAnswer = $expectedAnswerTextarea.val();
+            console.log('Current expected answer:', currentExpectedAnswer);
+            
             // Update hidden text field
             $form.find('input[name="prompt_text"]').val(currentText);
+            
+            // Add expected answer to form if not already present
+            if ($form.find('input[name="expected_answer"]').length === 0) {
+                $form.append('<input type="hidden" name="expected_answer" value="' + currentExpectedAnswer + '" />');
+            } else {
+                $form.find('input[name="expected_answer"]').val(currentExpectedAnswer);
+            }
             
             // Sync cron frequency dropdown value to hidden input
             var $cronSelect = $form.closest('tr').find('[id^="llmvm-cron-frequency-"]');

@@ -32,6 +32,35 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
             width: 55%;
             word-wrap: break-word;
         }
+        .wp-list-table .column-score {
+            width: 80px;
+            text-align: center;
+        }
+        .score-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            min-width: 40px;
+        }
+        .score-high {
+            background: #28a745;
+            color: white;
+        }
+        .score-medium {
+            background: #ffc107;
+            color: #212529;
+        }
+        .score-low {
+            background: #dc3545;
+            color: white;
+        }
+        .score-none {
+            background: #6c757d;
+            color: white;
+        }
         .wp-list-table .column-prompt {
             width: 20%;
         }
@@ -196,6 +225,9 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>
+                <th scope="col" class="manage-column column-score">
+                    <span><?php echo esc_html__( 'Score', 'llm-visibility-monitor' ); ?></span>
+                </th>
                 <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
                 <th scope="col" class="manage-column column-user sortable <?php echo esc_attr( $current_orderby === 'user_id' ? strtolower( $current_order ) : '' ); ?>">
                     <a href="<?php echo esc_url( llmvm_get_sort_url( 'user_id', $current_orderby === 'user_id' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
@@ -213,7 +245,7 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         <tbody id="the-list">
             <?php if ( empty( $results ) ) : ?>
                 <tr>
-                    <td colspan="<?php echo current_user_can( 'llmvm_manage_settings' ) ? '6' : '5'; ?>"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
+                    <td colspan="<?php echo current_user_can( 'llmvm_manage_settings' ) ? '7' : '6'; ?>"><?php echo esc_html__( 'No results yet.', 'llm-visibility-monitor' ); ?></td>
                 </tr>
             <?php else : ?>
                 <?php foreach ( $results as $row ) : ?>
@@ -246,6 +278,17 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         </td>
                         <td class="date column-date">
                             <?php echo esc_html( LLMVM_Admin::convert_utc_to_user_timezone( $row['created_at'] ?? '' ) ); ?>
+                        </td>
+                        <td class="score column-score">
+                            <?php 
+                            $comparison_score = isset( $row['comparison_score'] ) ? (int) $row['comparison_score'] : null;
+                            if ( $comparison_score !== null ) {
+                                $score_class = $comparison_score >= 8 ? 'score-high' : ( $comparison_score >= 6 ? 'score-medium' : 'score-low' );
+                                echo '<span class="score-badge ' . esc_attr( $score_class ) . '">' . esc_html( (string) $comparison_score ) . '/10</span>';
+                            } else {
+                                echo '<span class="score-badge score-none">N/A</span>';
+                            }
+                            ?>
                         </td>
                         <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
                         <td class="user column-user">
@@ -304,6 +347,9 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <?php echo wp_kses_post( llmvm_get_sort_indicator( 'created_at', $current_orderby, $current_order ) ); ?>
                     </a>
                 </th>
+                <th scope="col" class="manage-column column-score">
+                    <span><?php echo esc_html__( 'Score', 'llm-visibility-monitor' ); ?></span>
+                </th>
                 <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
                 <th scope="col" class="manage-column column-user sortable <?php echo esc_attr( $current_orderby === 'user_id' ? strtolower( $current_order ) : '' ); ?>">
                     <a href="<?php echo esc_url( llmvm_get_sort_url( 'user_id', $current_orderby === 'user_id' && $current_order === 'DESC' ? 'ASC' : 'DESC' ) ); ?>">
@@ -342,5 +388,90 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
         </div>
     </form>
 </div>
+
+<?php
+// Display prompt summaries section
+$prompt_summaries = LLMVM_Database::get_latest_prompt_summaries( 0, 5 );
+if ( ! empty( $prompt_summaries ) ) :
+?>
+<div class="wrap" style="margin-top: 30px;">
+    <h2><?php echo esc_html__( '💬 Prompt Summaries', 'llm-visibility-monitor' ); ?></h2>
+    <p style="color: #666; margin-bottom: 20px;">
+        <?php echo esc_html__( 'AI-generated summaries of how well responses matched expected answers.', 'llm-visibility-monitor' ); ?>
+    </p>
+    
+    <div class="prompt-summaries-container">
+        <?php foreach ( $prompt_summaries as $summary ) : ?>
+            <?php
+            $prompt_text = isset( $summary['prompt_text'] ) ? (string) $summary['prompt_text'] : '';
+            $expected_answer = isset( $summary['expected_answer'] ) ? (string) $summary['expected_answer'] : '';
+            $comparison_summary = isset( $summary['comparison_summary'] ) ? (string) $summary['comparison_summary'] : '';
+            $average_score = isset( $summary['average_score'] ) ? (float) $summary['average_score'] : null;
+            $min_score = isset( $summary['min_score'] ) ? (int) $summary['min_score'] : null;
+            $max_score = isset( $summary['max_score'] ) ? (int) $summary['max_score'] : null;
+            $total_models = isset( $summary['total_models'] ) ? (int) $summary['total_models'] : 0;
+            $completed_at = isset( $summary['completed_at'] ) ? (string) $summary['completed_at'] : '';
+            
+            // Truncate prompt for display
+            $display_prompt = strlen( $prompt_text ) > 100 ? substr( $prompt_text, 0, 100 ) . '...' : $prompt_text;
+            $display_expected = strlen( $expected_answer ) > 50 ? substr( $expected_answer, 0, 50 ) . '...' : $expected_answer;
+            ?>
+            <div class="summary-card" style="background: #f8f9fa; border-left: 4px solid #0073aa; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #495057;"><?php echo esc_html__( 'Prompt:', 'llm-visibility-monitor' ); ?></strong> 
+                    <?php echo esc_html( $display_prompt ); ?>
+                </div>
+                
+                <?php if ( ! empty( $expected_answer ) ) : ?>
+                <div style="margin-bottom: 10px; font-size: 14px; color: #6c757d;">
+                    <strong><?php echo esc_html__( 'Expected:', 'llm-visibility-monitor' ); ?></strong> 
+                    <?php echo esc_html( $display_expected ); ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ( $average_score !== null ) : ?>
+                    <?php
+                    $score_color = $average_score >= 8 ? '#28a745' : ( $average_score >= 6 ? '#ffc107' : '#dc3545' );
+                    $text_color = $average_score >= 6 && $average_score < 8 ? '#000' : '#fff';
+                    ?>
+                    <div style="margin-bottom: 10px; font-size: 14px;">
+                        <span style="background: <?php echo esc_attr( $score_color ); ?>; color: <?php echo esc_attr( $text_color ); ?>; padding: 2px 6px; border-radius: 3px; font-weight: bold;">
+                            <?php echo esc_html( (string) $average_score ); ?>/10 <?php echo esc_html__( 'avg', 'llm-visibility-monitor' ); ?>
+                        </span>
+                        
+                        <?php if ( $total_models > 1 ) : ?>
+                            <span style="color: #6c757d; font-size: 12px;">
+                                (<?php echo esc_html__( 'Range:', 'llm-visibility-monitor' ); ?> <?php echo esc_html( (string) $min_score ); ?>-<?php echo esc_html( (string) $max_score ); ?>, <?php echo esc_html( (string) $total_models ); ?> <?php echo esc_html__( 'models', 'llm-visibility-monitor' ); ?>)
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if ( ! empty( $comparison_summary ) ) : ?>
+                <div style="font-style: italic; color: #495057; line-height: 1.5; margin-bottom: 10px;">
+                    <?php echo esc_html( $comparison_summary ); ?>
+                </div>
+                <?php endif; ?>
+                
+                <div style="font-size: 12px; color: #6c757d;">
+                    <?php echo esc_html__( 'Completed:', 'llm-visibility-monitor' ); ?> 
+                    <?php echo esc_html( LLMVM_Admin::convert_utc_to_user_timezone( $completed_at, $summary['user_id'] ?? null ) ); ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    
+    <!-- Scoring Legend -->
+    <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px;">
+        <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 <?php echo esc_html__( 'Scoring Legend', 'llm-visibility-monitor' ); ?></h4>
+        <div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
+            <strong>0:</strong> <?php echo esc_html__( 'Expected answer not mentioned at all', 'llm-visibility-monitor' ); ?><br>
+            <strong>1-3:</strong> <?php echo esc_html__( 'Expected answer mentioned briefly or incorrectly', 'llm-visibility-monitor' ); ?><br>
+            <strong>4-7:</strong> <?php echo esc_html__( 'Expected answer mentioned correctly but not prominently', 'llm-visibility-monitor' ); ?><br>
+            <strong>8-10:</strong> <?php echo esc_html__( 'Expected answer mentioned correctly and prominently', 'llm-visibility-monitor' ); ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 

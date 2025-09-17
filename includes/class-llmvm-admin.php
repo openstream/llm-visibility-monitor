@@ -357,7 +357,7 @@ class LLMVM_Admin {
         register_setting( 'llmvm_settings', 'llmvm_options', [
             'type'              => 'array',
             'sanitize_callback' => [ $this, 'sanitize_options' ],
-            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false, 'login_custom_text' => '' ],
+            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false, 'login_custom_text' => '', 'comparison_model' => 'openai/gpt-4o-mini' ],
             'show_in_rest'      => false,
         ] );
 
@@ -366,6 +366,7 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_api_key', __( 'OpenRouter API Key', 'llm-visibility-monitor' ), [ $this, 'field_api_key' ], 'llmvm-settings', 'llmvm_section_main' );
 
         add_settings_field( 'llmvm_model', __( 'Model', 'llm-visibility-monitor' ), [ $this, 'field_model' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_comparison_model', __( 'Comparison Model', 'llm-visibility-monitor' ), [ $this, 'field_comparison_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_queue_concurrency', __( 'Queue Concurrency Limit', 'llm-visibility-monitor' ), [ $this, 'field_queue_concurrency' ], 'llmvm-settings', 'llmvm_section_main' );
@@ -451,6 +452,9 @@ class LLMVM_Admin {
         
         // Login page customization
         $new['login_custom_text'] = isset( $input['login_custom_text'] ) ? wp_kses_post( (string) $input['login_custom_text'] ) : '';
+        
+        $comparison_model = isset( $input['comparison_model'] ) ? sanitize_text_field( (string) $input['comparison_model'] ) : ( $options['comparison_model'] ?? 'openai/gpt-4o-mini' );
+        $new['comparison_model'] = $comparison_model;
 
         return $new;
     }
@@ -524,6 +528,41 @@ class LLMVM_Admin {
         echo '<input type="text" id="llmvm-model-custom" value="' . esc_attr( $value ) . '" class="regular-text llmvm-model-custom" placeholder="e.g., openai/gpt-4o-mini" />';
         
 
+    }
+
+    /**
+     * Render comparison model field.
+     */
+    public function field_comparison_model(): void {
+        // Only render on settings page
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- GET parameter is safe for page detection.
+        if ( ! isset( $_GET['page'] ) || 'llmvm-settings' !== sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+            return;
+        }
+        
+        $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = isset( $options['comparison_model'] ) ? (string) $options['comparison_model'] : 'openai/gpt-4o-mini';
+        
+        // Get available models (will fallback to common models if API key decryption fails)
+        $models = self::get_openrouter_models();
+        
+        echo '<select name="llmvm_options[comparison_model]" id="llmvm-comparison-model-select" class="llmvm-model-select">';
+        echo '<option value="">' . esc_html__( 'Select a comparison model...', 'llm-visibility-monitor' ) . '</option>';
+        
+        foreach ( $models as $model ) {
+            $selected = ( $model['id'] === $value ) ? ' selected="selected"' : '';
+            echo '<option value="' . esc_attr( $model['id'] ) . '"' . esc_attr( $selected ) . '>';
+            echo esc_html( $model['name'] . ' (' . $model['id'] . ')' );
+            echo '</option>';
+        }
+        
+        echo '</select>';
+        
+        echo '<p class="description">' . esc_html__( 'Select the model to use for comparing responses with expected answers. This model will evaluate how well each response matches the expected answer on a scale of 1-10.', 'llm-visibility-monitor' ) . '</p>';
     }
 
     /** Render debug logging field */
@@ -1716,6 +1755,9 @@ class LLMVM_Admin {
         $cron_frequency = isset( $_POST['cron_frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ) ) : 'daily'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
         $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
         
+        // Handle expected answer option
+        $expected_answer = isset( $_POST['expected_answer'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expected_answer'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+        
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
@@ -1783,7 +1825,8 @@ class LLMVM_Admin {
                     'models' => $models,
                     'user_id' => $current_user_id,
                     'web_search' => $web_search,
-                    'cron_frequency' => $cron_frequency
+                    'cron_frequency' => $cron_frequency,
+                    'expected_answer' => $expected_answer
                 ];
                 update_option( 'llmvm_prompts', $prompts, false );
                 
@@ -1859,6 +1902,14 @@ class LLMVM_Admin {
             $cron_frequency = sanitize_text_field( wp_unslash( $_POST['cron_frequency'][ $id ] ) );
             $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
         }
+        
+        // Handle expected answer option
+        $expected_answer = '';
+        if ( isset( $_POST['expected_answer'] ) && is_array( $_POST['expected_answer'] ) && isset( $_POST['expected_answer'][ $id ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+            $expected_answer = sanitize_textarea_field( wp_unslash( $_POST['expected_answer'][ $id ] ) );
+        } elseif ( isset( $_POST['expected_answer'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+            $expected_answer = sanitize_textarea_field( wp_unslash( $_POST['expected_answer'] ) );
+        }
 
         $prompts = get_option( 'llmvm_prompts', [] );
         $prompts = is_array( $prompts ) ? $prompts : [];
@@ -1912,6 +1963,7 @@ class LLMVM_Admin {
                     }
                     $prompt['web_search'] = $web_search;
                     $prompt['cron_frequency'] = $cron_frequency;
+                    $prompt['expected_answer'] = $expected_answer;
                     $prompt_updated = true;
                     set_transient( 'llmvm_notice', [ 'type' => 'success', 'msg' => __( 'Prompt updated successfully.', 'llm-visibility-monitor' ) ], 60 );
                 } else {
@@ -2099,7 +2151,13 @@ class LLMVM_Admin {
     public static function get_openrouter_models(): array {
         $options = get_option( 'llmvm_options', [] );
         if ( ! is_array( $options ) ) {
-            $options = [];
+            // Handle case where options are stored as JSON string
+            if ( is_string( $options ) ) {
+                $decoded = json_decode( $options, true );
+                $options = is_array( $decoded ) ? $decoded : [];
+            } else {
+                $options = [];
+            }
         }
         
         $api_key = isset( $options['api_key'] ) ? (string) $options['api_key'] : '';

@@ -654,7 +654,7 @@ class LLMVM_Queue_Manager {
 			$table_name,
 			array(
 				'status'     => 'processing',
-				'started_at' => current_time( 'mysql' ),
+				'started_at' => gmdate( 'Y-m-d H:i:s' ),
 				'attempts'   => (int) $job['attempts'] + 1,
 			),
 			array( 
@@ -707,7 +707,7 @@ class LLMVM_Queue_Manager {
 				$table_name,
 				array(
 					'status'       => 'completed',
-					'completed_at' => current_time( 'mysql' ),
+					'completed_at' => gmdate( 'Y-m-d H:i:s' ),
 				),
 				array( 'id' => $job_id ),
 				array( '%s', '%s' ),
@@ -725,6 +725,11 @@ class LLMVM_Queue_Manager {
 				'db_update_time_ms' => round( $db_update_time * 1000, 2 )
 			) );
 
+			// Check if this was the last job for a prompt and generate summary if needed
+			if ( $job['job_type'] === 'llm_request' ) {
+				$this->check_prompt_completion( $job_data );
+			}
+
 			// Don't check email action here - it will be checked after all jobs are processed
 			LLMVM_Logger::log( 'Job completed, email check will happen after all jobs are processed', array( 'user_id' => $user_id ) );
 
@@ -735,7 +740,7 @@ class LLMVM_Queue_Manager {
 				array(
 					'status'        => 'failed',
 					'error_message' => $e->getMessage(),
-					'completed_at'  => current_time( 'mysql' ),
+					'completed_at'  => gmdate( 'Y-m-d H:i:s' ),
 				),
 				array( 'id' => $job_id ),
 				array( '%s', '%s', '%s' ),
@@ -779,9 +784,31 @@ class LLMVM_Queue_Manager {
 		$error = $response['error'] ?? '';
 		$response_time = $response['response_time'] ?? 0.0;
 
+		// Perform comparison if expected answer is provided
+		$expected_answer = $job_data['expected_answer'] ?? '';
+		$comparison_score = null;
+		
+		if ( ! empty( $expected_answer ) && ! empty( $answer ) ) {
+			LLMVM_Logger::log( 'Starting comparison', array(
+				'expected_answer' => $expected_answer,
+				'answer_length' => strlen( $answer ),
+				'prompt_length' => strlen( $prompt )
+			) );
+			$comparison_score = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt );
+			LLMVM_Logger::log( 'Comparison completed', array(
+				'comparison_score' => $comparison_score
+			) );
+		} else {
+			LLMVM_Logger::log( 'Skipping comparison', array(
+				'expected_answer_empty' => empty( $expected_answer ),
+				'answer_empty' => empty( $answer ),
+				'expected_answer' => $expected_answer
+			) );
+		}
+		
 		// Store result in database
 		$db_insert_start = microtime( true );
-		$result_id = LLMVM_Database::insert_result( $prompt, $resp_model, $answer, $user_id );
+		$result_id = LLMVM_Database::insert_result( $prompt, $resp_model, $answer, $user_id, $expected_answer, $comparison_score );
 		$db_insert_time = microtime( true ) - $db_insert_start;
 		
 		if ( ! $result_id ) {
@@ -805,7 +832,7 @@ class LLMVM_Queue_Manager {
 				'prompt' => $prompt,
 				'model' => $resp_model,
 				'answer' => $answer,
-				'created_at' => current_time( 'mysql' )
+				'created_at' => gmdate( 'Y-m-d H:i:s' )
 			),
 			array( '%d', '%s', '%d', '%s', '%s', '%s', '%s' )
 		);
@@ -1024,5 +1051,169 @@ class LLMVM_Queue_Manager {
 		$deleted = $wpdb->query( "DELETE FROM $table_name" );
 
 		LLMVM_Logger::log( 'Cleared all queue jobs', array( 'deleted_count' => $deleted ) );
+	}
+
+	/**
+	 * Check if all models for a prompt have completed and generate summary if needed.
+	 *
+	 * @param array $job_data The job data from the completed job.
+	 */
+	private function check_prompt_completion( array $job_data ): void {
+		$prompt_id = $job_data['prompt_id'] ?? '';
+		$expected_answer = $job_data['expected_answer'] ?? '';
+		$user_id = $job_data['user_id'] ?? 0;
+
+		// Only check for prompts with expected answers
+		if ( empty( $prompt_id ) || empty( $expected_answer ) || $user_id <= 0 ) {
+			return;
+		}
+
+		LLMVM_Logger::log( 'Checking prompt completion for summary generation', array(
+			'prompt_id' => $prompt_id,
+			'user_id' => $user_id,
+			'has_expected_answer' => ! empty( $expected_answer )
+		) );
+
+		// Get the original prompt data to find expected models
+		$prompts = get_option( 'llmvm_prompts', array() );
+		$target_prompt = null;
+
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+				$target_prompt = $prompt;
+				break;
+			}
+		}
+
+		if ( ! $target_prompt ) {
+			LLMVM_Logger::log( 'Target prompt not found for summary generation', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		// Get expected models for this prompt
+		$expected_models = array();
+		if ( isset( $target_prompt['models'] ) && is_array( $target_prompt['models'] ) ) {
+			$expected_models = $target_prompt['models'];
+		} elseif ( isset( $target_prompt['model'] ) && ! empty( $target_prompt['model'] ) ) {
+			$expected_models = array( $target_prompt['model'] );
+		}
+
+		if ( empty( $expected_models ) ) {
+			LLMVM_Logger::log( 'No expected models found for prompt', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		// Check if all models have completed
+		if ( ! LLMVM_Comparison::are_all_models_complete( $prompt_id, $expected_models ) ) {
+			LLMVM_Logger::log( 'Not all models completed yet for prompt', array(
+				'prompt_id' => $prompt_id,
+				'expected_models' => $expected_models
+			) );
+			return;
+		}
+
+		// Check if summary already exists for the same content
+		$prompt_text = $target_prompt['text'] ?? '';
+		if ( $this->prompt_summary_exists( $prompt_id, $prompt_text, $expected_answer ) ) {
+			LLMVM_Logger::log( 'Summary already exists for prompt content', array( 
+				'prompt_id' => $prompt_id,
+				'prompt_text' => substr( $prompt_text, 0, 50 ) . '...',
+				'expected_answer' => $expected_answer
+			) );
+			return;
+		}
+
+		// Get all results for this prompt
+		$results = LLMVM_Comparison::get_prompt_results( $prompt_id, $expected_models );
+
+		if ( empty( $results ) ) {
+			LLMVM_Logger::log( 'No results found for prompt summary', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		// Filter to only valid results (remove empty/failed answers)
+		$valid_results = array_filter( $results, function( $result ) {
+			$answer = trim( $result['answer'] ?? '' );
+			return ! empty( $answer ) && $answer !== 'No answer received';
+		} );
+
+		// Generate summary only if we have at least one valid result
+		if ( empty( $valid_results ) ) {
+			LLMVM_Logger::log( 'No valid answers found, skipping summary generation', array( 
+				'prompt_id' => $prompt_id,
+				'total_results' => count( $results ),
+				'valid_results' => count( $valid_results )
+			) );
+			return;
+		}
+
+		// Log if some models failed but we're still generating summary
+		if ( count( $valid_results ) < count( $results ) ) {
+			LLMVM_Logger::log( 'Some models failed, generating summary with valid results only', array( 
+				'prompt_id' => $prompt_id,
+				'total_results' => count( $results ),
+				'valid_results' => count( $valid_results )
+			) );
+		}
+
+		// Use only valid results for summary generation
+		$results = $valid_results;
+
+		LLMVM_Logger::log( 'Generating prompt summary', array(
+			'prompt_id' => $prompt_id,
+			'results_count' => count( $results ),
+			'expected_models' => $expected_models
+		) );
+
+		// Generate prompt summary
+		$summary_data = LLMVM_Comparison::generate_prompt_summary(
+			$prompt_id,
+			$target_prompt['text'] ?? '',
+			$expected_answer,
+			$results
+		);
+
+		if ( $summary_data ) {
+			// Store the summary in the database
+			$summary_id = LLMVM_Database::insert_prompt_summary(
+				$prompt_id,
+				$target_prompt['text'] ?? '',
+				$expected_answer,
+				$user_id,
+				$summary_data
+			);
+
+			LLMVM_Logger::log( 'Prompt summary generated and stored', array(
+				'prompt_id' => $prompt_id,
+				'summary_id' => $summary_id,
+				'average_score' => $summary_data['average_score'] ?? null
+			) );
+		} else {
+			LLMVM_Logger::log( 'Failed to generate prompt summary', array( 'prompt_id' => $prompt_id ) );
+		}
+	}
+
+	/**
+	 * Check if a prompt summary already exists for the current prompt content.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param string $prompt_text The current prompt text.
+	 * @param string $expected_answer The current expected answer.
+	 * @return bool True if summary exists for the same content.
+	 */
+	private function prompt_summary_exists( string $prompt_id, string $prompt_text = '', string $expected_answer = '' ): bool {
+		global $wpdb;
+
+		$table_name = LLMVM_Database::prompt_summaries_table_name();
+		
+		// Check if summary exists for the same prompt content
+		$exists = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$table_name} WHERE prompt_id = %s AND prompt_text = %s AND expected_answer = %s", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string
+			$prompt_id,
+			$prompt_text,
+			$expected_answer
+		) );
+
+		return $exists > 0;
 	}
 }

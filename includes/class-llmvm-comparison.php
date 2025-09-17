@@ -1,0 +1,403 @@
+<?php
+/**
+ * Comparison logic for LLM responses.
+ *
+ * This class handles the comparison of LLM responses with expected answers
+ * using semantic similarity scoring.
+ *
+ * @package LLM_Visibility_Monitor
+ * @since 0.13.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Comparison class for LLM responses.
+ *
+ * Handles semantic similarity scoring between actual responses and expected answers.
+ *
+ * @package LLM_Visibility_Monitor
+ */
+class LLMVM_Comparison {
+
+	/**
+	 * Compare a response with an expected answer and return a score.
+	 *
+	 * @param string $actual_response The actual response from the LLM.
+	 * @param string $expected_answer The expected answer for comparison.
+	 * @param string $original_prompt The original prompt that was sent.
+	 * @return int|null The comparison score (1-10) or null if comparison fails.
+	 */
+	public static function compare_response( string $actual_response, string $expected_answer, string $original_prompt ): ?int {
+		// Get comparison model from settings
+		$options = get_option( 'llmvm_options', [] );
+		if ( ! is_array( $options ) ) {
+			// Handle case where options are stored as JSON string
+			if ( is_string( $options ) ) {
+				$decoded = json_decode( $options, true );
+				$options = is_array( $decoded ) ? $decoded : [];
+			} else {
+				$options = [];
+			}
+		}
+		$comparison_model = isset( $options['comparison_model'] ) ? (string) $options['comparison_model'] : 'openai/gpt-4o-mini';
+		$api_key = LLMVM_Cron::decrypt_api_key( $options['api_key'] ?? '' );
+		
+		// If no comparison model is set, return null
+		if ( empty( $comparison_model ) ) {
+			LLMVM_Logger::log( 'No comparison model set, skipping comparison' );
+			return null;
+		}
+		
+		// If expected answer is empty, return null
+		if ( empty( trim( $expected_answer ) ) ) {
+			LLMVM_Logger::log( 'No expected answer provided, skipping comparison' );
+			return null;
+		}
+		
+		// Prepare the comparison prompt
+		$comparison_prompt = self::build_comparison_prompt( $actual_response, $expected_answer, $original_prompt );
+		
+		// Call the comparison model
+		$comparison_result = self::call_comparison_model( $api_key, $comparison_model, $comparison_prompt );
+		
+		if ( $comparison_result === null ) {
+			LLMVM_Logger::log( 'Comparison model call failed' );
+			return null;
+		}
+		
+		// Extract score from the response
+		$score = self::extract_score_from_response( $comparison_result );
+		
+		LLMVM_Logger::log( 'Comparison completed', array(
+			'comparison_model' => $comparison_model,
+			'score' => $score,
+			'expected_answer_length' => strlen( $expected_answer ),
+			'actual_response_length' => strlen( $actual_response )
+		) );
+		
+		return $score;
+	}
+
+	/**
+	 * Build the comparison prompt for the LLM.
+	 *
+	 * @param string $actual_response The actual response from the LLM.
+	 * @param string $expected_answer The expected answer for comparison.
+	 * @param string $original_prompt The original prompt that was sent.
+	 * @return string The formatted comparison prompt.
+	 */
+	private static function build_comparison_prompt( string $actual_response, string $expected_answer, string $original_prompt ): string {
+		return sprintf(
+			"Compare this response: %s\n\nwith this expected answer: %s\n\nfor this prompt: %s\n\nRate the match from 0-10 using this strict scoring system:\n\n0: Expected entity/answer not mentioned at all\n1-3: Expected entity mentioned briefly or incorrectly\n4-7: Expected entity mentioned correctly but not prominently\n8-10: Expected entity mentioned correctly and prominently\n\nPriority: First check if the expected answer appears in the response. If not, score should be 0-3. Focus on exact entity matching over general response quality.\n\nRespond with only the number (0-10).",
+			$actual_response,
+			$expected_answer,
+			$original_prompt
+		);
+	}
+
+	/**
+	 * Call the comparison model via OpenRouter.
+	 *
+	 * @param string $model The model to use for comparison.
+	 * @param string $prompt The comparison prompt.
+	 * @return string|null The response from the model or null if failed.
+	 */
+	private static function call_comparison_model( string $api_key, string $model, string $prompt ): ?string {
+		// Get OpenRouter client
+		$openrouter_client = new LLMVM_OpenRouter_Client();
+		
+		// Call the model
+		$response = $openrouter_client->query( $api_key, $prompt, $model );
+		
+		$score_text = $response['answer'] ?? '';
+		$status = $response['status'] ?? 0;
+		$error = $response['error'] ?? '';
+		
+		if ( $status >= 400 || empty( $score_text ) ) {
+			LLMVM_Logger::log( 'Comparison model call failed', array(
+				'status' => $status,
+				'error' => $error,
+				'model' => $model
+			) );
+			return null;
+		}
+		
+		return $score_text;
+	}
+
+	/**
+	 * Extract the score from the model response.
+	 *
+	 * @param string $response The response from the comparison model.
+	 * @return int|null The extracted score (0-10) or null if extraction fails.
+	 */
+	private static function extract_score_from_response( string $response ): ?int {
+		// Clean the response
+		$response = trim( $response );
+		
+		// Look for a number between 0 and 10
+		if ( preg_match( '/\b([0-9]|10)\b/', $response, $matches ) ) {
+			$score = (int) $matches[1];
+			
+			// Ensure score is within valid range
+			if ( $score >= 0 && $score <= 10 ) {
+				return $score;
+			}
+		}
+		
+		// If no valid score found, try to extract any number and clamp it
+		if ( preg_match( '/\b(\d+)\b/', $response, $matches ) ) {
+			$score = (int) $matches[1];
+			// Clamp to 0-10 range
+			$score = max( 0, min( 10, $score ) );
+			return $score;
+		}
+		
+		LLMVM_Logger::log( 'Could not extract valid score from comparison response', array(
+			'response' => $response
+		) );
+		
+		return null;
+	}
+
+	/**
+	 * Generate a prompt-level comparison summary from multiple model results.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param string $prompt_text The original prompt text.
+	 * @param string $expected_answer The expected answer.
+	 * @param array $results Array of results from different models.
+	 * @return array|null Summary data or null if generation fails.
+	 */
+	public static function generate_prompt_summary( string $prompt_id, string $prompt_text, string $expected_answer, array $results ): ?array {
+		if ( empty( $results ) || empty( $expected_answer ) ) {
+			return null;
+		}
+
+		// Extract all answers and scores
+		$answers = array();
+		$scores = array();
+		$models = array();
+
+		foreach ( $results as $result ) {
+			if ( ! empty( $result['answer'] ) ) {
+				$answers[] = $result['answer'];
+				$models[] = $result['model'];
+				
+				// Treat NULL scores as 0 to properly reflect failed comparisons
+				if ( isset( $result['comparison_score'] ) && $result['comparison_score'] !== null ) {
+					$scores[] = (int) $result['comparison_score'];
+				} else {
+					$scores[] = 0; // NULL or missing score = 0
+				}
+			}
+		}
+
+		if ( empty( $answers ) ) {
+			return null;
+		}
+
+		// Calculate score statistics
+		$score_stats = array();
+		if ( ! empty( $scores ) ) {
+			$score_stats = array(
+				'average_score' => round( array_sum( $scores ) / count( $scores ), 1 ),
+				'min_score'     => min( $scores ),
+				'max_score'     => max( $scores ),
+			);
+		}
+
+		// Generate comparison summary using LLM
+		$summary = self::generate_comparison_summary( $prompt_text, $expected_answer, $answers, $models, $score_stats );
+
+		return array(
+			'summary'       => $summary,
+			'average_score' => $score_stats['average_score'] ?? null,
+			'min_score'     => $score_stats['min_score'] ?? null,
+			'max_score'     => $score_stats['max_score'] ?? null,
+			'total_models'  => count( $results ),
+		);
+	}
+
+	/**
+	 * Generate a comparison summary using an LLM.
+	 *
+	 * @param string $prompt_text The original prompt.
+	 * @param string $expected_answer The expected answer.
+	 * @param array $answers Array of answers from different models.
+	 * @param array $models Array of model names.
+	 * @param array $score_stats Score statistics.
+	 * @return string|null The generated summary or null if generation fails.
+	 */
+	private static function generate_comparison_summary( string $prompt_text, string $expected_answer, array $answers, array $models, array $score_stats ): ?string {
+		// Get comparison model from settings
+		$options = get_option( 'llmvm_options', [] );
+		if ( ! is_array( $options ) ) {
+			// Handle case where options are stored as JSON string
+			if ( is_string( $options ) ) {
+				$decoded = json_decode( $options, true );
+				$options = is_array( $decoded ) ? $decoded : [];
+			} else {
+				$options = [];
+			}
+		}
+		$comparison_model = isset( $options['comparison_model'] ) ? (string) $options['comparison_model'] : 'openai/gpt-4o-mini';
+		$api_key = LLMVM_Cron::decrypt_api_key( $options['api_key'] ?? '' );
+
+		if ( empty( $api_key ) || empty( $comparison_model ) ) {
+			return null;
+		}
+
+		// Build summary prompt
+		$summary_prompt = self::build_summary_prompt( $prompt_text, $expected_answer, $answers, $models, $score_stats );
+
+		// Call the comparison model
+		$summary_result = self::call_comparison_model( $api_key, $comparison_model, $summary_prompt );
+
+		if ( $summary_result === null ) {
+			LLMVM_Logger::log( 'Summary generation failed', array(
+				'prompt_text' => $prompt_text,
+				'expected_answer' => $expected_answer,
+				'total_answers' => count( $answers )
+			) );
+			return null;
+		}
+
+		return $summary_result;
+	}
+
+	/**
+	 * Build the prompt for generating a comparison summary.
+	 *
+	 * @param string $prompt_text The original prompt.
+	 * @param string $expected_answer The expected answer.
+	 * @param array $answers Array of answers from different models.
+	 * @param array $models Array of model names.
+	 * @param array $score_stats Score statistics.
+	 * @return string The summary prompt.
+	 */
+	private static function build_summary_prompt( string $prompt_text, string $expected_answer, array $answers, array $models, array $score_stats ): string {
+		$summary_prompt = "Please provide a brief comparison summary of how well the following AI model responses match the expected answer.\n\n";
+		$summary_prompt .= "**Original Prompt:** " . $prompt_text . "\n\n";
+		$summary_prompt .= "**Expected Answer:** " . $expected_answer . "\n\n";
+
+		if ( ! empty( $score_stats ) ) {
+			$summary_prompt .= "**Score Statistics:** Average: " . $score_stats['average_score'] . "/10, Range: " . $score_stats['min_score'] . "-" . $score_stats['max_score'] . "/10\n\n";
+		}
+
+		$summary_prompt .= "**Model Responses:**\n";
+		for ( $i = 0; $i < count( $answers ); $i++ ) {
+			$model_name = isset( $models[ $i ] ) ? $models[ $i ] : 'Unknown Model';
+			$summary_prompt .= ( $i + 1 ) . ". **" . $model_name . ":** " . $answers[ $i ] . "\n\n";
+		}
+
+		$summary_prompt .= "Please provide a concise 2-3 sentence summary focusing on:\n";
+		$summary_prompt .= "- How many responses actually mention the expected answer vs. those that don't\n";
+		$summary_prompt .= "- Whether responses that don't mention the expected answer should be considered poor matches (regardless of their general quality)\n";
+		$summary_prompt .= "- Overall assessment emphasizing exact entity matching over general response quality\n\n";
+		$summary_prompt .= "Note: A response that doesn't mention the expected answer should be considered a poor match, even if it provides good alternative information.\n\n";
+		$summary_prompt .= "Keep the summary professional and informative for email reports. **Important: Respond in the same language as the original prompt.**";
+
+		return $summary_prompt;
+	}
+
+
+	/**
+	 * Check if all models for a prompt have completed processing.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param array $expected_models Array of expected model names.
+	 * @return bool True if all models are complete.
+	 */
+	public static function are_all_models_complete( string $prompt_id, array $expected_models ): bool {
+		global $wpdb;
+
+		$table_name = LLMVM_Database::table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $expected_models ), '%s' ) );
+
+		// Get the prompt text for this prompt ID from the stored prompts
+		$prompts = get_option( 'llmvm_prompts', array() );
+		$prompt_text = '';
+		
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+				$prompt_text = $prompt['text'] ?? '';
+				break;
+			}
+		}
+
+		if ( empty( $prompt_text ) ) {
+			return false;
+		}
+
+		// Build LIKE conditions for model matching to handle suffixes like :online
+		$model_conditions = array();
+		foreach ( $expected_models as $model ) {
+			$model_conditions[] = "model LIKE %s";
+		}
+		$model_like_placeholders = implode( ' OR ', $model_conditions );
+		
+		$like_params = array( $prompt_text );
+		foreach ( $expected_models as $model ) {
+			$like_params[] = $wpdb->esc_like( $model ) . '%';
+		}
+
+		$completed_models = $wpdb->get_col( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
+			"SELECT DISTINCT model FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
+			...$like_params
+		) );
+
+		return count( $completed_models ) === count( $expected_models );
+	}
+
+	/**
+	 * Get all results for a specific prompt.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param array $expected_models Array of expected model names.
+	 * @return array Array of results for the prompt.
+	 */
+	public static function get_prompt_results( string $prompt_id, array $expected_models ): array {
+		global $wpdb;
+
+		$table_name = LLMVM_Database::table_name();
+		$placeholders = implode( ',', array_fill( 0, count( $expected_models ), '%s' ) );
+
+		// Get the prompt text for this prompt ID from the stored prompts
+		$prompts = get_option( 'llmvm_prompts', array() );
+		$prompt_text = '';
+		
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+				$prompt_text = $prompt['text'] ?? '';
+				break;
+			}
+		}
+
+		if ( empty( $prompt_text ) ) {
+			return array();
+		}
+
+		// Build LIKE conditions for model matching to handle suffixes like :online
+		$model_conditions = array();
+		foreach ( $expected_models as $model ) {
+			$model_conditions[] = "model LIKE %s";
+		}
+		$model_like_placeholders = implode( ' OR ', $model_conditions );
+		
+		$like_params = array( $prompt_text );
+		foreach ( $expected_models as $model ) {
+			$like_params[] = $wpdb->esc_like( $model ) . '%';
+		}
+
+		$results = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
+			"SELECT * FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders}) ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
+			...$like_params
+		), ARRAY_A );
+
+		return $results ? $results : array();
+	}
+}
