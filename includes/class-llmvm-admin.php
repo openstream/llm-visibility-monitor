@@ -977,7 +977,6 @@ class LLMVM_Admin {
             echo '<th>' . esc_html__( 'Response Time', 'llm-visibility-monitor' ) . '</th>';
             echo '<th>' . esc_html__( 'Execution Time', 'llm-visibility-monitor' ) . '</th>';
             echo '<th>' . esc_html__( 'Created', 'llm-visibility-monitor' ) . '</th>';
-            echo '<th>' . esc_html__( 'Attempts', 'llm-visibility-monitor' ) . '</th>';
             if ( $is_admin ) {
                 echo '<th>' . esc_html__( 'User', 'llm-visibility-monitor' ) . '</th>';
             }
@@ -1021,7 +1020,6 @@ class LLMVM_Admin {
                 echo '<td><span class="llmvm-metric-value">' . esc_html( $response_time ) . '</span></td>';
                 echo '<td><span class="llmvm-metric-value">' . esc_html( $execution_time ) . '</span></td>';
                 echo '<td>' . esc_html( $job['created_at'] ) . '</td>';
-                echo '<td>' . esc_html( $job['attempts'] . '/' . $job['max_attempts'] ) . '</td>';
                 if ( $is_admin ) {
                     echo '<td>' . esc_html( $user_name ) . '</td>';
                 }

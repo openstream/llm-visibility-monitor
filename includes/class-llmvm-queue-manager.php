@@ -22,10 +22,6 @@ class LLMVM_Queue_Manager {
 	 */
 	private const QUEUE_TABLE = 'llmvm_queue';
 
-	/**
-	 * Maximum retry attempts for failed jobs.
-	 */
-	private const MAX_RETRIES = 3;
 
 	/**
 	 * Job timeout in seconds.
@@ -105,8 +101,6 @@ class LLMVM_Queue_Manager {
 			job_data longtext NOT NULL,
 			status varchar(20) NOT NULL DEFAULT 'pending',
 			priority int(11) NOT NULL DEFAULT 0,
-			attempts int(11) NOT NULL DEFAULT 0,
-			max_attempts int(11) NOT NULL DEFAULT 3,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			started_at datetime NULL,
@@ -269,9 +263,8 @@ class LLMVM_Queue_Manager {
 				'job_data'     => wp_json_encode( $job_data ),
 				'priority'     => $priority,
 				'status'       => 'pending',
-				'max_attempts' => self::MAX_RETRIES,
 			),
-			array( '%d', '%s', '%s', '%d', '%s', '%d' )
+			array( '%d', '%s', '%s', '%d', '%s' )
 		);
 
 		if ( $result === false ) {
@@ -346,7 +339,6 @@ class LLMVM_Queue_Manager {
 			$wpdb->prepare(
 				"SELECT * FROM $table_name 
 				WHERE status = 'pending' 
-				AND attempts < max_attempts 
 				AND (started_at IS NULL OR started_at = '0000-00-00 00:00:00')
 				ORDER BY priority DESC, created_at ASC 
 				LIMIT %d",
@@ -360,8 +352,6 @@ class LLMVM_Queue_Manager {
 			LLMVM_Logger::log( 'Found pending job', array(
 				'job_id' => $job['id'],
 				'status' => $job['status'],
-				'attempts' => $job['attempts'],
-				'max_attempts' => $job['max_attempts'],
 				'created_at' => $job['created_at']
 			) );
 		}
@@ -655,13 +645,12 @@ class LLMVM_Queue_Manager {
 			array(
 				'status'     => 'processing',
 				'started_at' => gmdate( 'Y-m-d H:i:s' ),
-				'attempts'   => (int) $job['attempts'] + 1,
 			),
 			array( 
 				'id' => $job_id,
 				'status' => 'pending' // Only update if still pending
 			),
-			array( '%s', '%s', '%d' ),
+			array( '%s', '%s' ),
 			array( '%d', '%s' )
 		);
 		$db_update_time = microtime( true ) - $db_update_start;
@@ -749,8 +738,7 @@ class LLMVM_Queue_Manager {
 
 			LLMVM_Logger::log( 'Job failed', array( 
 				'job_id' => $job_id, 
-				'error' => $e->getMessage(),
-				'attempts' => (int) $job['attempts'] + 1
+				'error' => $e->getMessage()
 			) );
 		}
 	}
