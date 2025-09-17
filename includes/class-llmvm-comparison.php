@@ -354,13 +354,14 @@ class LLMVM_Comparison {
 	}
 
 	/**
-	 * Get all results for a specific prompt.
+	 * Get all results for a specific prompt with the same expected answer.
 	 *
 	 * @param string $prompt_id The prompt ID.
 	 * @param array $expected_models Array of expected model names.
+	 * @param string $expected_answer The expected answer to filter by.
 	 * @return array Array of results for the prompt.
 	 */
-	public static function get_prompt_results( string $prompt_id, array $expected_models ): array {
+	public static function get_prompt_results( string $prompt_id, array $expected_models, string $expected_answer = '' ): array {
 		global $wpdb;
 
 		$table_name = LLMVM_Database::table_name();
@@ -393,8 +394,15 @@ class LLMVM_Comparison {
 			$like_params[] = $wpdb->esc_like( $model ) . '%';
 		}
 
+		// Add expected answer filter if provided
+		$expected_answer_condition = '';
+		if ( ! empty( $expected_answer ) ) {
+			$expected_answer_condition = ' AND expected_answer = %s';
+			$like_params[] = $expected_answer;
+		}
+
 		$results = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
-			"SELECT * FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders}) ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
+			"SELECT * FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders}){$expected_answer_condition} ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
 			...$like_params
 		), ARRAY_A );
 

@@ -1123,8 +1123,8 @@ class LLMVM_Queue_Manager {
 			return;
 		}
 
-		// Get all results for this prompt
-		$results = LLMVM_Comparison::get_prompt_results( $prompt_id, $expected_models );
+		// Get all results for this prompt with the same expected answer
+		$results = LLMVM_Comparison::get_prompt_results( $prompt_id, $expected_models, $expected_answer );
 
 		if ( empty( $results ) ) {
 			LLMVM_Logger::log( 'No results found for prompt summary', array( 'prompt_id' => $prompt_id ) );
