@@ -30,7 +30,7 @@ class LLMVM_Comparison {
 	 * @param string $original_prompt The original prompt that was sent.
 	 * @return int|null The comparison score (1-10) or null if comparison fails.
 	 */
-	public static function compare_response( string $actual_response, string $expected_answer, string $original_prompt ): ?int {
+	public static function compare_response( string $actual_response, string $expected_answer, string $original_prompt ) {
 		// Get comparison model from settings
 		$options = get_option( 'llmvm_options', [] );
 		if ( ! is_array( $options ) ) {
@@ -74,6 +74,20 @@ class LLMVM_Comparison {
 		
 		// Extract score from the response
 		$score = self::extract_score_from_response( $comparison_result );
+		
+		if ( $score === null ) {
+			LLMVM_Logger::log( 'Comparison score extraction failed', array(
+				'comparison_model' => $comparison_model,
+				'response' => $comparison_result,
+				'expected_answer_length' => strlen( $expected_answer ),
+				'actual_response_length' => strlen( $actual_response )
+			) );
+			return array(
+				'score' => null,
+				'failed' => true,
+				'reason' => 'Could not extract valid score from comparison model response'
+			);
+		}
 		
 		LLMVM_Logger::log( 'Comparison completed', array(
 			'comparison_model' => $comparison_model,
