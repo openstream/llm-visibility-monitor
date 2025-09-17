@@ -541,32 +541,42 @@ class LLMVM_Email_Reporter {
                     padding: 15px;
                     background: #ffffff;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    width: 90%;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 .results-table td {
                     border: none;
                     position: relative;
-                    padding: 8px 0;
-                    padding-left: 90px;
+                    padding: 12px 0;
+                    padding-left: 0;
                     font-size: 14px;
                     width: 100%;
+                    display: block;
+                    clear: both;
                 }
                 
                 .results-table td:before {
                     content: attr(data-label) ": ";
-                    position: absolute;
-                    left: 6px;
-                    width: 80px;
-                    padding-right: 8px;
-                    white-space: nowrap;
+                    display: block;
                     font-weight: 600;
                     color: #495057;
                     font-size: 12px;
+                    margin-bottom: 6px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
                 }
                 
                 .answer-content {
                     max-height: 300px;
+                    overflow-y: auto;
+                    border: 1px solid #e9ecef;
+                    border-radius: 4px;
+                    padding: 12px;
+                    background: #f8f9fa;
+                    width: 100%;
+                    box-sizing: border-box;
+                    margin-top: 6px;
                 }
                 
                 .score-col {
@@ -579,27 +589,19 @@ class LLMVM_Email_Reporter {
                     padding: 3px 6px;
                     min-width: 35px;
                 }
-                    overflow-y: auto;
-                    border: 1px solid #e9ecef;
-                    border-radius: 4px;
-                    padding: 12px;
-                    background: #f8f9fa;
-                    width: 100%;
-                    box-sizing: border-box;
+                
+                /* Ensure proper spacing for meta items */
+                .meta-item {
+                    margin-bottom: 8px;
+                    display: block;
                 }
                 
-                /* Full width utilization for prompt and answer */
-                .results-table td[data-label="Prompt"],
-                .results-table td[data-label="Answer"],
-                .results-table td[data-label="Meta"] {
-                    padding-left: 0;
+                .date-badge, .model-badge {
+                    display: inline-block;
+                    margin-right: 8px;
+                    margin-bottom: 4px;
                 }
-                
-                .results-table td[data-label="Prompt"]:before,
-                .results-table td[data-label="Answer"]:before,
-                .results-table td[data-label="Meta"]:before {
-                    display: none;
-                }
+            }
                 
                 .results-table td[data-label="Prompt"] {
                     font-weight: 600;
