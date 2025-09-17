@@ -126,7 +126,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 == Changelog ==
 
-= 0.13.0 - 2025-01-17 =
+= 0.13.0 - 2025-09-17 =
 * **Major Feature**: LLM Response Comparison System
   * Added optional "Expected Answer" field to prompts for defining target responses
   * Implemented automated LLM-powered comparison scoring (0-10 scale) of actual vs expected answers
@@ -152,6 +152,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * Better error handling - NULL comparison scores treated as 0 for accurate averages
   * Enhanced logging system for comparison and summary generation processes
   * Fixed summary caching issues where old summaries were reused for different content
+  * Fixed summary accuracy issue where results from different expected answers were mixed together
 
 = 0.12.0 - 2025-01-12 =
 * **New Feature**: Enhanced Response Time Logging

@@ -2,32 +2,6 @@
 
 Monitor LLM responses on a schedule and store/export results.
 
-## Version 0.13.0
-
-### Comparison Feature (New)
-- **Expected Answer Field**: Added optional field to prompts for defining expected responses
-- **Automated Scoring**: LLM-powered comparison scoring (0-10 scale) of actual vs expected answers
-- **Comparison Model Selection**: Configurable comparison model in settings (default: openai/gpt-4o-mini)
-- **Prompt Summaries**: AI-generated summaries after all models complete for each prompt
-- **Email Report Integration**: Comparison scores and summaries included in email reports
-- **Dashboard Display**: Comparison scores and summaries visible on main dashboard
-- **Scoring Legend**: Clear explanation of 0-10 scoring ranges in both emails and dashboard
-- **Strict Entity Matching**: Prioritizes exact entity matching over general response quality
-- **Smart Summary Logic**: Only generates summaries when valid results exist, handles mixed success/failure
-
-### UI Improvements
-- **Collapsible Add New Prompt Form**: Form now starts collapsed showing only a textarea, expanding when clicked
-- **Improved Textarea Alignment**: Consistent width and left margin alignment between "Add New Prompt" and "Your Prompts" sections
-- **Better Visual Consistency**: Enhanced spacing, padding, and overall layout for improved user experience
-- **Smooth Transitions**: Added CSS transitions for form expansion with visual feedback
-- **Queue Status Styling**: Reduced font size for status badges to prevent text wrapping
-
-### Technical Improvements
-- **Fixed Timezone Handling**: All timestamps now properly stored in UTC and converted to user's timezone
-- **Improved Summary Generation**: Summaries regenerated when prompt content changes
-- **Better Error Handling**: NULL comparison scores treated as 0 for accurate averages
-- **Enhanced Logging**: Comprehensive logging for comparison and summary generation processes
-
 ## Requirements
 
 - WordPress 6.4+
@@ -177,6 +151,33 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 - **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 ## Changelog
+
+### 0.13.0 - 2025-09-17
+
+#### Comparison Feature (New)
+- **Expected Answer Field**: Added optional field to prompts for defining expected responses
+- **Automated Scoring**: LLM-powered comparison scoring (0-10 scale) of actual vs expected answers
+- **Comparison Model Selection**: Configurable comparison model in settings (default: openai/gpt-4o-mini)
+- **Prompt Summaries**: AI-generated summaries after all models complete for each prompt
+- **Email Report Integration**: Comparison scores and summaries included in email reports
+- **Dashboard Display**: Comparison scores and summaries visible on main dashboard
+- **Scoring Legend**: Clear explanation of 0-10 scoring ranges in both emails and dashboard
+- **Strict Entity Matching**: Prioritizes exact entity matching over general response quality
+- **Smart Summary Logic**: Only generates summaries when valid results exist, handles mixed success/failure
+
+#### UI Improvements
+- **Collapsible Add New Prompt Form**: Form now starts collapsed showing only a textarea, expanding when clicked
+- **Improved Textarea Alignment**: Consistent width and left margin alignment between "Add New Prompt" and "Your Prompts" sections
+- **Better Visual Consistency**: Enhanced spacing, padding, and overall layout for improved user experience
+- **Smooth Transitions**: Added CSS transitions for form expansion with visual feedback
+- **Queue Status Styling**: Reduced font size for status badges to prevent text wrapping
+
+#### Technical Improvements
+- **Fixed Timezone Handling**: All timestamps now properly stored in UTC and converted to user's timezone
+- **Improved Summary Generation**: Summaries regenerated when prompt content changes
+- **Better Error Handling**: NULL comparison scores treated as 0 for accurate averages
+- **Enhanced Logging**: Comprehensive logging for comparison and summary generation processes
+- **Summary Accuracy Fix**: Fixed issue where summaries mixed results from different expected answers
 
 ### 0.12.0 - 2025-01-12
 - **New Feature**: Enhanced Response Time Logging
