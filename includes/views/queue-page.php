@@ -100,7 +100,7 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                             $user_id = $job_data['user_id'] ?? 0;
                             $user_name = $user_id ? ( get_user_by( 'id', $user_id )->display_name ?? 'User ' . $user_id ) : 'Unknown';
                             $created_time = strtotime( $job['created_at'] );
-                            $time_ago = human_time_diff( $created_time, current_time( 'timestamp' ) );
+                            $time_ago = human_time_diff( $created_time, time() );
                             
                             // Calculate execution time
                             $execution_time = '';
@@ -111,7 +111,7 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                                 $execution_time = $execution_seconds . 's';
                             } elseif ( $job['status'] === 'processing' && ! empty( $job['started_at'] ) ) {
                                 $start_time = strtotime( $job['started_at'] );
-                                $current_time = current_time( 'timestamp' );
+                                $current_time = time();
                                 $execution_seconds = $current_time - $start_time;
                                 $execution_time = $execution_seconds . 's (running)';
                             } else {

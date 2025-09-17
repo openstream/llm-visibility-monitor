@@ -54,8 +54,8 @@ class LLMVM_Progress_Tracker {
             'percentage' => 0,
             'message' => $message,
             'completed' => false,
-            'started_at' => current_time( 'timestamp' ),
-            'updated_at' => current_time( 'timestamp' )
+            'started_at' => time(),
+            'updated_at' => time()
         ];
         
         // Store for 1 hour (3600 seconds)
@@ -79,7 +79,7 @@ class LLMVM_Progress_Tracker {
         
         $progress['current'] = $current_step;
         $progress['percentage'] = $progress['total'] > 0 ? round( ( $current_step / $progress['total'] ) * 100 ) : 0;
-        $progress['updated_at'] = current_time( 'timestamp' );
+        $progress['updated_at'] = time();
         
         if ( ! empty( $message ) ) {
             $progress['message'] = $message;
@@ -120,8 +120,8 @@ class LLMVM_Progress_Tracker {
         $progress['current'] = $progress['total'];
         $progress['percentage'] = 100;
         $progress['message'] = $message;
-        $progress['completed_at'] = current_time( 'timestamp' );
-        $progress['updated_at'] = current_time( 'timestamp' );
+        $progress['completed_at'] = time();
+        $progress['updated_at'] = time();
         
         // Store for 1 hour (3600 seconds)
         return set_transient( 'llmvm_progress_' . $run_id, $progress, 3600 );
@@ -168,7 +168,7 @@ class LLMVM_Progress_Tracker {
         );
         
         $cleaned = 0;
-        $cutoff_time = current_time( 'timestamp' ) - 3600; // 1 hour ago
+        $cutoff_time = time() - 3600; // 1 hour ago
         
         foreach ( $transients as $transient ) {
             $transient_name = str_replace( '_transient_', '', $transient->option_name );

@@ -765,7 +765,7 @@ class LLMVM_Email_Reporter {
     <div class="email-container">
     <div class="header">
             <h1>🤖 LLM Visibility Monitor</h1>
-            <p>Generated on ' . current_time( 'F j, Y \a\t g:i A T' ) . '</p>';
+            <p>Generated on ' . LLMVM_Admin::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s' ) ) . '</p>';
         
         if ( $email_type === 'user' && $user ) {
             $html .= '<p>Run Results for: ' . esc_html( $user->display_name ) . '</p>';

@@ -488,7 +488,7 @@ class LLMVM_Queue_Manager {
 			'minutes_back' => $minutes_back,
 			'cutoff_time_utc' => $cutoff_time,
 			'current_time_utc' => date( 'Y-m-d H:i:s' ),
-			'current_time_wp' => current_time( 'mysql' ),
+			'current_time_wp' => gmdate( 'Y-m-d H:i:s' ),
 			'results_count' => count( $results ),
 			'all_user_results' => $all_user_results,
 			'total_results_in_table' => $total_results,

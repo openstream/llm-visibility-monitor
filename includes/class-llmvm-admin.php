@@ -998,7 +998,7 @@ class LLMVM_Admin {
                     $execution_time = $execution_seconds . 's';
                 } elseif ( $job['status'] === 'processing' && ! empty( $job['started_at'] ) ) {
                     $start_time = strtotime( $job['started_at'] );
-                    $current_time = current_time( 'timestamp' );
+                    $current_time = time();
                     $execution_seconds = $current_time - $start_time;
                     $execution_time = $execution_seconds . 's (running)';
                 } else {
