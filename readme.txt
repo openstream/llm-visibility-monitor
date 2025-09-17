@@ -154,7 +154,7 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * Fixed summary caching issues where old summaries were reused for different content
   * Fixed summary accuracy issue where results from different expected answers were mixed together
 
-= 0.12.0 - 2025-01-12 =
+= 0.12.0 - 2025-09-12 =
 * **New Feature**: Enhanced Response Time Logging
   * Added detailed response time tracking for all OpenRouter API requests
   * Response times logged in milliseconds with model, prompt length, and body size information

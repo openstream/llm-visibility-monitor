@@ -9,6 +9,40 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// Ensure CSS is loaded (fallback if not enqueued)
+if ( ! wp_style_is( 'llmvm-admin', 'enqueued' ) ) {
+    wp_enqueue_style(
+        'llmvm-admin',
+        LLMVM_PLUGIN_URL . 'assets/css/llmvm-admin.css',
+        [],
+        LLMVM_VERSION . '.' . time() // Force cache refresh
+    );
+}
+
+// Add inline CSS for status badges with maximum specificity
+echo '<style>
+table.llmvm-queue-table tbody tr td .llmvm-status-badge {
+    display: inline-block !important;
+    padding: 2px !important;
+    margin: 0px !important;
+    border-radius: 1px !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2px !important;
+    color: white !important;
+    min-width: 20px !important;
+    text-align: center !important;
+    line-height: 1 !important;
+    height: auto !important;
+}
+table.llmvm-queue-table tbody tr td .llmvm-status-badge.completed { background-color: #46b450 !important; }
+table.llmvm-queue-table tbody tr td .llmvm-status-badge.processing { background-color: #00a0d2 !important; }
+table.llmvm-queue-table tbody tr td .llmvm-status-badge.pending { background-color: #ffb900 !important; }
+table.llmvm-queue-table tbody tr td .llmvm-status-badge.failed { background-color: #dc3232 !important; }
+</style>';
+
+
 // Get variables passed from the admin class
 $current_user_id = get_current_user_id();
 $is_admin = current_user_can( 'llmvm_manage_settings' );
@@ -16,6 +50,28 @@ $queue_manager = class_exists( 'LLMVM_Queue_Manager' ) ? new LLMVM_Queue_Manager
 $queue_status = $queue_manager ? $queue_manager->get_queue_status() : array();
 $user_filter = $is_admin ? null : $current_user_id;
 $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, null, 100 ) : array();
+
+// Calculate time ago for each job (using server time for accurate calculation)
+foreach ( $queue_jobs as &$job ) {
+    // Use server time for accurate time difference calculation
+    $created_time = strtotime( $job['created_at'] );
+    $current_time = time(); // Use server time for accurate calculation
+    
+    $time_diff = $current_time - $created_time;
+    
+    if ( $time_diff < 60 ) {
+        $job['time_ago'] = 'Just now';
+    } elseif ( $time_diff < 3600 ) {
+        $minutes = floor( $time_diff / 60 );
+        $job['time_ago'] = $minutes . ' minute' . ( $minutes > 1 ? 's' : '' ) . ' ago';
+    } elseif ( $time_diff < 86400 ) {
+        $hours = floor( $time_diff / 3600 );
+        $job['time_ago'] = $hours . ' hour' . ( $hours > 1 ? 's' : '' ) . ' ago';
+    } else {
+        $days = floor( $time_diff / 86400 );
+        $job['time_ago'] = $days . ' day' . ( $days > 1 ? 's' : '' ) . ' ago';
+    }
+}
 ?>
 
 <div class="wrap">
@@ -100,7 +156,7 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                             $user_id = $job_data['user_id'] ?? 0;
                             $user_name = $user_id ? ( get_user_by( 'id', $user_id )->display_name ?? 'User ' . $user_id ) : 'Unknown';
                             $created_time = strtotime( $job['created_at'] );
-                            $time_ago = human_time_diff( $created_time, time() );
+                            $time_ago = $job['time_ago'] ?? 'Unknown';
                             
                             // Calculate execution time
                             $execution_time = '';
@@ -111,7 +167,7 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
                                 $execution_time = $execution_seconds . 's';
                             } elseif ( $job['status'] === 'processing' && ! empty( $job['started_at'] ) ) {
                                 $start_time = strtotime( $job['started_at'] );
-                                $current_time = time();
+                                $current_time = current_time('timestamp');
                                 $execution_seconds = $current_time - $start_time;
                                 $execution_time = $execution_seconds . 's (running)';
                             } else {
@@ -402,6 +458,9 @@ $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, nul
 </style>
 
 <script>
+// Pass admin status to JavaScript
+window.llmvm_is_admin = <?php echo $is_admin ? 'true' : 'false'; ?>;
+
 jQuery(document).ready(function($) {
     // Auto-refresh every 30 seconds
     setInterval(function() {
@@ -468,9 +527,98 @@ jQuery(document).ready(function($) {
         $('.llmvm-status-card.completed .llmvm-count').text(data.status.completed);
         $('.llmvm-status-card.failed .llmvm-count').text(data.status.failed);
 
-        // Update jobs table (simplified - just reload page for now)
-        // In a more sophisticated implementation, you'd update the table rows
-        location.reload();
+        // Update jobs table
+        updateJobsTable(data.jobs);
+    }
+
+    function updateJobsTable(jobs) {
+        var tbody = $('.llmvm-queue-table tbody');
+        tbody.empty();
+        
+        if (jobs.length === 0) {
+            tbody.append('<tr><td colspan="9">No jobs in queue.</td></tr>');
+            return;
+        }
+        
+        jobs.forEach(function(job) {
+            var jobData = job.job_data || {};
+            var model = jobData.model || 'Unknown';
+            var userId = jobData.user_id || 0;
+            var userName = userId ? 'User ' + userId : 'Unknown';
+            
+            // Use server-calculated time ago (no JavaScript calculation needed)
+            var timeAgo = job.time_ago || 'Unknown';
+            
+            // Calculate execution time (properly handle UTC timestamps)
+            var executionTime = '-';
+            if (job.status === 'completed' && job.completed_at) {
+                var startTime = new Date(job.created_at + 'Z').getTime();
+                var endTime = new Date(job.completed_at + 'Z').getTime();
+                var executionSeconds = Math.floor((endTime - startTime) / 1000);
+                executionTime = executionSeconds + 's';
+            } else if (job.status === 'processing' && job.started_at) {
+                var startTime = new Date(job.started_at + 'Z').getTime();
+                var currentTime = Date.now();
+                var executionSeconds = Math.floor((currentTime - startTime) / 1000);
+                executionTime = executionSeconds + 's (running)';
+            }
+            
+            // Get response time
+            var responseTime = '-';
+            if (jobData.response_time && !isNaN(jobData.response_time)) {
+                responseTime = Math.round(jobData.response_time * 1000) + 'ms';
+            }
+            
+            // Calculate queue overhead (properly handle UTC timestamps)
+            var queueOverhead = '-';
+            if (job.status === 'completed' && job.completed_at && responseTime !== '-') {
+                var responseTimeSeconds = parseFloat(jobData.response_time) || 0;
+                var startTime = new Date(job.created_at + 'Z').getTime();
+                var endTime = new Date(job.completed_at + 'Z').getTime();
+                var executionSeconds = (endTime - startTime) / 1000;
+                var overheadSeconds = Math.max(0, executionSeconds - responseTimeSeconds);
+                queueOverhead = Math.round(overheadSeconds * 10) / 10 + 's';
+            }
+            
+            // Calculate overhead breakdown
+            var overheadBreakdown = '-';
+            if (jobData.timing_breakdown && jobData.timing_breakdown.api_call_time_ms) {
+                var breakdown = jobData.timing_breakdown;
+                var apiTime = breakdown.api_call_time_ms || 0;
+                var dbTime = breakdown.db_insert_time_ms || 0;
+                var jobTime = breakdown.job_update_time_ms || 0;
+                overheadBreakdown = 'Wait: 0ms, Process: ' + Math.round(apiTime + dbTime + jobTime) + 'ms';
+            }
+            
+            // Get DB operations time
+            var dbOperations = '-';
+            if (jobData.db_operations_time_ms) {
+                dbOperations = Math.round(jobData.db_operations_time_ms * 10) / 10 + 'ms';
+            }
+            
+            // Status badge
+            var statusBadge = '<span class="llmvm-status-badge ' + job.status + '">' + job.status.toUpperCase() + '</span>';
+            
+            // Create table row
+            var row = '<tr>' +
+                '<td>' + job.id + '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td>' + model + '</td>' +
+                '<td><span class="llmvm-metric-value">' + responseTime + '</span></td>' +
+                '<td><span class="llmvm-metric-value">' + executionTime + '</span></td>' +
+                '<td><span class="llmvm-metric-value">' + queueOverhead + '</span></td>' +
+                '<td><span class="llmvm-metric-value" style="font-size: 11px;">' + overheadBreakdown + '</span></td>' +
+                '<td><span class="llmvm-metric-value">' + dbOperations + '</span></td>' +
+                '<td title="' + job.created_at + '">' + timeAgo + ' ago</td>';
+            
+            // Add user column if admin
+            if (window.llmvm_is_admin) {
+                row += '<td>' + userName + '</td>';
+            }
+            
+            row += '</tr>';
+            tbody.append(row);
+        });
     }
 });
 </script>

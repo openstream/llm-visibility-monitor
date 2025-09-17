@@ -1053,6 +1053,28 @@ class LLMVM_Admin {
         $user_filter = $is_admin ? null : $current_user_id;
         $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 50 );
 
+        // Calculate time ago for each job (using server time for accurate calculation)
+        foreach ( $queue_jobs as &$job ) {
+            // Use server time for accurate time difference calculation
+            $created_time = strtotime( $job['created_at'] );
+            $current_time = time(); // Use server time for accurate calculation
+            
+            $time_diff = $current_time - $created_time;
+            
+            if ( $time_diff < 60 ) {
+                $job['time_ago'] = 'Just now';
+            } elseif ( $time_diff < 3600 ) {
+                $minutes = floor( $time_diff / 60 );
+                $job['time_ago'] = $minutes . ' minute' . ( $minutes > 1 ? 's' : '' ) . ' ago';
+            } elseif ( $time_diff < 86400 ) {
+                $hours = floor( $time_diff / 3600 );
+                $job['time_ago'] = $hours . ' hour' . ( $hours > 1 ? 's' : '' ) . ' ago';
+            } else {
+                $days = floor( $time_diff / 86400 );
+                $job['time_ago'] = $days . ' day' . ( $days > 1 ? 's' : '' ) . ' ago';
+            }
+        }
+
         wp_send_json_success( array(
             'status' => $queue_status,
             'jobs' => $queue_jobs
@@ -2280,7 +2302,7 @@ class LLMVM_Admin {
      */
     public function enqueue_admin_assets( string $hook ): void {
         // Only load on our plugin pages
-        if ( ! in_array( $hook, [ 'settings_page_llmvm-settings', 'tools_page_llmvm-dashboard', 'tools_page_llmvm-result', 'tools_page_llmvm-prompts' ], true ) ) {
+        if ( ! in_array( $hook, [ 'settings_page_llmvm-settings', 'tools_page_llmvm-dashboard', 'tools_page_llmvm-result', 'tools_page_llmvm-prompts', 'tools_page_llmvm-queue' ], true ) ) {
             return;
         }
 

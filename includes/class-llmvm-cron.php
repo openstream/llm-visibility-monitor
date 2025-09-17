@@ -179,6 +179,10 @@ class LLMVM_Cron {
 		ini_set( 'max_execution_time', 720 );
 		
 		$options   = get_option( 'llmvm_options', [] );
+		// Handle case where options are stored as JSON string
+		if ( is_string( $options ) ) {
+			$options = json_decode( $options, true );
+		}
 		// Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
 		if ( ! is_array( $options ) ) {
 			$options = [];

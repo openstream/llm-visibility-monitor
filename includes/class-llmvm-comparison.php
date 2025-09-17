@@ -390,9 +390,10 @@ class LLMVM_Comparison {
 	 * @param string $prompt_id The prompt ID.
 	 * @param array $expected_models Array of expected model names.
 	 * @param string $expected_answer The expected answer to filter by.
+	 * @param string $batch_run_id Optional batch run ID to filter by current run only.
 	 * @return array Array of results for the prompt.
 	 */
-	public static function get_prompt_results( string $prompt_id, array $expected_models, string $expected_answer = '' ): array {
+	public static function get_prompt_results( string $prompt_id, array $expected_models, string $expected_answer = '', string $batch_run_id = '' ): array {
 		global $wpdb;
 
 		$table_name = LLMVM_Database::table_name();
@@ -432,8 +433,28 @@ class LLMVM_Comparison {
 			$like_params[] = $expected_answer;
 		}
 
+		// Add batch run ID filter if provided (to limit to current run only)
+		// Since results table doesn't have run_id, we'll use a time-based approach
+		$batch_run_condition = '';
+		if ( ! empty( $batch_run_id ) ) {
+			// For batch runs, we'll get the job creation time from the queue table
+			// and filter results within a reasonable time window (e.g., 5 minutes)
+			$queue_table = $wpdb->prefix . 'llmvm_queue';
+			$job_time = $wpdb->get_var( $wpdb->prepare(
+				"SELECT created_at FROM {$queue_table} WHERE JSON_EXTRACT(job_data, '$.batch_run_id') = %s ORDER BY created_at ASC LIMIT 1",
+				$batch_run_id
+			) );
+			
+			if ( $job_time ) {
+				// Filter results within 5 minutes of the batch start time
+				$batch_run_condition = ' AND created_at >= %s AND created_at <= DATE_ADD(%s, INTERVAL 5 MINUTE)';
+				$like_params[] = $job_time;
+				$like_params[] = $job_time;
+			}
+		}
+
 		$results = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries.
-			"SELECT * FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders}){$expected_answer_condition} ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
+			"SELECT * FROM {$table_name} WHERE prompt = %s AND ({$model_like_placeholders}){$expected_answer_condition}{$batch_run_condition} ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table_name() returns constant string, placeholders are safely generated
 			...$like_params
 		), ARRAY_A );
 

@@ -297,3 +297,37 @@
         gap: 2px;
     }
 }
+
+/* Status Badge Styles */
+.llmvm-status-badge {
+    display: inline-block;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: white;
+    min-width: 30px;
+    text-align: center;
+}
+
+.llmvm-status-badge.completed {
+    background-color: #46b450;
+    color: white;
+}
+
+.llmvm-status-badge.processing {
+    background-color: #00a0d2;
+    color: white;
+}
+
+.llmvm-status-badge.pending {
+    background-color: #ffb900;
+    color: white;
+}
+
+.llmvm-status-badge.failed {
+    background-color: #dc3232;
+    color: white;
+}

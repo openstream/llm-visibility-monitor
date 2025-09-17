@@ -263,8 +263,9 @@ class LLMVM_Queue_Manager {
 				'job_data'     => wp_json_encode( $job_data ),
 				'priority'     => $priority,
 				'status'       => 'pending',
+				'created_at'   => gmdate( 'Y-m-d H:i:s' ),
 			),
-			array( '%d', '%s', '%s', '%d', '%s' )
+			array( '%d', '%s', '%s', '%d', '%s', '%s' )
 		);
 
 		if ( $result === false ) {
@@ -525,6 +526,11 @@ class LLMVM_Queue_Manager {
 			$job_data = json_decode( $recent_job['job_data'], true );
 			$prompt_id = $job_data['prompt_id'] ?? '';
 			$batch_run_id = $job_data['batch_run_id'] ?? '';
+			
+			// Clean up batch_run_id if it has extra quotes from JSON encoding
+			if ( is_string( $batch_run_id ) && strlen( $batch_run_id ) > 2 && $batch_run_id[0] === '"' && $batch_run_id[-1] === '"' ) {
+				$batch_run_id = trim( $batch_run_id, '"' );
+			}
 		}
 		
 		// Check if all pending jobs for this user are complete
@@ -555,9 +561,10 @@ class LLMVM_Queue_Manager {
 			$recent_results = $wpdb->get_results( $wpdb->prepare(
 				"SELECT result_id as id, prompt, model, answer, user_id, created_at 
 				FROM $table_name 
-				WHERE run_id = %s 
+				WHERE run_id = %s OR run_id = %s
 				ORDER BY created_at ASC",
-				$run_id
+				$run_id,
+				'"' . $run_id . '"'
 			), ARRAY_A );
 			
 			LLMVM_Logger::log( 'Using current run results for email from database', array(
@@ -719,9 +726,6 @@ class LLMVM_Queue_Manager {
 				$this->check_prompt_completion( $job_data );
 			}
 
-			// Don't check email action here - it will be checked after all jobs are processed
-			LLMVM_Logger::log( 'Job completed, email check will happen after all jobs are processed', array( 'user_id' => $user_id ) );
-
 		} catch ( Exception $e ) {
 			// Mark job as failed
 			$wpdb->update(
@@ -775,6 +779,7 @@ class LLMVM_Queue_Manager {
 		// Perform comparison if expected answer is provided
 		$expected_answer = $job_data['expected_answer'] ?? '';
 		$comparison_score = null;
+		$comparison_failed = 0; // Initialize comparison_failed
 		
 		if ( ! empty( $expected_answer ) && ! empty( $answer ) ) {
 			LLMVM_Logger::log( 'Starting comparison', array(
@@ -817,6 +822,11 @@ class LLMVM_Queue_Manager {
 		// Add result to current run results for email reporting using database
 		// Use batch_run_id if available, otherwise use prompt_id
 		$run_id = $job_data['batch_run_id'] ?? ( $user_id . '_' . $prompt_id );
+		
+		// Clean up run_id if it has extra quotes from JSON encoding
+		if ( is_string( $run_id ) && strlen( $run_id ) > 2 && $run_id[0] === '"' && $run_id[-1] === '"' ) {
+			$run_id = trim( $run_id, '"' );
+		}
 		
 		// Store result in database
 		global $wpdb;
@@ -991,7 +1001,7 @@ class LLMVM_Queue_Manager {
 		}
 
 		// Build and execute query
-		$query = "SELECT * FROM $table_name $where_clause ORDER BY created_at DESC LIMIT %d";
+		$query = "SELECT * FROM $table_name $where_clause ORDER BY id DESC LIMIT %d";
 		$where_values[] = $limit;
 
 		$jobs = $wpdb->get_results(
@@ -1134,7 +1144,10 @@ class LLMVM_Queue_Manager {
 		}
 
 		// Get all results for this prompt with the same expected answer
-		$results = LLMVM_Comparison::get_prompt_results( $prompt_id, $expected_models, $expected_answer );
+		// Get batch run ID from job data to filter by current run only
+		$batch_run_id = $job_data['batch_run_id'] ?? '';
+		
+		$results = LLMVM_Comparison::get_prompt_results( $prompt_id, $expected_models, $expected_answer, $batch_run_id );
 
 		if ( empty( $results ) ) {
 			LLMVM_Logger::log( 'No results found for prompt summary', array( 'prompt_id' => $prompt_id ) );
