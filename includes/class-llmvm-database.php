@@ -375,7 +375,7 @@ class LLMVM_Database {
 	 * @param int    $user_id  The user ID who owns this result.
 	 * @return int The ID of the inserted result, or 0 if insertion failed.
 	 */
-	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1, string $expected_answer = null, int $comparison_score = null ): int {
+	public static function insert_result( string $prompt, string $model, string $answer, int $user_id = 1, string $expected_answer = null, int $comparison_score = null, int $comparison_failed = 0 ): int {
 		global $wpdb;
 
 		// Log the insert attempt.
@@ -400,6 +400,7 @@ class LLMVM_Database {
 			'user_id'    => $user_id,
 			'expected_answer' => $expected_answer,
 			'comparison_score' => $comparison_score,
+			'comparison_failed' => $comparison_failed,
 		);
 
 		LLMVM_Logger::log( 'Insert data prepared', array( 'data' => $insert_data ) );
@@ -408,7 +409,7 @@ class LLMVM_Database {
 		$result = $wpdb->insert(
 			self::table_name(),
 			$insert_data,
-			array( '%s', '%s', '%s', '%s', '%d', '%s', '%d' )
+			array( '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d' )
 		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table operations require direct queries. $wpdb->insert() is the proper WordPress method for custom table inserts.
 
 		if ( false === $result ) {

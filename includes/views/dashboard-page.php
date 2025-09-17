@@ -45,6 +45,10 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
             text-align: center;
             min-width: 40px;
         }
+        .score-failed {
+            background-color: #dc3545;
+            color: white;
+        }
         .score-high {
             background: #28a745;
             color: white;
@@ -282,7 +286,11 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                         <td class="score column-score">
                             <?php 
                             $comparison_score = isset( $row['comparison_score'] ) ? (int) $row['comparison_score'] : null;
-                            if ( $comparison_score !== null ) {
+                            $comparison_failed = isset( $row['comparison_failed'] ) ? (int) $row['comparison_failed'] : 0;
+                            
+                            if ( $comparison_failed ) {
+                                echo '<span class="score-badge score-failed">Comparison Failed</span>';
+                            } elseif ( $comparison_score !== null ) {
                                 $score_class = $comparison_score >= 8 ? 'score-high' : ( $comparison_score >= 6 ? 'score-medium' : 'score-low' );
                                 echo '<span class="score-badge ' . esc_attr( $score_class ) . '">' . esc_html( (string) $comparison_score ) . '/10</span>';
                             } else {

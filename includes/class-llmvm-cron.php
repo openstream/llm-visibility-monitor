@@ -378,9 +378,18 @@ class LLMVM_Cron {
 		// Perform comparison if expected answer is provided
 		$expected_answer = isset( $prompt_item['expected_answer'] ) ? (string) $prompt_item['expected_answer'] : '';
 		$comparison_score = null;
+		$comparison_failed = 0;
 		
 		if ( ! empty( $expected_answer ) && ! empty( $answer ) ) {
-			$comparison_score = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt_text );
+			$comparison_result = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt_text );
+			
+			if ( is_array( $comparison_result ) && isset( $comparison_result['failed'] ) && $comparison_result['failed'] ) {
+				$comparison_score = null;
+				$comparison_failed = 1;
+			} else {
+				$comparison_score = $comparison_result;
+				$comparison_failed = 0;
+			}
 		}
 		
 		LLMVM_Logger::log( 'Inserting result', [ 
@@ -392,7 +401,7 @@ class LLMVM_Cron {
 			'comparison_score' => $comparison_score
 		] );
 		
-		$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id, $expected_answer, $comparison_score );
+		$result_id = LLMVM_Database::insert_result( $prompt_text, $resp_model, $answer, $user_id, $expected_answer, $comparison_score, $comparison_failed );
 		
 		// Track this result for the current run
 		if ( $result_id ) {

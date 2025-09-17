@@ -782,10 +782,21 @@ class LLMVM_Queue_Manager {
 				'answer_length' => strlen( $answer ),
 				'prompt_length' => strlen( $prompt )
 			) );
-			$comparison_score = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt );
-			LLMVM_Logger::log( 'Comparison completed', array(
-				'comparison_score' => $comparison_score
-			) );
+			$comparison_result = LLMVM_Comparison::compare_response( $answer, $expected_answer, $prompt );
+			
+			if ( is_array( $comparison_result ) && isset( $comparison_result['failed'] ) && $comparison_result['failed'] ) {
+				$comparison_score = null;
+				$comparison_failed = 1;
+				LLMVM_Logger::log( 'Comparison failed', array(
+					'reason' => $comparison_result['reason'] ?? 'Unknown error'
+				) );
+			} else {
+				$comparison_score = $comparison_result;
+				$comparison_failed = 0;
+				LLMVM_Logger::log( 'Comparison completed', array(
+					'comparison_score' => $comparison_score
+				) );
+			}
 		} else {
 			LLMVM_Logger::log( 'Skipping comparison', array(
 				'expected_answer_empty' => empty( $expected_answer ),
@@ -796,7 +807,7 @@ class LLMVM_Queue_Manager {
 		
 		// Store result in database
 		$db_insert_start = microtime( true );
-		$result_id = LLMVM_Database::insert_result( $prompt, $resp_model, $answer, $user_id, $expected_answer, $comparison_score );
+		$result_id = LLMVM_Database::insert_result( $prompt, $resp_model, $answer, $user_id, $expected_answer, $comparison_score, $comparison_failed );
 		$db_insert_time = microtime( true ) - $db_insert_start;
 		
 		if ( ! $result_id ) {

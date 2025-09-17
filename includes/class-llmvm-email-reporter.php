@@ -430,6 +430,11 @@ class LLMVM_Email_Reporter {
             min-width: 40px;
         }
         
+        .score-failed {
+            background-color: #dc3545;
+            color: white;
+        }
+        
         .score-high {
             background: #28a745;
             color: white;
@@ -891,7 +896,13 @@ class LLMVM_Email_Reporter {
                 // Add comparison score cell if we have comparison scores
                 if ( $has_comparison_scores ) {
                     $comparison_score = isset( $result['comparison_score'] ) ? (int) $result['comparison_score'] : null;
-                    if ( $comparison_score !== null ) {
+                    $comparison_failed = isset( $result['comparison_failed'] ) ? (int) $result['comparison_failed'] : 0;
+                    
+                    if ( $comparison_failed ) {
+                        $html .= '<td class="score-col" data-label="Score">
+                            <span class="score-badge score-failed">Comparison Failed</span>
+                        </td>';
+                    } elseif ( $comparison_score !== null ) {
                         $score_class = $comparison_score >= 8 ? 'score-high' : ( $comparison_score >= 6 ? 'score-medium' : 'score-low' );
                         $html .= '<td class="score-col" data-label="Score">
                             <span class="score-badge ' . $score_class . '">' . esc_html( (string) $comparison_score ) . '/10</span>

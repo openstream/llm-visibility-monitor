@@ -65,7 +65,11 @@ class LLMVM_Comparison {
 		
 		if ( $comparison_result === null ) {
 			LLMVM_Logger::log( 'Comparison model call failed' );
-			return null;
+			return array(
+				'score' => null,
+				'failed' => true,
+				'reason' => 'Comparison model call failed'
+			);
 		}
 		
 		// Extract score from the response
