@@ -329,7 +329,7 @@ class LLMVM_Cron {
 	 * @param int    $priority Job priority.
 	 * @return int|false Job ID on success, false on failure.
 	 */
-	private function queue_llm_request( string $api_key, string $prompt, string $model, int $user_id, string $prompt_id = '', int $priority = 0, bool $is_batch_run = false, string $expected_answer = '' ) {
+	private function queue_llm_request( string $api_key, string $prompt, string $model, int $user_id, string $prompt_id = '', int $priority = 0, bool $is_batch_run = false, string $expected_answer = '', string $run_id = '' ) {
 		if ( ! class_exists( 'LLMVM_Queue_Manager' ) ) {
 			return false;
 		}
@@ -344,6 +344,7 @@ class LLMVM_Cron {
 			'prompt_id'   => $prompt_id,
 			'is_batch_run' => $is_batch_run,
 			'expected_answer' => $expected_answer,
+			'batch_run_id' => $run_id, // Use run_id as batch_run_id for filtering
 		);
 
 		return $queue_manager->add_job( 'llm_request', $job_data, $priority );
@@ -640,12 +641,16 @@ class LLMVM_Cron {
 		// Track results from this run
 		$current_run_results = [];
 
+		// Generate a unique run ID for this single prompt run
+		$single_run_id = $prompt_id . '_single_' . time() . '_' . wp_generate_password( 8, false );
+
 		// Queue system is always enabled
 		$queued_jobs = [];
 		
 		LLMVM_Logger::log( 'Single prompt processing', array( 
 			'prompt_id' => $prompt_id, 
-			'prompt_models_count' => count( $prompt_models )
+			'prompt_models_count' => count( $prompt_models ),
+			'single_run_id' => $single_run_id
 		) );
 
 		// Process each model for this prompt
@@ -672,7 +677,8 @@ class LLMVM_Cron {
 				$prompt_id,
 				0, // Normal priority
 				false, // is_batch_run for single prompt
-				$target_prompt['expected_answer'] ?? ''
+				$target_prompt['expected_answer'] ?? '',
+				$single_run_id // Pass the single run ID for filtering
 			);
 			
 			if ( $job_id ) {

@@ -220,8 +220,25 @@ class LLMVM_Queue_Manager {
 			// Store the batch run ID in job data for future reference
 			$job_data['batch_run_id'] = $run_id;
 		} else {
-			// For single prompt runs, use prompt_id
-			$run_id = $user_id . '_' . $prompt_id;
+			// For single prompt runs, check if a run_id was provided
+			if ( ! empty( $job_data['batch_run_id'] ) ) {
+				// Use the provided run_id (from single prompt run)
+				$run_id = $job_data['batch_run_id'];
+				LLMVM_Logger::log( 'Using provided single run ID', array(
+					'user_id' => $user_id,
+					'prompt_id' => $prompt_id,
+					'run_id' => $run_id
+				) );
+			} else {
+				// Fallback to prompt_id for backward compatibility
+				$run_id = $user_id . '_' . $prompt_id;
+				$job_data['batch_run_id'] = $run_id;
+				LLMVM_Logger::log( 'Using fallback run ID', array(
+					'user_id' => $user_id,
+					'prompt_id' => $prompt_id,
+					'run_id' => $run_id
+				) );
+			}
 		}
 		
 		// Only clear results if this is a new run (different prompt)
