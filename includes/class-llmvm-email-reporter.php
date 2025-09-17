@@ -1600,17 +1600,18 @@ class LLMVM_Email_Reporter {
             $html .= '</div>';
         }
 
-        // Add scoring legend
-        $html .= '
-        <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 Scoring Legend</h4>
-            <div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
-                <strong>0:</strong> Expected answer not mentioned at all<br>
-                <strong>1-3:</strong> Expected answer mentioned briefly or incorrectly<br>
-                <strong>4-7:</strong> Expected answer mentioned correctly but not prominently<br>
-                <strong>8-10:</strong> Expected answer mentioned correctly and prominently
-            </div>
-        </div>';
+		// Add scoring legend
+		$html .= '
+		<div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px;">
+			<h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 Scoring Legend</h4>
+			<div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
+				<strong>0:</strong> Expected answer not mentioned at all<br>
+				<strong>1-3:</strong> Expected answer mentioned briefly or incorrectly<br>
+				<strong>4-7:</strong> Expected answer mentioned correctly but not prominently<br>
+				<strong>8-10:</strong> Expected answer mentioned correctly and prominently<br>
+				<em style="color: #868e96; font-size: 10px; margin-top: 4px; display: block;">Note: This scoring system is being fine-tuned based on user feedback.</em>
+			</div>
+		</div>';
 
         $html .= '</div>';
 

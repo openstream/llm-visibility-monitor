@@ -468,7 +468,8 @@ if ( ! empty( $prompt_summaries ) ) :
             <strong>0:</strong> <?php echo esc_html__( 'Expected answer not mentioned at all', 'llm-visibility-monitor' ); ?><br>
             <strong>1-3:</strong> <?php echo esc_html__( 'Expected answer mentioned briefly or incorrectly', 'llm-visibility-monitor' ); ?><br>
             <strong>4-7:</strong> <?php echo esc_html__( 'Expected answer mentioned correctly but not prominently', 'llm-visibility-monitor' ); ?><br>
-            <strong>8-10:</strong> <?php echo esc_html__( 'Expected answer mentioned correctly and prominently', 'llm-visibility-monitor' ); ?>
+            <strong>8-10:</strong> <?php echo esc_html__( 'Expected answer mentioned correctly and prominently', 'llm-visibility-monitor' ); ?><br>
+            <em style="color: #868e96; font-size: 10px; margin-top: 4px; display: block;"><?php echo esc_html__( 'Note: This scoring system is being fine-tuned based on user feedback.', 'llm-visibility-monitor' ); ?></em>
         </div>
     </div>
 </div>

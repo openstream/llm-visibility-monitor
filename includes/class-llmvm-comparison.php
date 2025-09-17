@@ -295,10 +295,11 @@ class LLMVM_Comparison {
 		}
 
 		$summary_prompt .= "Please provide a concise 2-3 sentence summary focusing on:\n";
-		$summary_prompt .= "- How many responses actually mention the expected answer vs. those that don't\n";
-		$summary_prompt .= "- Whether responses that don't mention the expected answer should be considered poor matches (regardless of their general quality)\n";
-		$summary_prompt .= "- Overall assessment emphasizing exact entity matching over general response quality\n\n";
-		$summary_prompt .= "Note: A response that doesn't mention the expected answer should be considered a poor match, even if it provides good alternative information.\n\n";
+		$summary_prompt .= "- How many responses successfully mention the expected answer (celebrate any mentions as positive results)\n";
+		$summary_prompt .= "- Overall assessment with a balanced, constructive tone\n";
+		$summary_prompt .= "- If most responses mention the expected answer, highlight this as a strong performance\n";
+		$summary_prompt .= "- If some responses don't mention it, note this neutrally without calling them 'poor' or 'bad'\n\n";
+		$summary_prompt .= "Use an encouraging, professional tone that focuses on what worked well. Any mention of the expected answer should be considered a positive result.\n\n";
 		$summary_prompt .= "Keep the summary professional and informative for email reports. **Important: Respond in the same language as the original prompt.**";
 
 		return $summary_prompt;
