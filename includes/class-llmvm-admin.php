@@ -1050,6 +1050,8 @@ class LLMVM_Admin {
 
     /** AJAX handler for getting queue status */
     public function ajax_get_queue_status(): void {
+        $start_time = microtime( true );
+        
         if ( ! current_user_can( 'llmvm_view_dashboard' ) ) {
             wp_die( esc_html__( 'Unauthorized', 'llm-visibility-monitor' ) );
         }
@@ -1065,9 +1067,9 @@ class LLMVM_Admin {
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can( 'llmvm_manage_settings' );
         
-        // Get queue jobs (filtered by user if not admin)
+        // Get queue jobs (filtered by user if not admin) - limit to 20 for better performance
         $user_filter = $is_admin ? null : $current_user_id;
-        $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 50 );
+        $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 20 );
 
         // Calculate time ago for each job (using server time for accurate calculation)
         foreach ( $queue_jobs as &$job ) {
@@ -1090,6 +1092,17 @@ class LLMVM_Admin {
                 $job['time_ago'] = $days . ' day' . ( $days > 1 ? 's' : '' ) . ' ago';
             }
         }
+
+        $total_time = microtime( true ) - $start_time;
+        
+        // Log performance for debugging
+        LLMVM_Logger::log( 'Queue status AJAX response', array(
+            'user_id' => $current_user_id,
+            'is_admin' => $is_admin,
+            'jobs_count' => count( $queue_jobs ),
+            'response_time_ms' => round( $total_time * 1000, 2 ),
+            'status' => $queue_status
+        ) );
 
         wp_send_json_success( array(
             'status' => $queue_status,

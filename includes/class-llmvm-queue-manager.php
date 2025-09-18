@@ -302,6 +302,9 @@ class LLMVM_Queue_Manager {
 			'insert_id' => $job_id
 		) );
 
+		// Trigger immediate queue processing for better responsiveness
+		wp_schedule_single_event( time(), 'llmvm_process_queue' );
+
 		return $job_id;
 	}
 

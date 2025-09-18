@@ -462,10 +462,24 @@ foreach ( $queue_jobs as &$job ) {
 window.llmvm_is_admin = <?php echo $is_admin ? 'true' : 'false'; ?>;
 
 jQuery(document).ready(function($) {
-    // Auto-refresh every 30 seconds
+    // Auto-refresh every 10 seconds (faster for better UX)
     setInterval(function() {
         refreshQueueStatus();
-    }, 30000);
+    }, 10000);
+    
+    // Check if we just submitted jobs (from redirect with llmvm_queued=1)
+    var urlParams = new URLSearchParams(window.location.search);
+    var justQueued = urlParams.get('llmvm_queued') === '1';
+    
+    if (justQueued) {
+        // Wait 2 seconds for jobs to be queued, then refresh
+        setTimeout(function() {
+            refreshQueueStatus();
+        }, 2000);
+    } else {
+        // Immediate refresh on page load to catch any new jobs
+        refreshQueueStatus();
+    }
 
     // Manual refresh button
     $('#llmvm-refresh-queue').on('click', function() {
@@ -487,13 +501,20 @@ jQuery(document).ready(function($) {
                 action: 'llmvm_get_queue_status',
                 nonce: '<?php echo wp_create_nonce( 'llmvm_queue_nonce' ); ?>'
             },
+            timeout: 10000, // 10 second timeout
             success: function(response) {
                 if (response.success) {
                     updateQueueDisplay(response.data);
+                } else {
+                    console.log('Queue status refresh failed:', response.data);
                 }
             },
-            error: function() {
-                console.log('Failed to refresh queue status');
+            error: function(xhr, status, error) {
+                console.log('Queue status refresh error:', status, error);
+                // Show user-friendly message
+                if (status === 'timeout') {
+                    console.log('Queue refresh timed out - this may indicate server performance issues');
+                }
             }
         });
     }
