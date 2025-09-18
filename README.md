@@ -152,6 +152,15 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.14.0 - 2025-09-18
+
+#### Email Configuration (New)
+- **Custom From Address**: Added admin-only setting to configure email "from" address for all WordPress emails
+- **Global Email Control**: Setting affects plugin emails, password resets, user notifications, and all WordPress system emails
+- **Site Name Integration**: Uses WordPress site title as the "from" name instead of "WordPress"
+- **Settings Location**: Available in Settings → LLM Visibility Monitor (admin-only access)
+- **Fallback Behavior**: If no custom address is configured, WordPress uses its default behavior
+
 ### 0.13.0 - 2025-09-17
 
 #### Comparison Feature (New)

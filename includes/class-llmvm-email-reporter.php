@@ -15,6 +15,72 @@ class LLMVM_Email_Reporter {
     public function hooks(): void {
         // Send email report after each cron run
         add_action( 'llmvm_run_completed', [ $this, 'send_report_after_run' ], 20 );
+        
+        // Set from address and name for all WordPress emails
+        add_filter( 'wp_mail_from', [ $this, 'set_wp_mail_from' ] );
+        add_filter( 'wp_mail_from_name', [ $this, 'set_wp_mail_from_name' ] );
+    }
+
+    /**
+     * Get the configured from address for emails.
+     *
+     * @return string The from address or empty string if not configured.
+     */
+    private function get_from_address(): string {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+
+        $from_address = isset( $options['email_from_address'] ) ? (string) $options['email_from_address'] : '';
+        
+        // If no custom from address is configured, return empty string to use WordPress default
+        if ( empty( $from_address ) ) {
+            return '';
+        }
+
+        // Validate the email address
+        if ( ! is_email( $from_address ) ) {
+            LLMVM_Logger::log( 'Invalid from address configured', [ 'from_address' => $from_address ] );
+            return '';
+        }
+
+        return $from_address;
+    }
+
+    /**
+     * Set the from address for all WordPress emails.
+     *
+     * @param string $from_email The current from email.
+     * @return string The configured from email or the original if not configured.
+     */
+    public function set_wp_mail_from( string $from_email ): string {
+        $configured_from = $this->get_from_address();
+        
+        // If no custom from address is configured, use the original
+        if ( empty( $configured_from ) ) {
+            return $from_email;
+        }
+
+        return $configured_from;
+    }
+
+    /**
+     * Set the from name for all WordPress emails.
+     *
+     * @param string $from_name The current from name.
+     * @return string The site name or the original if no custom from address is configured.
+     */
+    public function set_wp_mail_from_name( string $from_name ): string {
+        $configured_from = $this->get_from_address();
+        
+        // If no custom from address is configured, use the original name
+        if ( empty( $configured_from ) ) {
+            return $from_name;
+        }
+
+        // Use the WordPress site title as the from name
+        return get_bloginfo( 'name' );
     }
 
     /**
@@ -53,7 +119,10 @@ class LLMVM_Email_Reporter {
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-        LLMVM_Logger::log( 'Limit notification: sending', [ 'to' => $recipient_email, 'user_id' => $user_id ] );
+        
+        // From address and name are handled by global filters
+        $from_address = $this->get_from_address();
+        LLMVM_Logger::log( 'Limit notification: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'from' => $from_address ] );
         
         $sent = wp_mail( $recipient_email, $subject, $message, $headers );
 
@@ -168,7 +237,10 @@ class LLMVM_Email_Reporter {
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ) ] );
+        
+        // From address and name are handled by global filters
+        $from_address = $this->get_from_address();
+        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ), 'from' => $from_address ] );
         
         $sent = wp_mail( $recipient_email, $subject, $message, $headers );
 

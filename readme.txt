@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.13.0
+Stable tag: 0.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,13 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.14.0 - 2025-09-18 =
+* **Email Configuration**: Added admin-only setting to configure custom "from" address for all WordPress emails
+* **Global Email Control**: Setting affects plugin emails, password resets, user notifications, and all WordPress system emails
+* **Site Name Integration**: Uses WordPress site title as the "from" name instead of "WordPress"
+* **Settings Location**: Available in Settings → LLM Visibility Monitor (admin-only access)
+* **Fallback Behavior**: If no custom address is configured, WordPress uses its default behavior
 
 = 0.13.0 - 2025-09-17 =
 * **Major Feature**: LLM Response Comparison System
