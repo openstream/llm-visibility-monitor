@@ -740,6 +740,10 @@ msgstr "Hier klicken, um einen neuen Prompt hinzuzufügen..."
 msgid "Web Search"
 msgstr "Web-Suche"
 
+#: includes/views/prompts-page.php
+msgid "Optional: Enter the expected answer for comparison scoring..."
+msgstr "Optional: Erwartete Antwort für Vergleichsbewertung eingeben..."
+
 
 
 
