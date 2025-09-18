@@ -596,5 +596,33 @@ msgstr "Nächste Cron-Ausführung:"
 msgid "No prompts found."
 msgstr "Keine Prompts gefunden."
 
+#: includes/class-llmvm-admin.php
+msgid "Welcome to LLM Visibility Monitor"
+msgstr "Willkommen beim LLM Visibility Monitor"
+
+#: includes/class-llmvm-admin.php
+msgid "Manage your LLM prompts and monitor their visibility across different models."
+msgstr "Verwalten Sie Ihre LLM-Prompts und überwachen Sie deren Sichtbarkeit über verschiedene Modelle."
+
+#: includes/class-llmvm-admin.php
+msgid "View Results"
+msgstr "Ergebnisse anzeigen"
+
+#: includes/class-llmvm-admin.php
+msgid "Queue Status"
+msgstr "Warteschlangen-Status"
+
+#: includes/views/prompts-page.php
+msgid "Expected Answer"
+msgstr "Erwartete Antwort"
+
+#: includes/views/prompts-page.php
+msgid "Expected Answer:"
+msgstr "Erwartete Antwort:"
+
+#: includes/views/queue-page.php
+msgid "LLM Queue Status"
+msgstr "LLM-Warteschlangen-Status"
+
 
 
