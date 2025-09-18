@@ -469,6 +469,15 @@ if ( $is_admin ) {
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="llmvm-new-prompt-expected-answer"><?php echo esc_html__( 'Expected Answer', 'llm-visibility-monitor' ); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="llmvm-new-prompt-expected-answer" name="expected_answer" class="llmvm-prompt-textarea" rows="3" placeholder="<?php echo esc_attr__( 'Optional: Enter the expected answer for comparison scoring...', 'llm-visibility-monitor' ); ?>"></textarea>
+                            <p class="description"><?php echo esc_html__( 'Optional: Enter the expected answer to enable automatic comparison scoring (1-10 scale).', 'llm-visibility-monitor' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="llmvm-new-prompt-models"><?php echo esc_html__( 'Models', 'llm-visibility-monitor' ); ?></label>
                         </th>
                         <td>
@@ -490,15 +499,6 @@ if ( $is_admin ) {
                                 </label>
                                 <p class="description"><?php echo esc_html__( 'Uses OpenRouter web search plugin to find relevant information from the web (appends :online to models).', 'llm-visibility-monitor' ); ?></p>
                             </fieldset>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="llmvm-new-prompt-expected-answer"><?php echo esc_html__( 'Expected Answer', 'llm-visibility-monitor' ); ?></label>
-                        </th>
-                        <td>
-                            <textarea id="llmvm-new-prompt-expected-answer" name="expected_answer" class="llmvm-prompt-textarea" rows="3" placeholder="<?php echo esc_attr__( 'Optional: Enter the expected answer for comparison scoring...', 'llm-visibility-monitor' ); ?>"></textarea>
-                            <p class="description"><?php echo esc_html__( 'Optional: Enter the expected answer to enable automatic comparison scoring (1-10 scale).', 'llm-visibility-monitor' ); ?></p>
                         </td>
                     </tr>
                     <tr>
