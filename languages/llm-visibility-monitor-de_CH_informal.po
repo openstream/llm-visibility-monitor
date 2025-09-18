@@ -692,5 +692,46 @@ msgstr "Hinweis: Ausführungszeit = Antwortzeit + Queue Overhead. Queue Overhead
 msgid "Pending: %d, Processing: %d, Completed: %d, Failed: %d"
 msgstr "Ausstehend: %d, Verarbeitung: %d, Abgeschlossen: %d, Fehlgeschlagen: %d"
 
+#: includes/views/dashboard-page.php
+msgid "💬 Prompt Summaries"
+msgstr "💬 Prompt-Zusammenfassungen"
+
+#: includes/views/dashboard-page.php
+msgid "AI-generated summaries of how well responses matched expected answers."
+msgstr "KI-generierte Zusammenfassungen darüber, wie gut die Antworten den erwarteten Antworten entsprachen."
+
+#: includes/views/dashboard-page.php
+msgid "Expected:"
+msgstr "Erwartet:"
+
+#: includes/views/dashboard-page.php
+msgid "Range:"
+msgstr "Bereich:"
+
+#: includes/views/dashboard-page.php
+msgid "models"
+msgstr "Modelle"
+
+#: includes/views/dashboard-page.php
+msgid "Scoring Legend"
+msgstr "Bewertungslegende"
+
+#: includes/views/dashboard-page.php
+msgid "Expected answer not mentioned at all"
+msgstr "Erwartete Antwort überhaupt nicht erwähnt"
+
+#: includes/views/dashboard-page.php
+msgid "Expected answer mentioned briefly or incorrectly"
+msgstr "Erwartete Antwort kurz oder falsch erwähnt"
+
+#: includes/views/dashboard-page.php
+msgid "Expected answer mentioned correctly but not prominently"
+msgstr "Erwartete Antwort korrekt aber nicht prominent erwähnt"
+
+#: includes/views/dashboard-page.php
+msgid "Expected answer mentioned correctly and prominently"
+msgstr "Erwartete Antwort korrekt und prominent erwähnt"
+
+
 
 
