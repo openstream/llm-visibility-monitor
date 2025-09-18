@@ -132,6 +132,16 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Site Name Integration**: Uses WordPress site title as the "from" name instead of "WordPress"
 * **Settings Location**: Available in Settings → LLM Visibility Monitor (admin-only access)
 * **Fallback Behavior**: If no custom address is configured, WordPress uses its default behavior
+* **Queue Performance**: Faster queue refresh (10s), immediate processing triggers, enhanced AJAX performance
+* **UI/UX Improvements**: Reordered form fields, better queue interface, improved user experience
+* **German Translation**: Complete German localization for all admin interface elements
+* **Dashboard Translations**: All dashboard elements, status cards, and descriptions translated
+* **Queue Page Translations**: Queue status elements, table headers, and time metrics in German
+* **Prompts Page Translations**: All form elements, placeholders, and descriptions translated
+* **Scoring Legend**: Complete German translation of scoring system explanations
+* **Informal German**: Proper informal German (du-form) for de_CH_informal locale
+* **Technical Terms**: Kept terms like "Queue" in English for consistency
+* **All Locales**: Complete translations for de_DE, de_DE_formal, de_CH, and de_CH_informal
 
 = 0.13.0 - 2025-09-17 =
 * **Major Feature**: LLM Response Comparison System

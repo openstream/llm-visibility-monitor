@@ -161,6 +161,28 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 - **Settings Location**: Available in Settings → LLM Visibility Monitor (admin-only access)
 - **Fallback Behavior**: If no custom address is configured, WordPress uses its default behavior
 
+#### Queue Performance Improvements
+- **Faster Queue Refresh**: Reduced auto-refresh interval from 30 seconds to 10 seconds for better responsiveness
+- **Immediate Queue Processing**: Added automatic queue processing trigger when new jobs are added
+- **Enhanced AJAX Performance**: Optimized queue status AJAX calls with reduced job limits and better error handling
+- **Improved User Experience**: Added immediate refresh logic for better queue visibility after job submission
+- **Performance Logging**: Added detailed logging for queue AJAX response times and performance metrics
+
+#### UI/UX Enhancements
+- **Form Field Reordering**: Moved "Expected Answer" field to appear immediately after "Prompt Text" in Add New Prompt form
+- **Better Form Flow**: Improved logical grouping of related form fields for better user experience
+- **Enhanced Queue Interface**: Improved queue status display with better error handling and timeout management
+
+#### German Translation Completeness
+- **Comprehensive German Localization**: Added complete German translations for all admin interface elements
+- **Dashboard Translations**: Translated all dashboard elements including status cards, buttons, and descriptions
+- **Queue Page Translations**: Added German translations for all queue status elements, table headers, and time metrics
+- **Prompts Page Translations**: Translated all form elements, placeholders, and descriptions
+- **Scoring Legend Translation**: Complete German translation of the scoring system explanations
+- **Informal German Support**: Proper informal German (du-form) for de_CH_informal locale
+- **Technical Terms**: Kept technical terms like "Queue" in English for consistency and brevity
+- **All Locales Updated**: Complete translations for de_DE, de_DE_formal, de_CH, and de_CH_informal
+
 ### 0.13.0 - 2025-09-17
 
 #### Comparison Feature (New)
