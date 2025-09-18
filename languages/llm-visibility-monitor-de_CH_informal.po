@@ -744,6 +744,10 @@ msgstr "Web-Suche"
 msgid "Optional: Enter the expected answer for comparison scoring..."
 msgstr "Optional: Erwartete Antwort für Vergleichsbewertung eingeben..."
 
+#: includes/views/prompts-page.php
+msgid "Optional: Enter the expected answer to enable automatic comparison scoring (1-10 scale)."
+msgstr "Optional: Erwartete Antwort eingeben, um automatische Vergleichsbewertung (1-10 Skala) zu aktivieren."
+
 
 
 
