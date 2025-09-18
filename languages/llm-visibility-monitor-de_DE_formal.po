@@ -624,5 +624,73 @@ msgstr "Erwartete Antwort:"
 msgid "LLM Queue Status"
 msgstr "LLM-Warteschlangen-Status"
 
+#: includes/views/queue-page.php
+msgid "Pending:"
+msgstr "Ausstehend:"
+
+#: includes/views/queue-page.php
+msgid "Processing:"
+msgstr "Verarbeitung:"
+
+#: includes/views/queue-page.php
+msgid "Completed:"
+msgstr "Abgeschlossen:"
+
+#: includes/views/queue-page.php
+msgid "Failed:"
+msgstr "Fehlgeschlagen:"
+
+#: includes/views/queue-page.php
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+#: includes/views/queue-page.php
+msgid "Recent Jobs"
+msgstr "Aktuelle Jobs"
+
+#: includes/views/queue-page.php
+msgid "Response Time"
+msgstr "Antwortzeit"
+
+#: includes/views/queue-page.php
+msgid "Execution Time"
+msgstr "Ausführungszeit"
+
+#: includes/views/queue-page.php
+msgid "Queue Overhead"
+msgstr "Warteschlangen-Overhead"
+
+#: includes/views/queue-page.php
+msgid "Overhead Breakdown"
+msgstr "Overhead-Aufschlüsselung"
+
+#: includes/views/queue-page.php
+msgid "Time Metrics Explained:"
+msgstr "Zeitmetriken erklärt:"
+
+#: includes/views/queue-page.php
+msgid "How long the OpenRouter API took to respond (pure API call time)"
+msgstr "Wie lange die OpenRouter API für die Antwort benötigte (reine API-Aufrufzeit)"
+
+#: includes/views/queue-page.php
+msgid "Total time from job creation to completion (includes queue processing, database operations, etc.)"
+msgstr "Gesamtzeit von der Job-Erstellung bis zur Fertigstellung (einschließlich Warteschlangen-Verarbeitung, Datenbankoperationen, etc.)"
+
+#: includes/views/queue-page.php
+msgid "Time spent in queue processing (execution time - response time)"
+msgstr "Zeit für die Warteschlangen-Verarbeitung (Ausführungszeit - Antwortzeit)"
+
+#: includes/views/queue-page.php
+msgid "Shows queue wait time vs processing time, or API/DB/Job timing details"
+msgstr "Zeigt Warteschlangen-Wartezeit vs. Verarbeitungszeit oder API/DB/Job-Zeitdetails"
+
+#: includes/views/queue-page.php
+msgid "Note: Execution time = Response Time + Queue Overhead. Queue Overhead includes DB operations, job management, and other processing."
+msgstr "Hinweis: Ausführungszeit = Antwortzeit + Warteschlangen-Overhead. Warteschlangen-Overhead umfasst DB-Operationen, Job-Management und andere Verarbeitung."
+
+#: includes/class-llmvm-admin.php
+msgid "Pending: %d, Processing: %d, Completed: %d, Failed: %d"
+msgstr "Ausstehend: %d, Verarbeitung: %d, Abgeschlossen: %d, Fehlgeschlagen: %d"
+
 
 
