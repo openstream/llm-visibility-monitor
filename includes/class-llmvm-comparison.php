@@ -109,7 +109,7 @@ class LLMVM_Comparison {
 	 */
 	private static function build_comparison_prompt( string $actual_response, string $expected_answer, string $original_prompt ): string {
 		return sprintf(
-			"Rate how well this response matches the expected answer. Respond with only a number 0-10.\n\nResponse: %s\nExpected: %s\n\n0=not mentioned, 10=perfectly mentioned\n\nScore:",
+			"Rate how well this response matches the expected answer. Respond with ONLY a number from 0-10, nothing else.\n\nResponse: %s\nExpected: %s\n\n0=not mentioned, 10=perfectly mentioned\n\nScore:",
 			$actual_response,
 			$expected_answer
 		);
@@ -168,8 +168,8 @@ class LLMVM_Comparison {
 		// Clean the response
 		$response = trim( $response );
 		
-		// Look for a number between 0 and 10
-		if ( preg_match( '/\b([0-9]|10)\b/', $response, $matches ) ) {
+		// Look for a number between 0 and 10 (improved regex to handle 10 properly)
+		if ( preg_match( '/\b(10|[0-9])\b/', $response, $matches ) ) {
 			$score = (int) $matches[1];
 			
 			// Ensure score is within valid range
@@ -186,8 +186,23 @@ class LLMVM_Comparison {
 			return $score;
 		}
 		
+		// Try to find numbers at the beginning of the response (common pattern)
+		if ( preg_match( '/^(\d+)/', $response, $matches ) ) {
+			$score = (int) $matches[1];
+			$score = max( 0, min( 10, $score ) );
+			return $score;
+		}
+		
+		// Try to find numbers at the end of the response (common pattern)
+		if ( preg_match( '/(\d+)$/', $response, $matches ) ) {
+			$score = (int) $matches[1];
+			$score = max( 0, min( 10, $score ) );
+			return $score;
+		}
+		
 		LLMVM_Logger::log( 'Could not extract valid score from comparison response', array(
-			'response' => $response
+			'response' => $response,
+			'response_length' => strlen( $response )
 		) );
 		
 		return null;
