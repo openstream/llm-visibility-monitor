@@ -114,7 +114,7 @@ class LLMVM_Email_Reporter {
         $usage = LLMVM_Usage_Manager::get_usage_summary( $user_id );
         
         // Prepare email content
-        $subject = sprintf( '[%s] LLM Visibility Monitor - Usage Limit Reached', get_bloginfo( 'name' ) );
+        $subject = sprintf( '[%s] Usage Limit Reached', get_bloginfo( 'name' ) );
         $message = $this->generate_limit_notification_email( $usage, $user );
 
         // Send email
@@ -232,7 +232,7 @@ class LLMVM_Email_Reporter {
         }
 
         // Prepare email content
-        $subject = sprintf( '[%s] LLM Visibility Monitor - Run Results', get_bloginfo( 'name' ) );
+        $subject = sprintf( '[%s] Run Results', get_bloginfo( 'name' ) );
         $message = $this->generate_report_email( $results_to_send, $email_type, $current_user );
 
         // Send email
