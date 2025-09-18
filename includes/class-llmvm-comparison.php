@@ -144,7 +144,7 @@ class LLMVM_Comparison {
 			'trimmed_length' => strlen( trim( $score_text ) )
 		) );
 		
-		if ( $status >= 400 || empty( $score_text ) ) {
+		if ( $status >= 400 || $score_text === '' || $score_text === null ) {
 			LLMVM_Logger::log( 'Comparison model call failed', array(
 				'status' => $status,
 				'error' => $error,
