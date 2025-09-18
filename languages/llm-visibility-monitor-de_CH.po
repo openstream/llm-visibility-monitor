@@ -732,6 +732,14 @@ msgstr "Erwartete Antwort korrekt aber nicht prominent erwähnt"
 msgid "Expected answer mentioned correctly and prominently"
 msgstr "Erwartete Antwort korrekt und prominent erwähnt"
 
+#: includes/views/prompts-page.php
+msgid "Click here to add a new prompt..."
+msgstr "Hier klicken, um einen neuen Prompt hinzuzufügen..."
+
+#: includes/views/prompts-page.php
+msgid "Web Search"
+msgstr "Web-Suche"
+
 
 
 

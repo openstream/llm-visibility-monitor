@@ -602,7 +602,7 @@ msgstr "Willkommen beim LLM Visibility Monitor"
 
 #: includes/class-llmvm-admin.php
 msgid "Manage your LLM prompts and monitor their visibility across different models."
-msgstr "Verwalten Sie Ihre LLM-Prompts und überwachen Sie deren Sichtbarkeit über verschiedene Modelle."
+msgstr "Verwalte deine LLM-Prompts und überwache deren Sichtbarkeit über verschiedene Modelle."
 
 #: includes/class-llmvm-admin.php
 msgid "View Results"
@@ -731,6 +731,14 @@ msgstr "Erwartete Antwort korrekt aber nicht prominent erwähnt"
 #: includes/views/dashboard-page.php
 msgid "Expected answer mentioned correctly and prominently"
 msgstr "Erwartete Antwort korrekt und prominent erwähnt"
+
+#: includes/views/prompts-page.php
+msgid "Click here to add a new prompt..."
+msgstr "Hier klicken, um einen neuen Prompt hinzuzufügen..."
+
+#: includes/views/prompts-page.php
+msgid "Web Search"
+msgstr "Web-Suche"
 
 
 
