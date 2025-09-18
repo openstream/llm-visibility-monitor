@@ -622,7 +622,7 @@ msgstr "Erwartete Antwort:"
 
 #: includes/views/queue-page.php
 msgid "LLM Queue Status"
-msgstr "LLM-Warteschlangen-Status"
+msgstr "LLM Queue Status"
 
 #: includes/views/queue-page.php
 msgid "Pending:"
@@ -658,7 +658,7 @@ msgstr "Ausführungszeit"
 
 #: includes/views/queue-page.php
 msgid "Queue Overhead"
-msgstr "Warteschlangen-Overhead"
+msgstr "Queue Overhead"
 
 #: includes/views/queue-page.php
 msgid "Overhead Breakdown"
@@ -674,19 +674,19 @@ msgstr "Wie lange die OpenRouter API für die Antwort benötigte (reine API-Aufr
 
 #: includes/views/queue-page.php
 msgid "Total time from job creation to completion (includes queue processing, database operations, etc.)"
-msgstr "Gesamtzeit von der Job-Erstellung bis zur Fertigstellung (einschließlich Warteschlangen-Verarbeitung, Datenbankoperationen, etc.)"
+msgstr "Gesamtzeit von der Job-Erstellung bis zur Fertigstellung (einschließlich Queue-Verarbeitung, Datenbankoperationen, etc.)"
 
 #: includes/views/queue-page.php
 msgid "Time spent in queue processing (execution time - response time)"
-msgstr "Zeit für die Warteschlangen-Verarbeitung (Ausführungszeit - Antwortzeit)"
+msgstr "Zeit für die Queue-Verarbeitung (Ausführungszeit - Antwortzeit)"
 
 #: includes/views/queue-page.php
 msgid "Shows queue wait time vs processing time, or API/DB/Job timing details"
-msgstr "Zeigt Warteschlangen-Wartezeit vs. Verarbeitungszeit oder API/DB/Job-Zeitdetails"
+msgstr "Zeigt Queue-Wartezeit vs. Verarbeitungszeit oder API/DB/Job-Zeitdetails"
 
 #: includes/views/queue-page.php
 msgid "Note: Execution time = Response Time + Queue Overhead. Queue Overhead includes DB operations, job management, and other processing."
-msgstr "Hinweis: Ausführungszeit = Antwortzeit + Warteschlangen-Overhead. Warteschlangen-Overhead umfasst DB-Operationen, Job-Management und andere Verarbeitung."
+msgstr "Hinweis: Ausführungszeit = Antwortzeit + Queue Overhead. Queue Overhead umfasst DB-Operationen, Job-Management und andere Verarbeitung."
 
 #: includes/class-llmvm-admin.php
 msgid "Pending: %d, Processing: %d, Completed: %d, Failed: %d"
