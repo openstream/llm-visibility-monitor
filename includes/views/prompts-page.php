@@ -208,7 +208,14 @@ if ( $is_admin ) {
     padding: 20px;
     margin: 20px 0;
     box-shadow: 0 1px 1px rgba(0,0,0,.04);
-    max-width: 45%;
+    max-width: 50%;
+}
+
+/* Responsive width adjustments for Add New Prompt section */
+@media screen and (max-width: 1200px) {
+    .llmvm-add-prompt-container {
+        max-width: 75%;
+    }
 }
 
 /* Collapsible form styles */
