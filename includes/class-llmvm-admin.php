@@ -45,15 +45,44 @@ class LLMVM_Admin {
         $user_timezone_obj = new DateTimeZone( $user_timezone );
         $utc_datetime->setTimezone( $user_timezone_obj );
         
-        // Format the date
-        return $utc_datetime->format( 'Y-m-d H:i:s' );
+        // Get user's locale for proper language formatting
+        $user_locale = get_user_locale( $user_id );
+        $original_locale = get_locale();
+        
+        // Temporarily switch to user's locale for date formatting
+        if ( $user_locale !== $original_locale ) {
+            switch_to_locale( $user_locale );
+        }
+        
+        // Use WordPress's built-in date formatting that automatically adapts to language
+        // This will use appropriate date/time formats for each language
+        // Format: "September 21, 2025 at 11:00 AM" (English) or equivalent in other languages
+        $formatted_date = wp_date( 'F j, Y \a\t g:i A', $utc_datetime->getTimestamp() );
+        
+        // Restore original locale
+        if ( $user_locale !== $original_locale ) {
+            restore_previous_locale();
+        }
+        
+        return $formatted_date;
     }
 
     /**
      * Get the next cron execution time for display.
      */
-    public static function get_next_cron_execution_time( string $frequency = 'daily' ): string {
-        // Calculate next execution time based on frequency
+    public static function get_next_cron_execution_time( string $frequency = 'daily', string $prompt_id = '' ): string {
+        // If we have a prompt ID, get the actual scheduled time
+        if ( ! empty( $prompt_id ) ) {
+            $hook = 'llmvm_run_prompt_' . $prompt_id;
+            $next_run = wp_next_scheduled( $hook );
+            
+            if ( $next_run ) {
+                // Convert to user's timezone
+                return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ) );
+            }
+        }
+        
+        // Fallback: Calculate next execution time based on frequency (for new prompts)
         $now = time();
         
         switch ( $frequency ) {
@@ -88,6 +117,9 @@ class LLMVM_Admin {
 
         // Add Subscription menu item
         add_action( 'admin_menu', [ $this, 'add_subscription_menu' ], 1000 );
+        
+        // Cleanup orphaned cron jobs on admin init
+        add_action( 'admin_init', [ $this, 'cleanup_orphaned_cron_jobs' ] );
 
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
@@ -624,6 +656,100 @@ class LLMVM_Admin {
     }
 
     /**
+     * Show planned cron prompt executions for all users.
+     */
+    public function show_planned_cron_executions(): void {
+        $prompts = get_option( 'llmvm_prompts', [] );
+        
+        if ( empty( $prompts ) ) {
+            echo '<div class="notice notice-info"><p><strong>' . esc_html__( 'Planned Cron Executions:', 'llm-visibility-monitor' ) . '</strong> ';
+            echo esc_html__( 'No prompts scheduled for execution.', 'llm-visibility-monitor' );
+            echo '</p></div>';
+            return;
+        }
+
+        // Get all scheduled cron jobs for prompts
+        $scheduled_prompts = [];
+        foreach ( $prompts as $prompt ) {
+            $prompt_id = $prompt['id'];
+            $hook = 'llmvm_run_prompt_' . $prompt_id;
+            $next_run = wp_next_scheduled( $hook );
+            
+            if ( $next_run ) {
+                $scheduled_prompts[] = [
+                    'prompt' => $prompt,
+                    'next_run' => $next_run,
+                    'hook' => $hook
+                ];
+            }
+        }
+
+        if ( empty( $scheduled_prompts ) ) {
+            echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Planned Cron Executions:', 'llm-visibility-monitor' ) . '</strong> ';
+            echo esc_html__( 'No cron jobs scheduled for any prompts.', 'llm-visibility-monitor' );
+            echo '</p></div>';
+            return;
+        }
+
+        // Sort by next run time
+        usort( $scheduled_prompts, function( $a, $b ) {
+            return $a['next_run'] - $b['next_run'];
+        } );
+
+        echo '<div class="notice notice-info">';
+        echo '<p><strong>' . esc_html__( 'Planned Cron Executions:', 'llm-visibility-monitor' ) . '</strong></p>';
+        echo '<table class="widefat" style="margin-top: 10px;">';
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th>' . esc_html__( 'Prompt', 'llm-visibility-monitor' ) . '</th>';
+        echo '<th>' . esc_html__( 'User', 'llm-visibility-monitor' ) . '</th>';
+        echo '<th>' . esc_html__( 'Frequency', 'llm-visibility-monitor' ) . '</th>';
+        echo '<th>' . esc_html__( 'Next Execution', 'llm-visibility-monitor' ) . '</th>';
+        echo '<th>' . esc_html__( 'Models', 'llm-visibility-monitor' ) . '</th>';
+        echo '</tr>';
+        echo '</thead>';
+        echo '<tbody>';
+
+        foreach ( $scheduled_prompts as $scheduled ) {
+            $prompt = $scheduled['prompt'];
+            $next_run = $scheduled['next_run'];
+            
+            // Get user info
+            $user = get_user_by( 'id', $prompt['user_id'] );
+            $user_name = $user ? $user->display_name : sprintf( __( 'User ID: %d', 'llm-visibility-monitor' ), $prompt['user_id'] );
+            
+            // Format next execution time
+            $formatted_time = self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ), $prompt['user_id'] );
+            $relative_time = human_time_diff( $next_run );
+            
+            // Truncate prompt text if too long
+            $prompt_text = $prompt['text'];
+            if ( strlen( $prompt_text ) > 50 ) {
+                $prompt_text = substr( $prompt_text, 0, 47 ) . '...';
+            }
+            
+            // Format models
+            $models = is_array( $prompt['models'] ) ? implode( ', ', $prompt['models'] ) : $prompt['models'];
+            if ( strlen( $models ) > 30 ) {
+                $models = substr( $models, 0, 27 ) . '...';
+            }
+            
+            echo '<tr>';
+            echo '<td>' . esc_html( $prompt_text ) . '</td>';
+            echo '<td>' . esc_html( $user_name ) . '</td>';
+            echo '<td>' . esc_html( ucfirst( $prompt['cron_frequency'] ) ) . '</td>';
+            echo '<td>' . esc_html( $formatted_time ) . '<br><small>' . esc_html( sprintf( __( 'in %s', 'llm-visibility-monitor' ), $relative_time ) ) . '</small></td>';
+            echo '<td>' . esc_html( $models ) . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody>';
+        echo '</table>';
+        echo '<p><small>' . esc_html__( 'All times are displayed in the respective user\'s timezone.', 'llm-visibility-monitor' ) . '</small></p>';
+        echo '</div>';
+    }
+
+    /**
      * Render the queue concurrency field.
      */
     public function field_queue_concurrency(): void {
@@ -801,33 +927,12 @@ class LLMVM_Admin {
             $prompts = [];
         }
         
-        // Get current user info for filtering
-        $current_user_id = get_current_user_id();
-        $is_admin = current_user_can( 'llmvm_manage_settings' );
-        
-        // Filter prompts based on user role
-        $user_prompts = [];
-        $all_prompts = [];
-        
-        foreach ( $prompts as $prompt ) {
-            $prompt_user_id = isset( $prompt['user_id'] ) ? (int) $prompt['user_id'] : 1;
-            
-            // Always add to user_prompts if it belongs to current user
-            if ( $prompt_user_id === $current_user_id ) {
-                $user_prompts[] = $prompt;
-            }
-            
-            // Add to all_prompts if admin (for viewing all prompts)
-            if ( $is_admin ) {
-                $all_prompts[] = $prompt;
-            }
-        }
-        
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
             return;
         }
         $prompts_file = LLMVM_PLUGIN_DIR . 'includes/views/prompts-page.php';
         if ( is_file( $prompts_file ) && is_string( $prompts_file ) ) {
+            // Pass the prompts variable to the view
             include $prompts_file;
         }
     }
@@ -2080,6 +2185,9 @@ class LLMVM_Admin {
         // Unschedule cron job for deleted prompt
         $cron = new LLMVM_Cron();
         $cron->unschedule_prompt_cron( $id );
+        
+        // Verify cron cleanup was successful and retry if needed
+        $this->verify_and_cleanup_cron( $id );
 
         // Redirect back to the prompts page
         wp_safe_redirect( admin_url( 'tools.php?page=llmvm-prompts' ) );
@@ -2091,6 +2199,91 @@ class LLMVM_Admin {
         $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
         if ( ! wp_verify_nonce( $nonce, $action ) ) {
             wp_die( esc_html__( 'Invalid nonce', 'llm-visibility-monitor' ) );
+        }
+    }
+
+    /**
+     * Verify and cleanup cron jobs for deleted prompts.
+     *
+     * @param string $prompt_id The prompt ID to verify.
+     */
+    private function verify_and_cleanup_cron( string $prompt_id ): void {
+        $hook = 'llmvm_run_prompt_' . $prompt_id;
+        
+        // Check if cron job still exists
+        $next_scheduled = wp_next_scheduled( $hook );
+        
+        if ( $next_scheduled ) {
+            LLMVM_Logger::log( 'Cron job still exists after deletion, attempting cleanup', [
+                'prompt_id' => $prompt_id,
+                'hook' => $hook,
+                'next_scheduled' => gmdate( 'Y-m-d H:i:s', $next_scheduled )
+            ] );
+            
+            // Force clear the cron job
+            wp_clear_scheduled_hook( $hook );
+            
+            // Verify it's actually gone
+            $verify_scheduled = wp_next_scheduled( $hook );
+            if ( $verify_scheduled ) {
+                LLMVM_Logger::log( 'Failed to remove cron job after retry', [
+                    'prompt_id' => $prompt_id,
+                    'hook' => $hook,
+                    'next_scheduled' => gmdate( 'Y-m-d H:i:s', $verify_scheduled )
+                ] );
+            } else {
+                LLMVM_Logger::log( 'Successfully removed orphaned cron job', [
+                    'prompt_id' => $prompt_id,
+                    'hook' => $hook
+                ] );
+            }
+        }
+    }
+
+    /**
+     * Cleanup orphaned cron jobs that don't have corresponding prompts.
+     */
+    public function cleanup_orphaned_cron_jobs(): void {
+        // Only run this occasionally to avoid performance impact
+        $last_cleanup = get_transient( 'llmvm_last_cron_cleanup' );
+        if ( $last_cleanup && ( time() - $last_cleanup ) < 300 ) { // 5 minutes
+            return;
+        }
+        
+        set_transient( 'llmvm_last_cron_cleanup', time(), 300 );
+        
+        // Get all current prompts
+        $prompts = get_option( 'llmvm_prompts', [] );
+        $prompt_ids = array_column( $prompts, 'id' );
+        
+        // Get all LLM prompt cron jobs
+        $cron = _get_cron_array();
+        $orphaned_crons = [];
+        
+        foreach ( $cron as $timestamp => $hooks ) {
+            foreach ( $hooks as $hook => $events ) {
+                if ( strpos( $hook, 'llmvm_run_prompt_' ) === 0 ) {
+                    $prompt_id = str_replace( 'llmvm_run_prompt_', '', $hook );
+                    
+                    // If this prompt ID doesn't exist in the prompts array, it's orphaned
+                    if ( ! in_array( $prompt_id, $prompt_ids, true ) ) {
+                        $orphaned_crons[] = $hook;
+                    }
+                }
+            }
+        }
+        
+        // Remove orphaned cron jobs
+        if ( ! empty( $orphaned_crons ) ) {
+            LLMVM_Logger::log( 'Found orphaned cron jobs, cleaning up', [
+                'orphaned_crons' => $orphaned_crons,
+                'total_prompts' => count( $prompt_ids )
+            ] );
+            
+            foreach ( $orphaned_crons as $hook ) {
+                wp_clear_scheduled_hook( $hook );
+                LLMVM_Logger::log( 'Removed orphaned cron job', [ 'hook' => $hook ] );
+            }
         }
     }
 

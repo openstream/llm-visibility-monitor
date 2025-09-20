@@ -696,7 +696,7 @@ if ( $is_admin ) {
                                 </div>
                                 <div>
                                     <strong><?php echo esc_html__( 'Next cron execution:', 'llm-visibility-monitor' ); ?></strong>
-                                    <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time( $prompt['cron_frequency'] ?? 'daily' ) ); ?></span>
+                                    <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time( $prompt['cron_frequency'] ?? 'daily', $prompt['id'] ?? '' ) ); ?></span>
                                 </div>
                             </div>
                             <br><br>

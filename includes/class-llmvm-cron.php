@@ -124,6 +124,130 @@ class LLMVM_Cron {
 	}
 
 	/**
+	 * Calculate the next run time with distributed scheduling to avoid bottlenecks.
+	 *
+	 * @param string $frequency 'daily', 'weekly', or 'monthly'.
+	 * @param string $prompt_id The prompt ID for consistent scheduling.
+	 * @return int Unix timestamp for next run.
+	 */
+	private function calculate_distributed_run_time( string $frequency, string $prompt_id ): int {
+		$now = time();
+		
+		// Get all existing prompt cron jobs to avoid conflicts
+		$existing_times = $this->get_existing_cron_times( $frequency );
+		
+		// Generate a consistent but distributed time based on prompt ID
+		$hash = crc32( $prompt_id );
+		$hour_offset = abs( $hash ) % 12; // 0-11 hours offset from base time
+		$minute_offset = ( abs( $hash ) >> 8 ) % 60; // 0-59 minutes offset
+		
+		// Base time: 8:00 AM (avoiding 9:00 AM bottleneck)
+		$base_hour = 8;
+		$base_minute = 0;
+		
+		// Calculate distributed time
+		$distributed_hour = $base_hour + $hour_offset;
+		$distributed_minute = $base_minute + $minute_offset;
+		
+		// Ensure we stay within reasonable business hours (8 AM - 8 PM)
+		$distributed_hour = max( 8, min( 20, $distributed_hour ) );
+		
+		// Format time string
+		$time_string = sprintf( '%02d:%02d', $distributed_hour, $distributed_minute );
+		
+		switch ( $frequency ) {
+			case 'daily':
+				$next_run = strtotime( 'tomorrow ' . $time_string, $now );
+				break;
+			case 'weekly':
+				$next_run = strtotime( 'next monday ' . $time_string, $now );
+				break;
+			case 'monthly':
+				$next_run = strtotime( 'first day of next month ' . $time_string, $now );
+				break;
+			default:
+				$next_run = strtotime( 'tomorrow ' . $time_string, $now );
+		}
+		
+		// If this time conflicts with existing crons, find the next available slot
+		$next_run = $this->find_next_available_slot( $next_run, $existing_times, $frequency );
+		
+		LLMVM_Logger::log( 'Calculated distributed run time', [
+			'prompt_id' => $prompt_id,
+			'frequency' => $frequency,
+			'scheduled_time' => gmdate( 'Y-m-d H:i:s', $next_run ),
+			'hour_offset' => $hour_offset,
+			'minute_offset' => $minute_offset,
+			'distributed_hour' => $distributed_hour,
+			'distributed_minute' => $distributed_minute
+		] );
+		
+		return $next_run;
+	}
+
+	/**
+	 * Get existing cron times for a given frequency to avoid conflicts.
+	 *
+	 * @param string $frequency The cron frequency.
+	 * @return array Array of existing cron times.
+	 */
+	private function get_existing_cron_times( string $frequency ): array {
+		$existing_times = [];
+		$cron = _get_cron_array();
+		
+		foreach ( $cron as $timestamp => $hooks ) {
+			foreach ( $hooks as $hook => $events ) {
+				if ( strpos( $hook, 'llmvm_run_prompt_' ) === 0 ) {
+					foreach ( $events as $key => $event ) {
+						$event_frequency = $event['interval'] ?? 'single';
+						if ( $event_frequency === $frequency ) {
+							$existing_times[] = $timestamp;
+						}
+					}
+				}
+			}
+		}
+		
+		return $existing_times;
+	}
+
+	/**
+	 * Find the next available time slot that doesn't conflict with existing crons.
+	 *
+	 * @param int $proposed_time The proposed time.
+	 * @param array $existing_times Array of existing cron times.
+	 * @param string $frequency The cron frequency.
+	 * @return int The next available time.
+	 */
+	private function find_next_available_slot( int $proposed_time, array $existing_times, string $frequency ): int {
+		$min_interval = 15 * 60; // 15 minutes minimum between crons
+		$max_attempts = 48; // Try up to 48 different times (12 hours)
+		$attempt = 0;
+		
+		while ( $attempt < $max_attempts ) {
+			$conflict = false;
+			
+			foreach ( $existing_times as $existing_time ) {
+				if ( abs( $proposed_time - $existing_time ) < $min_interval ) {
+					$conflict = true;
+					break;
+				}
+			}
+			
+			if ( ! $conflict ) {
+				return $proposed_time;
+			}
+			
+			// Move to next 15-minute slot
+			$proposed_time += $min_interval;
+			$attempt++;
+		}
+		
+		// If we can't find a slot, return the original time
+		return $proposed_time;
+	}
+
+	/**
 	 * Schedule cron job for a specific prompt.
 	 *
 	 * @param string $prompt_id The prompt ID.
@@ -136,8 +260,8 @@ class LLMVM_Cron {
 		// Validate frequency
 		$frequency = in_array( $frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $frequency : 'daily';
 
-		// Calculate next run time
-		$next_run = $this->calculate_next_run_time( $frequency );
+		// Calculate next run time with distributed scheduling
+		$next_run = $this->calculate_distributed_run_time( $frequency, $prompt_id );
 
 		// Schedule the cron job with a unique hook for this prompt
 		$hook = 'llmvm_run_prompt_' . $prompt_id;

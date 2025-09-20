@@ -39,6 +39,11 @@ if ( ! defined( 'ABSPATH' ) ) {
     $admin->show_queue_status();
     ?>
 
+    <?php
+    // Show planned cron executions
+    $admin->show_planned_cron_executions();
+    ?>
+
     <?php if ( current_user_can( 'llmvm_manage_settings' ) ) : ?>
         <hr />
         

@@ -748,6 +748,43 @@ msgstr "Optional: Erwartete Antwort für Vergleichsbewertung eingeben..."
 msgid "Optional: Enter the expected answer to enable automatic comparison scoring (1-10 scale)."
 msgstr "Optional: Erwartete Antwort eingeben, um automatische Vergleichsbewertung (1-10 Skala) zu aktivieren."
 
+#: includes/class-llmvm-admin.php
+msgid "Planned Cron Executions:"
+msgstr "Geplante Cron-Ausführungen:"
+
+#: includes/class-llmvm-admin.php
+msgid "No prompts scheduled for execution."
+msgstr "Keine Prompts für die Ausführung geplant."
+
+#: includes/class-llmvm-admin.php
+msgid "No cron jobs scheduled for any prompts."
+msgstr "Keine Cron-Jobs für Prompts geplant."
+
+
+#: includes/class-llmvm-admin.php
+msgid "Frequency"
+msgstr "Häufigkeit"
+
+#: includes/class-llmvm-admin.php
+msgid "Next Execution"
+msgstr "Nächste Ausführung"
+
+#: includes/class-llmvm-admin.php
+msgid "Models"
+msgstr "Modelle"
+
+#: includes/class-llmvm-admin.php
+msgid "in %s"
+msgstr "in %s"
+
+#: includes/class-llmvm-admin.php
+msgid "All times are displayed in the respective user's timezone."
+msgstr "Alle Zeiten werden in der jeweiligen Benutzerzeitzone angezeigt."
+
+#: includes/class-llmvm-admin.php
+msgid "User ID: %d"
+msgstr "Benutzer-ID: %d"
+
 
 
 
