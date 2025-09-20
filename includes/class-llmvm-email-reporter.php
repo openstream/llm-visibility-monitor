@@ -136,10 +136,11 @@ class LLMVM_Email_Reporter {
         
         // Add BCC to admin if enabled
         $bcc_admin = $this->should_bcc_admin();
+        $bcc_emails = [];
         if ( $bcc_admin ) {
             $admin_email = get_option( 'admin_email' );
             if ( $admin_email && $admin_email !== $recipient_email ) {
-                $headers[] = 'Bcc: ' . $admin_email;
+                $bcc_emails[] = $admin_email;
                 LLMVM_Logger::log( 'Limit notification: BCC admin enabled', [ 'admin_email' => $admin_email ] );
             }
         }
@@ -148,7 +149,12 @@ class LLMVM_Email_Reporter {
         $from_address = $this->get_from_address();
         LLMVM_Logger::log( 'Limit notification: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'from' => $from_address, 'bcc_admin' => $bcc_admin ] );
         
-        $sent = wp_mail( $recipient_email, $subject, $message, $headers );
+        // Send email with proper BCC handling
+        if ( ! empty( $bcc_emails ) ) {
+            $sent = $this->send_email_with_bcc( $recipient_email, $subject, $message, $headers, $bcc_emails );
+        } else {
+            $sent = wp_mail( $recipient_email, $subject, $message, $headers );
+        }
 
         if ( $sent ) {
             LLMVM_Logger::log( 'Limit notification: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id ] );
@@ -264,12 +270,13 @@ class LLMVM_Email_Reporter {
         
         // Add BCC to admin if enabled (only for user emails, not admin emails)
         $bcc_admin = false;
+        $bcc_emails = [];
         if ( $email_type === 'user' ) {
             $bcc_admin = $this->should_bcc_admin();
             if ( $bcc_admin ) {
                 $admin_email = get_option( 'admin_email' );
                 if ( $admin_email && $admin_email !== $recipient_email ) {
-                    $headers[] = 'Bcc: ' . $admin_email;
+                    $bcc_emails[] = $admin_email;
                     LLMVM_Logger::log( 'Email report: BCC admin enabled', [ 'admin_email' => $admin_email ] );
                 }
             }
@@ -279,7 +286,12 @@ class LLMVM_Email_Reporter {
         $from_address = $this->get_from_address();
         LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ), 'from' => $from_address, 'bcc_admin' => $bcc_admin ] );
         
-        $sent = wp_mail( $recipient_email, $subject, $message, $headers );
+        // Send email with proper BCC handling
+        if ( ! empty( $bcc_emails ) ) {
+            $sent = $this->send_email_with_bcc( $recipient_email, $subject, $message, $headers, $bcc_emails );
+        } else {
+            $sent = wp_mail( $recipient_email, $subject, $message, $headers );
+        }
 
         if ( $sent ) {
             LLMVM_Logger::log( 'Email report: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type ] );
@@ -1738,5 +1750,39 @@ class LLMVM_Email_Reporter {
         $html .= '</div>';
 
         return $html;
+    }
+
+    /**
+     * Send email with proper BCC handling that doesn't expose BCC in headers.
+     *
+     * @param string $to Recipient email address.
+     * @param string $subject Email subject.
+     * @param string $message Email message.
+     * @param array $headers Email headers.
+     * @param array $bcc_emails Array of BCC email addresses.
+     * @return bool True if email was sent successfully, false otherwise.
+     */
+    private function send_email_with_bcc( string $to, string $subject, string $message, array $headers, array $bcc_emails ): bool {
+        // Send the main email to the recipient
+        $main_sent = wp_mail( $to, $subject, $message, $headers );
+        
+        if ( ! $main_sent ) {
+            LLMVM_Logger::log( 'Main email failed to send', [ 'to' => $to, 'subject' => $subject ] );
+            return false;
+        }
+        
+        // Send separate emails to BCC recipients
+        $bcc_sent = true;
+        foreach ( $bcc_emails as $bcc_email ) {
+            $bcc_sent = wp_mail( $bcc_email, $subject, $message, $headers ) && $bcc_sent;
+            
+            if ( ! $bcc_sent ) {
+                LLMVM_Logger::log( 'BCC email failed to send', [ 'bcc_email' => $bcc_email, 'subject' => $subject ] );
+            } else {
+                LLMVM_Logger::log( 'BCC email sent successfully', [ 'bcc_email' => $bcc_email, 'subject' => $subject ] );
+            }
+        }
+        
+        return $main_sent && $bcc_sent;
     }
 }
