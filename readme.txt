@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.15.0
+Stable tag: 0.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,14 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.16.0 - 2025-09-20 =
+* **BCC Implementation Fix**: Fixed BCC implementation to properly hide BCC recipients from main email recipient
+* **Privacy Enhancement**: Replaced BCC header approach with separate email sending for better privacy
+* **Email Best Practices**: BCC recipients now receive individual emails without exposing BCC information
+* **Database Cleanup**: Successfully cleaned up orphaned prompt data from production and local databases
+* **Data Integrity**: Ensured database only contains data for active prompts
+* **Email Report Fix**: Eliminated unwanted email reports for deleted prompts
 
 = 0.15.0 - 2025-09-20 =
 * **BCC Admin Feature**: Added BCC functionality for administrators to receive copies of all email reports

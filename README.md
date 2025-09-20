@@ -152,6 +152,21 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.16.0 - 2025-09-20
+
+#### BCC Implementation Fix
+- **Privacy Enhancement**: Fixed BCC implementation to properly hide BCC recipients from main email recipient
+- **Separate Email Sending**: Replaced BCC header approach with separate email sending for better privacy
+- **Email Best Practices**: BCC recipients now receive individual emails without exposing BCC information
+- **Maintained Functionality**: All existing BCC features continue to work as expected
+- **Improved Logging**: Enhanced logging for BCC email success/failure tracking
+
+#### Database Cleanup & Orphaned Data Management
+- **Production Cleanup**: Successfully cleaned up orphaned prompt data from production database
+- **Local Cleanup**: Removed 162+ orphaned records from local development environment
+- **Data Integrity**: Ensured database only contains data for active prompts
+- **Email Report Fix**: Eliminated unwanted email reports for deleted prompts
+
 ### 0.15.0 - 2025-09-20
 
 #### BCC Admin Feature (New)
