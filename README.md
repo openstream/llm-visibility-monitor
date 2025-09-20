@@ -154,6 +154,14 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ### 0.15.0 - 2025-09-20
 
+#### BCC Admin Feature (New)
+- **Email Monitoring**: Added BCC functionality for administrators to receive copies of all email reports
+- **Settings Control**: New "BCC Admin on All Reports" setting in Settings → LLM Visibility Monitor
+- **Smart Logic**: Only BCCs user emails, not admin emails (prevents duplicate admin emails)
+- **Universal Coverage**: Works for both cron runs and manual runs via unified email system
+- **Compliance**: Enhanced admin visibility and audit trail capabilities
+- **German Translations**: Complete localization for all BCC-related interface elements
+
 #### Planned Cron Executions Dashboard (New)
 - **Settings Page Enhancement**: Added comprehensive "Planned Cron Executions" section to Settings → LLM Visibility Monitor
 - **Multi-User Overview**: Display all scheduled prompts across all users in a single table
