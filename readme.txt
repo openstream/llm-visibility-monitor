@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.14.0
+Stable tag: 0.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,22 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.15.0 - 2025-09-20 =
+* **Planned Cron Executions Dashboard**: Added comprehensive overview section in Settings → LLM Visibility Monitor
+* **Multi-User Overview**: Display all scheduled prompts across all users in a single table
+* **Detailed Information**: Show prompt text, user, frequency, next execution time, and models
+* **Smart Sorting**: Automatically sort by next execution time (earliest first)
+* **Timezone Awareness**: Display times in each user's respective timezone
+* **Real-Time Updates**: Section updates automatically when prompts are added, modified, or deleted
+* **Enhanced Cron Management**: Improved distributed scheduling to prevent bottlenecks
+* **Conflict Resolution**: Automatic detection and resolution of scheduling conflicts
+* **Business Hours Distribution**: Spread cron jobs evenly between 8 AM - 8 PM
+* **Robust Cron Cleanup**: Multi-layer system prevents orphaned cron jobs
+* **Immediate Verification**: Check and retry cron cleanup after prompt deletion
+* **Background Cleanup**: Automatic orphaned cron job detection every 5 minutes
+* **German Translation Updates**: Complete localization for all new planned executions features
+* **Technical Improvements**: Enhanced performance, memory efficiency, and error handling
 
 = 0.14.0 - 2025-09-18 =
 * **Email Configuration**: Added admin-only setting to configure custom "from" address for all WordPress emails

@@ -152,6 +152,43 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.15.0 - 2025-09-20
+
+#### Planned Cron Executions Dashboard (New)
+- **Settings Page Enhancement**: Added comprehensive "Planned Cron Executions" section to Settings → LLM Visibility Monitor
+- **Multi-User Overview**: Display all scheduled prompts across all users in a single table
+- **Detailed Information**: Show prompt text, user, frequency, next execution time, and models for each scheduled prompt
+- **Smart Sorting**: Automatically sort by next execution time (earliest first)
+- **Timezone Awareness**: Display times in each user's respective timezone
+- **Real-Time Updates**: Section updates automatically when prompts are added, modified, or deleted
+- **Admin-Only Access**: Only administrators can view the planned executions overview
+
+#### Enhanced Cron Management
+- **Distributed Scheduling**: Improved cron job distribution to prevent bottlenecks
+- **Conflict Resolution**: Automatic detection and resolution of scheduling conflicts
+- **Business Hours Distribution**: Spread cron jobs evenly between 8 AM - 8 PM
+- **Minimum Intervals**: Ensure at least 15-minute gaps between scheduled executions
+- **Hash-Based Distribution**: Use prompt ID hashing for consistent, predictable scheduling
+
+#### Robust Cron Cleanup System
+- **Immediate Verification**: Check and retry cron cleanup immediately after prompt deletion
+- **Background Cleanup**: Automatic orphaned cron job detection and removal every 5 minutes
+- **Multi-Layer Protection**: Prevents orphaned cron jobs from accumulating over time
+- **Comprehensive Logging**: Detailed logging for all cleanup operations and verification steps
+- **Zero Orphaned Jobs**: Ensures database consistency between prompts and scheduled crons
+
+#### German Translation Updates
+- **Complete Localization**: Added German translations for all new planned executions features
+- **Multi-Locale Support**: Updated all 4 German locale files (de_DE, de_DE_formal, de_CH, de_CH_informal)
+- **Consistent Terminology**: Maintained consistent German terminology across all interface elements
+- **User Experience**: Improved German user experience with proper localization
+
+#### Technical Improvements
+- **Performance Optimization**: Enhanced cron scheduling algorithms for better performance
+- **Memory Efficiency**: Improved memory usage in cron management operations
+- **Error Handling**: Better error handling and recovery in cron operations
+- **Code Quality**: Refactored cron management code for better maintainability
+
 ### 0.14.0 - 2025-09-18
 
 #### Email Configuration (New)
