@@ -785,6 +785,18 @@ msgstr "Alle Zeiten werden in der jeweiligen Benutzerzeitzone angezeigt."
 msgid "User ID: %d"
 msgstr "Benutzer-ID: %d"
 
+#: includes/class-llmvm-admin.php
+msgid "BCC Admin on All Reports"
+msgstr "Admin bei allen Berichten in BCC"
+
+#: includes/class-llmvm-admin.php
+msgid "BCC administrator on all email reports"
+msgstr "Administrator bei allen E-Mail-Berichten in BCC"
+
+#: includes/class-llmvm-admin.php
+msgid "When enabled, all email reports sent to users will also be BCC'd to the administrator email address"
+msgstr "Wenn aktiviert, werden alle an Benutzer gesendeten E-Mail-Berichte auch an die Administrator-E-Mail-Adresse in BCC gesendet"
+
 
 
 

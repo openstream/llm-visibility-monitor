@@ -401,6 +401,7 @@ class LLMVM_Admin {
         add_settings_field( 'llmvm_comparison_model', __( 'Comparison Model', 'llm-visibility-monitor' ), [ $this, 'field_comparison_model' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_debug_logging', __( 'Debug Logging', 'llm-visibility-monitor' ), [ $this, 'field_debug_logging' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_reports', __( 'Email Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_reports' ], 'llmvm-settings', 'llmvm_section_main' );
+        add_settings_field( 'llmvm_email_bcc_admin', __( 'BCC Admin on All Reports', 'llm-visibility-monitor' ), [ $this, 'field_email_bcc_admin' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_email_from_address', __( 'Email From Address', 'llm-visibility-monitor' ), [ $this, 'field_email_from_address' ], 'llmvm-settings', 'llmvm_section_main' );
         add_settings_field( 'llmvm_queue_concurrency', __( 'Queue Concurrency Limit', 'llm-visibility-monitor' ), [ $this, 'field_queue_concurrency' ], 'llmvm-settings', 'llmvm_section_main' );
 
@@ -468,6 +469,9 @@ class LLMVM_Admin {
         
         $email_reports   = ! empty( $input['email_reports'] );
         $new['email_reports'] = $email_reports;
+        
+        $email_bcc_admin = ! empty( $input['email_bcc_admin'] );
+        $new['email_bcc_admin'] = $email_bcc_admin;
         
         $email_from_address = isset( $input['email_from_address'] ) ? sanitize_email( (string) $input['email_from_address'] ) : '';
         $new['email_from_address'] = $email_from_address;
@@ -622,6 +626,19 @@ class LLMVM_Admin {
         $value = ! empty( $options['email_reports'] );
         echo '<label><input type="checkbox" name="llmvm_options[email_reports]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'Send email reports to admin after each cron run', 'llm-visibility-monitor' ) . '</label>';
         echo '<p class="description">' . esc_html__( 'Reports will be sent to the WordPress admin email address with a summary of the latest results.', 'llm-visibility-monitor' ) . '</p>';
+    }
+
+    /** Render email BCC admin field */
+    public function field_email_bcc_admin(): void {
+        $options = get_option( 'llmvm_options', [] );
+        // Ensure we have a proper array to prevent PHP 8.1 deprecation warnings.
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+        $value = ! empty( $options['email_bcc_admin'] );
+        $admin_email = get_option( 'admin_email' );
+        echo '<label><input type="checkbox" name="llmvm_options[email_bcc_admin]" value="1"' . checked( $value, true, false ) . ' /> ' . esc_html__( 'BCC administrator on all email reports', 'llm-visibility-monitor' ) . '</label>';
+        echo '<p class="description">' . esc_html__( 'When enabled, all email reports sent to users will also be BCC\'d to the administrator email address', 'llm-visibility-monitor' ) . ' (' . esc_html( $admin_email ) . ').</p>';
     }
 
     /** Render email from address field */

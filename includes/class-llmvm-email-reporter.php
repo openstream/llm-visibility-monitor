@@ -22,6 +22,20 @@ class LLMVM_Email_Reporter {
     }
 
     /**
+     * Check if BCC admin is enabled for email reports.
+     *
+     * @return bool True if BCC admin is enabled, false otherwise.
+     */
+    private function should_bcc_admin(): bool {
+        $options = get_option( 'llmvm_options', [] );
+        if ( ! is_array( $options ) ) {
+            $options = [];
+        }
+
+        return ! empty( $options['email_bcc_admin'] );
+    }
+
+    /**
      * Get the configured from address for emails.
      *
      * @return string The from address or empty string if not configured.
@@ -120,9 +134,19 @@ class LLMVM_Email_Reporter {
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
         
+        // Add BCC to admin if enabled
+        $bcc_admin = $this->should_bcc_admin();
+        if ( $bcc_admin ) {
+            $admin_email = get_option( 'admin_email' );
+            if ( $admin_email && $admin_email !== $recipient_email ) {
+                $headers[] = 'Bcc: ' . $admin_email;
+                LLMVM_Logger::log( 'Limit notification: BCC admin enabled', [ 'admin_email' => $admin_email ] );
+            }
+        }
+        
         // From address and name are handled by global filters
         $from_address = $this->get_from_address();
-        LLMVM_Logger::log( 'Limit notification: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'from' => $from_address ] );
+        LLMVM_Logger::log( 'Limit notification: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'from' => $from_address, 'bcc_admin' => $bcc_admin ] );
         
         $sent = wp_mail( $recipient_email, $subject, $message, $headers );
 
@@ -238,9 +262,22 @@ class LLMVM_Email_Reporter {
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
         
+        // Add BCC to admin if enabled (only for user emails, not admin emails)
+        $bcc_admin = false;
+        if ( $email_type === 'user' ) {
+            $bcc_admin = $this->should_bcc_admin();
+            if ( $bcc_admin ) {
+                $admin_email = get_option( 'admin_email' );
+                if ( $admin_email && $admin_email !== $recipient_email ) {
+                    $headers[] = 'Bcc: ' . $admin_email;
+                    LLMVM_Logger::log( 'Email report: BCC admin enabled', [ 'admin_email' => $admin_email ] );
+                }
+            }
+        }
+        
         // From address and name are handled by global filters
         $from_address = $this->get_from_address();
-        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ), 'from' => $from_address ] );
+        LLMVM_Logger::log( 'Email report: sending', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type, 'results_count' => count( $results_to_send ), 'from' => $from_address, 'bcc_admin' => $bcc_admin ] );
         
         $sent = wp_mail( $recipient_email, $subject, $message, $headers );
 
