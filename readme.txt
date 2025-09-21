@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.16.0
+Stable tag: 0.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,15 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Includes Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/includes/`
 
 == Changelog ==
+
+= 0.17.0 - 2025-09-21 =
+* **Email System Improvements**: Fixed email system to send emails immediately when runs complete instead of waiting for queue processing
+* **Old Run Cleanup**: Added automatic cleanup of old runs (older than 1 hour) to prevent processing stale runs repeatedly
+* **Duplicate Email Fix**: Resolved issue where users were receiving 3 emails instead of 1 due to old run processing
+* **German Translation Fixes**: Fixed German formal/informal translations (de_DE=informal "du", de_CH=formal "Sie")
+* **Consistent Terminology**: Updated "Lauf-Ergebnisse" to "Ausführungsresultate" across all German locales
+* **Email Template Translation**: Fixed email template to use translate_string() method for all Latest Results section strings
+* **Footer Address Forms**: Corrected email footer to use proper informal/formal address forms based on locale
 
 = 0.16.0 - 2025-09-20 =
 * **BCC Implementation Fix**: Fixed BCC implementation to properly hide BCC recipients from main email recipient

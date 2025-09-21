@@ -152,6 +152,19 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.17.0 - 2025-09-21
+
+#### Email System Improvements
+- **Immediate Email Triggering**: Fixed email system to send emails immediately when runs complete instead of waiting for queue processing
+- **Old Run Cleanup**: Added automatic cleanup of old runs (older than 1 hour) to prevent processing stale runs repeatedly
+- **Duplicate Email Fix**: Resolved issue where users were receiving 3 emails instead of 1 due to old run processing
+
+#### German Translation Fixes
+- **Formal/Informal Correction**: Fixed German formal/informal translations (de_DE=informal "du", de_CH=formal "Sie")
+- **Consistent Terminology**: Updated "Lauf-Ergebnisse" to "Ausführungsresultate" across all German locales
+- **Email Template Translation**: Fixed email template to use translate_string() method for all Latest Results section strings
+- **Footer Address Forms**: Corrected email footer to use proper informal/formal address forms based on locale
+
 ### 0.16.0 - 2025-09-20
 
 #### BCC Implementation Fix
