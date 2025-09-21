@@ -127,9 +127,15 @@ class LLMVM_Email_Reporter {
         // Get usage summary
         $usage = LLMVM_Usage_Manager::get_usage_summary( $user_id );
         
+        // Switch to user's locale for email generation
+        $original_locale = $this->switch_to_user_locale( $user_id );
+        
+        // Load textdomain for translations
+        load_plugin_textdomain( 'llm-visibility-monitor', false, dirname( plugin_basename( __FILE__ ) ) . '/../languages' );
+        
         // Prepare email content
-        $subject = sprintf( '[%s] Usage Limit Reached', get_bloginfo( 'name' ) );
-        $message = $this->generate_limit_notification_email( $usage, $user );
+        $subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Usage Limit Reached', 'llm-visibility-monitor' ) );
+        $message = $this->generate_limit_notification_email( $usage, $user, $user_id );
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
@@ -156,6 +162,9 @@ class LLMVM_Email_Reporter {
             $sent = wp_mail( $recipient_email, $subject, $message, $headers );
         }
 
+        // Restore original locale
+        $this->restore_locale( $original_locale );
+        
         if ( $sent ) {
             LLMVM_Logger::log( 'Limit notification: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id ] );
         } else {
@@ -178,7 +187,8 @@ class LLMVM_Email_Reporter {
             'user_results_or_key_value' => is_array( $user_results_or_key ) ? count( $user_results_or_key ) : $user_results_or_key,
             'user_results_or_key_raw' => $user_results_or_key,
             'func_num_args' => func_num_args(),
-            'func_get_args' => func_get_args()
+            'func_get_args' => func_get_args(),
+            'call_stack' => debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 3 )
         ] );
         
         $options = get_option( 'llmvm_options', [] );
@@ -261,9 +271,23 @@ class LLMVM_Email_Reporter {
             return;
         }
 
+        // Switch to user's locale for email generation
+        $original_locale = $this->switch_to_user_locale( $user_id );
+        
+        // Load textdomain for translations
+        load_plugin_textdomain( 'llm-visibility-monitor', false, dirname( plugin_basename( __FILE__ ) ) . '/../languages' );
+        
         // Prepare email content
-        $subject = sprintf( '[%s] Run Results', get_bloginfo( 'name' ) );
-        $message = $this->generate_report_email( $results_to_send, $email_type, $current_user );
+        $email_id = uniqid( 'email_', true );
+        $subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), $this->translate_string( 'Run Results', $user_id ) );
+        
+        LLMVM_Logger::log( 'Preparing email with unique ID', [
+            'email_id' => $email_id,
+            'user_id' => $user_id,
+            'subject' => $subject
+        ] );
+        
+        $message = $this->generate_report_email( $results_to_send, $email_type, $current_user, $user_id );
 
         // Send email
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
@@ -293,17 +317,32 @@ class LLMVM_Email_Reporter {
             $sent = wp_mail( $recipient_email, $subject, $message, $headers );
         }
 
+        // Restore original locale
+        $this->restore_locale( $original_locale );
+        
         if ( $sent ) {
-            LLMVM_Logger::log( 'Email report: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type ] );
+            LLMVM_Logger::log( 'Email report: sent successfully', [ 
+                'email_id' => $email_id,
+                'to' => $recipient_email, 
+                'user_id' => $user_id, 
+                'email_type' => $email_type,
+                'subject' => $subject
+            ] );
         } else {
-            LLMVM_Logger::log( 'Email report: failed to send', [ 'to' => $recipient_email, 'user_id' => $user_id, 'email_type' => $email_type ] );
+            LLMVM_Logger::log( 'Email report: failed to send', [ 
+                'email_id' => $email_id,
+                'to' => $recipient_email, 
+                'user_id' => $user_id, 
+                'email_type' => $email_type,
+                'subject' => $subject
+            ] );
         }
     }
 
     /**
      * Generate HTML email report with improved mobile responsiveness and modern design.
      */
-    private function generate_report_email( array $results, string $email_type, $user = null ): string {
+    private function generate_report_email( array $results, string $email_type, $user = null, int $user_id = 0 ): string {
         $total_results = count( $results );
         $success_count = 0;
         $error_count = 0;
@@ -886,36 +925,36 @@ class LLMVM_Email_Reporter {
     <div class="email-container">
     <div class="header">
             <h1>🤖 LLM Visibility Monitor</h1>
-            <p>Generated on ' . LLMVM_Admin::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s' ) ) . '</p>';
+            <p>' . esc_html( $this->translate_string( 'Generated on', $user_id ) ) . ' ' . date_i18n( 'F j, Y \a\t g:i A', current_time( 'timestamp' ) ) . '</p>';
         
         if ( $email_type === 'user' && $user ) {
-            $html .= '<p>Run Results for: ' . esc_html( $user->display_name ) . '</p>';
+            $html .= '<p>' . esc_html( $this->translate_string( 'Run Results for:', $user_id ) ) . ' ' . esc_html( $user->display_name ) . '</p>';
         } elseif ( $email_type === 'admin' ) {
-            $html .= '<p>Administrator Run Results</p>';
+            $html .= '<p>' . esc_html( $this->translate_string( 'Administrator Run Results', $user_id ) ) . '</p>';
         }
         
         $html .= '</div>
     
     <div class="content">
             <div class="summary-card">
-                <h2>📊 Summary</h2>';
+                <h2>📊 ' . esc_html( $this->translate_string( 'Summary', $user_id ) ) . '</h2>';
             
         if ( $email_type === 'user' && $user ) {
-            $html .= '<p><strong>User:</strong> ' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_email ) . ')</p>';
+            $html .= '<p><strong>' . esc_html( $this->translate_string( 'User:', $user_id ) ) . '</strong> ' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_email ) . ')</p>';
         }
         
         $html .= '<div class="stats-grid">
                     <div class="stat-item">
                         <span class="stat-number total-stat">' . esc_html( (string) $total_results ) . '</span>
-                        <span class="stat-label">Total Results</span>
+                        <span class="stat-label">' . esc_html( $this->translate_string( 'Total Results', $user_id ) ) . '</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number success-stat">' . esc_html( (string) $success_count ) . '</span>
-                        <span class="stat-label">Successful</span>
+                        <span class="stat-label">' . esc_html( $this->translate_string( 'Successful', $user_id ) ) . '</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number error-stat">' . esc_html( (string) $error_count ) . '</span>
-                        <span class="stat-label">Errors</span>
+                        <span class="stat-label">' . esc_html( $this->translate_string( 'Errors', $user_id ) ) . '</span>
                     </div>
                 </div>';
         
@@ -927,23 +966,23 @@ class LLMVM_Email_Reporter {
             
             $html .= '
             <div class="summary-card">
-                <h2>🎯 Comparison Scores</h2>
+                <h2>🎯 ' . esc_html( $this->translate_string( 'Comparison Scores', $user_id ) ) . '</h2>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <span class="stat-number">' . esc_html( (string) $avg_score ) . '</span>
-                        <span class="stat-label">Average Score</span>
+                        <span class="stat-label">' . esc_html__( 'Average Score', 'llm-visibility-monitor' ) . '</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number">' . esc_html( (string) $min_score ) . '</span>
-                        <span class="stat-label">Lowest Score</span>
+                        <span class="stat-label">' . esc_html__( 'Lowest Score', 'llm-visibility-monitor' ) . '</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number">' . esc_html( (string) $max_score ) . '</span>
-                        <span class="stat-label">Highest Score</span>
+                        <span class="stat-label">' . esc_html__( 'Highest Score', 'llm-visibility-monitor' ) . '</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number">' . esc_html( (string) count( $comparison_scores ) ) . '</span>
-                        <span class="stat-label">Scored Results</span>
+                        <span class="stat-label">' . esc_html__( 'Scored Results', 'llm-visibility-monitor' ) . '</span>
                     </div>
                 </div>
             </div>';
@@ -960,23 +999,23 @@ class LLMVM_Email_Reporter {
         if ( ! empty( $results ) ) {
             $html .= '
             <div class="results-section">
-                <h2>📋 Latest Results</h2>
-                <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 On mobile devices, results are displayed in optimized cards for better readability.</p>
+                <h2>📋 ' . esc_html( $this->translate_string( 'Latest Results', $user_id ) ) . '</h2>
+                <p style="font-size: 12px; color: #6c757d; margin: 0 0 15px 0; font-style: italic;">💡 ' . esc_html( $this->translate_string( 'On mobile devices, results are displayed in optimized cards for better readability.', $user_id ) ) . '</p>
                 <table class="results-table">
             <thead>
                 <tr>';
                 
             if ( $email_type === 'admin' ) {
-                $html .= '<th class="prompt-col">User & Prompt</th>';
+                $html .= '<th class="prompt-col">' . esc_html( $this->translate_string( 'User & Prompt', $user_id ) ) . '</th>';
             } else {
-                $html .= '<th class="prompt-col">Prompt</th>';
+                $html .= '<th class="prompt-col">' . esc_html( $this->translate_string( 'Prompt', $user_id ) ) . '</th>';
             }
             
-            $html .= '<th class="answer-col">Answer</th>';
+            $html .= '<th class="answer-col">' . esc_html( $this->translate_string( 'Answer', $user_id ) ) . '</th>';
             
             // Add comparison score column if we have comparison scores
             if ( $has_comparison_scores ) {
-                $html .= '<th class="score-col">Score</th>';
+                $html .= '<th class="score-col">' . esc_html( $this->translate_string( 'Score', $user_id ) ) . '</th>';
             }
             
             $html .= '</tr>
@@ -1046,14 +1085,14 @@ class LLMVM_Email_Reporter {
 
         $html .= '
             <div class="action-buttons">
-                <a href="' . admin_url( 'tools.php?page=llmvm-dashboard' ) . '" class="btn">View Dashboard</a>
-                <a href="' . admin_url( 'tools.php?page=llmvm-prompts' ) . '" class="btn btn-secondary">Manage Prompts</a>
+                <a href="' . admin_url( 'tools.php?page=llmvm-dashboard' ) . '" class="btn">' . esc_html( $this->translate_string( 'View Dashboard', $user_id ) ) . '</a>
+                <a href="' . admin_url( 'tools.php?page=llmvm-prompts' ) . '" class="btn btn-secondary">' . esc_html( $this->translate_string( 'Manage Prompts', $user_id ) ) . '</a>
             </div>
         </div>
         
         <div class="footer">
-            <p>This report was automatically generated by the LLM Visibility Monitor plugin.</p>
-            <p>To disable email reports, go to <a href="' . admin_url( 'options-general.php?page=llmvm-settings' ) . '">Settings → LLM Visibility Monitor</a></p>
+            <p>' . esc_html( $this->translate_string( 'This report was automatically generated by the LLM Visibility Monitor plugin.', $user_id ) ) . '</p>
+            <p>' . esc_html( $this->translate_string( 'To disable email reports, go to', $user_id ) ) . ' <a href="' . admin_url( 'options-general.php?page=llmvm-settings' ) . '">' . esc_html( $this->translate_string( 'Settings → LLM Visibility Monitor', $user_id ) ) . '</a></p>
         </div>
     </div>
 </body>
@@ -1065,7 +1104,7 @@ class LLMVM_Email_Reporter {
     /**
      * Generate HTML limit notification email.
      */
-    private function generate_limit_notification_email( array $usage, $user ): string {
+    private function generate_limit_notification_email( array $usage, $user, int $user_id = 0 ): string {
         $upgrade_url = admin_url( 'admin.php?page=subscription' );
         $dashboard_url = admin_url( 'tools.php?page=llmvm-prompts' );
         
@@ -1250,63 +1289,63 @@ class LLMVM_Email_Reporter {
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>⚠️ Usage Limit Reached</h1>
-            <p>Your LLM Visibility Monitor usage has exceeded your plan limits</p>
+            <h1>⚠️ ' . esc_html__( 'Usage Limit Reached', 'llm-visibility-monitor' ) . '</h1>
+            <p>' . esc_html__( 'Your LLM Visibility Monitor usage has exceeded your plan limits', 'llm-visibility-monitor' ) . '</p>
         </div>
         
         <div class="content">
-            <p>Hello ' . esc_html( $user->display_name ) . ',</p>
+            <p>' . esc_html__( 'Hello', 'llm-visibility-monitor' ) . ' ' . esc_html( $user->display_name ) . ',</p>
             
-            <p>Your scheduled LLM monitoring run could not be completed because you have reached your usage limits. Here\'s your current usage status:</p>
+            <p>' . esc_html__( 'Your scheduled LLM monitoring run could not be completed because you have reached your usage limits. Here\'s your current usage status:', 'llm-visibility-monitor' ) . '</p>
             
             <div class="limit-card">
-                <h2>Current Usage Status</h2>
+                <h2>' . esc_html__( 'Current Usage Status', 'llm-visibility-monitor' ) . '</h2>
                 <div class="usage-stats">
                     <div class="usage-item">
-                        <span class="usage-label">Plan:</span>
+                        <span class="usage-label">' . esc_html__( 'Plan:', 'llm-visibility-monitor' ) . '</span>
                         <span class="usage-value">' . esc_html( $usage['plan_name'] ) . '</span>
                     </div>
                     <div class="usage-item">
-                        <span class="usage-label">Prompts:</span>
+                        <span class="usage-label">' . esc_html__( 'Prompts:', 'llm-visibility-monitor' ) . '</span>
                         <span class="usage-value ' . ( $usage['prompts']['used'] >= $usage['prompts']['limit'] ? 'exceeded' : '' ) . '">
                             ' . esc_html( $usage['prompts']['used'] ) . ' / ' . esc_html( $usage['prompts']['limit'] ) . '
                         </span>
                     </div>
                     <div class="usage-item">
-                        <span class="usage-label">Runs This Month:</span>
+                        <span class="usage-label">' . esc_html__( 'Runs This Month:', 'llm-visibility-monitor' ) . '</span>
                         <span class="usage-value ' . ( $usage['runs']['used'] >= $usage['runs']['limit'] ? 'exceeded' : '' ) . '">
                             ' . esc_html( $usage['runs']['used'] ) . ' / ' . esc_html( $usage['runs']['limit'] ) . '
                         </span>
                     </div>
                     <div class="usage-item">
-                        <span class="usage-label">Max Models per Prompt:</span>
+                        <span class="usage-label">' . esc_html__( 'Max Models per Prompt:', 'llm-visibility-monitor' ) . '</span>
                         <span class="usage-value">' . esc_html( $usage['models_per_prompt'] ) . '</span>
                     </div>
                 </div>
             </div>
             
             <div class="cta-section">
-                <h3>Upgrade Your Plan</h3>
-                <p>To continue monitoring your LLM visibility, please upgrade to a higher plan with more generous limits.</p>
+                <h3>' . esc_html__( 'Upgrade Your Plan', 'llm-visibility-monitor' ) . '</h3>
+                <p>' . esc_html__( 'To continue monitoring your LLM visibility, please upgrade to a higher plan with more generous limits.', 'llm-visibility-monitor' ) . '</p>
                 
                 <a href="' . esc_url( $upgrade_url ) . '" class="cta-button">
-                    🚀 Upgrade Now
+                    🚀 ' . esc_html__( 'Upgrade Now', 'llm-visibility-monitor' ) . '
                 </a>
                 
                 <a href="' . esc_url( $dashboard_url ) . '" class="cta-button secondary-button">
-                    📊 View Dashboard
+                    📊 ' . esc_html__( 'View Dashboard', 'llm-visibility-monitor' ) . '
                 </a>
             </div>
             
-            <p>If you have any questions about your usage or need help with your account, please don\'t hesitate to contact our support team.</p>
+            <p>' . esc_html__( 'If you have any questions about your usage or need help with your account, please don\'t hesitate to contact our support team.', 'llm-visibility-monitor' ) . '</p>
             
-            <p>Best regards,<br>
-            The LLM Visibility Monitor Team</p>
+            <p>' . esc_html__( 'Best regards,', 'llm-visibility-monitor' ) . '<br>
+            ' . esc_html__( 'The LLM Visibility Monitor Team', 'llm-visibility-monitor' ) . '</p>
         </div>
         
         <div class="footer">
-            <p>This email was sent because your scheduled LLM monitoring run could not be completed due to usage limits.</p>
-            <p><a href="' . esc_url( $dashboard_url ) . '">Manage your prompts</a> | <a href="' . esc_url( $upgrade_url ) . '">Upgrade your plan</a></p>
+            <p>' . esc_html__( 'This email was sent because your scheduled LLM monitoring run could not be completed due to usage limits.', 'llm-visibility-monitor' ) . '</p>
+            <p><a href="' . esc_url( $dashboard_url ) . '">' . esc_html__( 'Manage your prompts', 'llm-visibility-monitor' ) . '</a> | <a href="' . esc_url( $upgrade_url ) . '">' . esc_html__( 'Upgrade your plan', 'llm-visibility-monitor' ) . '</a></p>
         </div>
     </div>
 </body>
@@ -1750,6 +1789,129 @@ class LLMVM_Email_Reporter {
         $html .= '</div>';
 
         return $html;
+    }
+
+    /**
+     * Switch to user's locale for email generation.
+     *
+     * @param int $user_id User ID to get locale for.
+     * @return string Original locale that was active.
+     */
+    private function switch_to_user_locale( int $user_id ): string {
+        $user_locale = get_user_locale( $user_id );
+        $original_locale = get_locale();
+        
+        if ( $user_locale !== $original_locale ) {
+            switch_to_locale( $user_locale );
+            // Force reload text domain for the new locale
+            unload_textdomain( 'llm-visibility-monitor' );
+            load_plugin_textdomain( 'llm-visibility-monitor', false, dirname( plugin_basename( __FILE__ ) ) . '/../languages' );
+            LLMVM_Logger::log( 'Switched to user locale for email', [ 'user_id' => $user_id, 'user_locale' => $user_locale, 'original_locale' => $original_locale ] );
+        }
+        
+        return $original_locale;
+    }
+
+    /**
+     * Restore original locale after email generation.
+     *
+     * @param string $original_locale Original locale to restore.
+     */
+    private function restore_locale( string $original_locale ): void {
+        $current_locale = get_locale();
+        if ( $current_locale !== $original_locale ) {
+            restore_previous_locale();
+            LLMVM_Logger::log( 'Restored original locale after email', [ 'restored_to' => $original_locale, 'was' => $current_locale ] );
+        }
+    }
+
+    /**
+     * Translate a string for a specific user.
+     *
+     * @param string $string String to translate.
+     * @param int $user_id User ID to get locale for.
+     * @return string Translated string.
+     */
+    private function translate_string( string $string, int $user_id ): string {
+        $user_locale = get_user_locale( $user_id );
+        
+        // Simple translation mapping for German
+        $translations = [
+            'de_DE' => [
+                'Run Results' => 'Ausführungsresultate',
+                'Summary' => 'Zusammenfassung',
+                'Total Results' => 'Gesamtergebnisse',
+                'Successful' => 'Erfolgreich',
+                'Errors' => 'Fehler',
+                'Generated on' => 'Generiert am',
+                   'Run Results for:' => 'Ausführungsresultate für:',
+                   'Administrator Run Results' => 'Administrator Ausführungsresultate',
+                'User:' => 'Benutzer:',
+                'Latest Results' => 'Neueste Ergebnisse',
+                'On mobile devices, results are displayed in optimized cards for better readability.' => 'Auf mobilen Geräten werden die Ergebnisse für bessere Lesbarkeit «gestapelt» angezeigt.',
+                'User & Prompt' => 'Benutzer & Prompt',
+                'Prompt' => 'Prompt',
+                'Answer' => 'Antwort',
+                'Score' => 'Bewertung',
+                'View Dashboard' => 'Dashboard anzeigen',
+                'Manage Prompts' => 'Prompts verwalten',
+                'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
+                'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehst du zu',
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+            ],
+            'de_CH' => [
+                'Run Results' => 'Ausführungsresultate',
+                'Summary' => 'Zusammenfassung',
+                'Total Results' => 'Gesamtergebnisse',
+                'Successful' => 'Erfolgreich',
+                'Errors' => 'Fehler',
+                'Generated on' => 'Generiert am',
+                   'Run Results for:' => 'Ausführungsresultate für:',
+                   'Administrator Run Results' => 'Administrator Ausführungsresultate',
+                'User:' => 'Benutzer:',
+                'Latest Results' => 'Neueste Ergebnisse',
+                'On mobile devices, results are displayed in optimized cards for better readability.' => 'Auf mobilen Geräten werden die Ergebnisse für bessere Lesbarkeit «gestapelt» angezeigt.',
+                'User & Prompt' => 'Benutzer & Prompt',
+                'Prompt' => 'Prompt',
+                'Answer' => 'Antwort',
+                'Score' => 'Bewertung',
+                'View Dashboard' => 'Dashboard anzeigen',
+                'Manage Prompts' => 'Prompts verwalten',
+                'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
+                'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehen Sie zu',
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+            ],
+            'de_CH_informal' => [
+                'Run Results' => 'Ausführungsresultate',
+                'Summary' => 'Zusammenfassung',
+                'Total Results' => 'Gesamtergebnisse',
+                'Successful' => 'Erfolgreich',
+                'Errors' => 'Fehler',
+                'Generated on' => 'Generiert am',
+                   'Run Results for:' => 'Ausführungsresultate für:',
+                   'Administrator Run Results' => 'Administrator Ausführungsresultate',
+                'User:' => 'Benutzer:',
+                'Latest Results' => 'Neueste Ergebnisse',
+                'On mobile devices, results are displayed in optimized cards for better readability.' => 'Auf mobilen Geräten werden die Ergebnisse für bessere Lesbarkeit «gestapelt» angezeigt.',
+                'User & Prompt' => 'Benutzer & Prompt',
+                'Prompt' => 'Prompt',
+                'Answer' => 'Antwort',
+                'Score' => 'Bewertung',
+                'View Dashboard' => 'Dashboard anzeigen',
+                'Manage Prompts' => 'Prompts verwalten',
+                'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
+                'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehst du zu',
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+            ]
+        ];
+        
+        // Check if we have translations for this locale
+        if ( isset( $translations[ $user_locale ] ) && isset( $translations[ $user_locale ][ $string ] ) ) {
+            return $translations[ $user_locale ][ $string ];
+        }
+        
+        // Fallback to WordPress translation
+        return __( $string, 'llm-visibility-monitor' );
     }
 
     /**

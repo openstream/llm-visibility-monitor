@@ -988,8 +988,10 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
-		// Queue system handles email reporting when all jobs complete
-		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $current_user_id ) );
+		// Trigger email immediately when batch run completes
+		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
+		do_action( 'llmvm_run_completed', $current_user_id, $recent_results );
+		LLMVM_Logger::log( 'Email triggered immediately after batch run completion', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
 	}
 	
 	/**
@@ -1131,8 +1133,11 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
-		// Queue system handles email reporting when all jobs complete
-		LLMVM_Logger::log( 'Queue system handles email reporting when all jobs complete', array( 'user_id' => $current_user_id ) );
+		// Trigger email immediately when run completes
+		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
+		LLMVM_Logger::log( 'About to trigger immediate email', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
+		do_action( 'llmvm_run_completed', $current_user_id, $recent_results );
+		LLMVM_Logger::log( 'Email triggered immediately after run completion', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
 	}
 
 	/**

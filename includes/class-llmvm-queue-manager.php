@@ -571,6 +571,19 @@ class LLMVM_Queue_Manager {
 
 		// If no pending jobs, fire the email action
 		if ( $pending_jobs == 0 ) {
+			// Clean up old runs (older than 1 hour) to prevent processing old runs repeatedly
+			$cleanup_start = microtime( true );
+			$old_runs_deleted = $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}llmvm_current_run_results WHERE created_at < %s",
+				date( 'Y-m-d H:i:s', time() - 3600 ) // 1 hour ago
+			) );
+			$cleanup_time = microtime( true ) - $cleanup_start;
+			
+			LLMVM_Logger::log( 'Cleaned up old runs', array(
+				'deleted_count' => $old_runs_deleted,
+				'cleanup_time' => $cleanup_time
+			) );
+			
 			$email_action_start = microtime( true );
 			
 			// Use current run results from database
