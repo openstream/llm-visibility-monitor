@@ -38,8 +38,14 @@ class LLMVM_Admin {
             }
         }
         
-        // Create DateTime object from UTC date
-        $utc_datetime = new DateTime( $utc_date, new DateTimeZone( 'UTC' ) );
+        // Handle both timestamps and date strings
+        if ( is_numeric( $utc_date ) ) {
+            // It's a timestamp
+            $utc_datetime = new DateTime( '@' . $utc_date, new DateTimeZone( 'UTC' ) );
+        } else {
+            // It's a date string
+            $utc_datetime = new DateTime( $utc_date, new DateTimeZone( 'UTC' ) );
+        }
         
         // Convert to user's timezone
         $user_timezone_obj = new DateTimeZone( $user_timezone );
@@ -78,29 +84,16 @@ class LLMVM_Admin {
             
             if ( $next_run ) {
                 // Convert to user's timezone
-                return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ) );
+                return self::convert_utc_to_user_timezone( $next_run );
             }
         }
         
         // Fallback: Calculate next execution time based on frequency (for new prompts)
-        $now = time();
+        // This should use the same logic as the cron scheduler
+        $cron = new LLMVM_Cron();
+        $next_run = $cron->calculate_distributed_run_time( $frequency, 'fallback_prompt' );
         
-        switch ( $frequency ) {
-            case 'daily':
-                $next_run = strtotime( 'tomorrow 9:00 AM', $now );
-                break;
-            case 'weekly':
-                $next_run = strtotime( 'next monday 9:00 AM', $now );
-                break;
-            case 'monthly':
-                $next_run = strtotime( 'first day of next month 9:00 AM', $now );
-                break;
-            default:
-                $next_run = strtotime( 'tomorrow 9:00 AM', $now );
-        }
-        
-        // Convert to user's timezone
-        return self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ) );
+        return self::convert_utc_to_user_timezone( $next_run );
     }
 
     /**
@@ -120,6 +113,9 @@ class LLMVM_Admin {
         
         // Cleanup orphaned cron jobs on admin init
         add_action( 'admin_init', [ $this, 'cleanup_orphaned_cron_jobs' ] );
+        
+        // Add reschedule action for existing crons
+        add_action( 'wp_ajax_llmvm_reschedule_crons', [ $this, 'handle_reschedule_crons' ] );
 
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
@@ -737,7 +733,7 @@ class LLMVM_Admin {
             
             // Format next execution time
             $formatted_time = self::convert_utc_to_user_timezone( gmdate( 'Y-m-d H:i:s', $next_run ), $prompt['user_id'] );
-            $relative_time = human_time_diff( $next_run );
+            $relative_time = human_time_diff( time(), $next_run );
             
             // Truncate prompt text if too long
             $prompt_text = $prompt['text'];
@@ -763,6 +759,15 @@ class LLMVM_Admin {
         echo '</tbody>';
         echo '</table>';
         echo '<p><small>' . esc_html__( 'All times are displayed in the respective user\'s timezone.', 'llm-visibility-monitor' ) . '</small></p>';
+        
+        // Add reschedule button
+        echo '<p style="margin-top: 10px;">';
+        echo '<button type="button" id="reschedule-crons-btn" class="button button-secondary">';
+        echo esc_html__( 'Reschedule All Crons with New Logic', 'llm-visibility-monitor' );
+        echo '</button>';
+        echo ' <span id="reschedule-status" style="margin-left: 10px;"></span>';
+        echo '</p>';
+        
         echo '</div>';
     }
 
@@ -2575,6 +2580,46 @@ class LLMVM_Admin {
             LLMVM_VERSION,
             true
         );
+
+        // Add reschedule crons JavaScript for settings page
+        if ( 'settings_page_llmvm-settings' === $hook ) {
+            wp_add_inline_script( 'llmvm-admin', '
+                jQuery(document).ready(function($) {
+                    $("#reschedule-crons-btn").on("click", function() {
+                        var $btn = $(this);
+                        var $status = $("#reschedule-status");
+                        
+                        $btn.prop("disabled", true).text("Rescheduling...");
+                        $status.text("");
+                        
+                        $.ajax({
+                            url: ajaxurl,
+                            type: "POST",
+                            data: {
+                                action: "llmvm_reschedule_crons",
+                                nonce: "' . wp_create_nonce( 'llmvm_reschedule_crons' ) . '"
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    $status.html("<span style=\"color: green;\">✓ " + response.data.message + "</span>");
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 2000);
+                                } else {
+                                    $status.html("<span style=\"color: red;\">✗ " + response.data + "</span>");
+                                }
+                            },
+                            error: function() {
+                                $status.html("<span style=\"color: red;\">✗ Error rescheduling crons</span>");
+                            },
+                            complete: function() {
+                                $btn.prop("disabled", false).text("Reschedule All Crons with New Logic");
+                            }
+                        });
+                    });
+                });
+            ' );
+        }
     }
 
     /** Handle changing user plan */
@@ -2830,6 +2875,43 @@ class LLMVM_Admin {
     public function login_custom_text(): void {
         // This method is kept for backward compatibility but not used
         // Custom text is now displayed after the header instead
+    }
+
+    /**
+     * Handle reschedule crons AJAX request
+     */
+    public function handle_reschedule_crons(): void {
+        // Check permissions
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Insufficient permissions' );
+        }
+        
+        // Verify nonce
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'llmvm_reschedule_crons' ) ) {
+            wp_send_json_error( 'Invalid nonce' );
+        }
+        
+        $cron = new LLMVM_Cron();
+        $prompts = get_option( 'llmvm_prompts', [] );
+        $rescheduled = 0;
+        
+        foreach ( $prompts as $prompt ) {
+            $prompt_id = $prompt['id'];
+            $frequency = $prompt['cron_frequency'] ?? 'daily';
+            
+            // Clear existing cron
+            $hook = 'llmvm_run_prompt_' . $prompt_id;
+            wp_clear_scheduled_hook( $hook );
+            
+            // Schedule with new logic
+            $cron->schedule_prompt_cron( $prompt_id, $frequency );
+            $rescheduled++;
+        }
+        
+        wp_send_json_success( [
+            'message' => sprintf( 'Rescheduled %d cron jobs with new logic', $rescheduled ),
+            'count' => $rescheduled
+        ] );
     }
 }
 

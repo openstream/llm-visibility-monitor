@@ -130,7 +130,7 @@ class LLMVM_Cron {
 	 * @param string $prompt_id The prompt ID for consistent scheduling.
 	 * @return int Unix timestamp for next run.
 	 */
-	private function calculate_distributed_run_time( string $frequency, string $prompt_id ): int {
+	public function calculate_distributed_run_time( string $frequency, string $prompt_id ): int {
 		$now = time();
 		
 		// Get all existing prompt cron jobs to avoid conflicts
@@ -155,18 +155,25 @@ class LLMVM_Cron {
 		// Format time string
 		$time_string = sprintf( '%02d:%02d', $distributed_hour, $distributed_minute );
 		
+		// Calculate the time for today first
+		$today_time = strtotime( 'today ' . $time_string, $now );
+		
 		switch ( $frequency ) {
 			case 'daily':
-				$next_run = strtotime( 'tomorrow ' . $time_string, $now );
+				// If today's time has passed, schedule for tomorrow
+				$next_run = ( $today_time > $now ) ? $today_time : strtotime( 'tomorrow ' . $time_string, $now );
 				break;
 			case 'weekly':
-				$next_run = strtotime( 'next monday ' . $time_string, $now );
+				// If today's time has passed, schedule for next week
+				$next_run = ( $today_time > $now ) ? $today_time : strtotime( '+1 week ' . $time_string, $now );
 				break;
 			case 'monthly':
-				$next_run = strtotime( 'first day of next month ' . $time_string, $now );
+				// If today's time has passed, schedule for next month
+				$next_run = ( $today_time > $now ) ? $today_time : strtotime( '+1 month ' . $time_string, $now );
 				break;
 			default:
-				$next_run = strtotime( 'tomorrow ' . $time_string, $now );
+				// If today's time has passed, schedule for tomorrow
+				$next_run = ( $today_time > $now ) ? $today_time : strtotime( 'tomorrow ' . $time_string, $now );
 		}
 		
 		// If this time conflicts with existing crons, find the next available slot
