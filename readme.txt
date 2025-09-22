@@ -134,6 +134,11 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Consistent Terminology**: Updated "Lauf-Ergebnisse" to "Ausführungsresultate" across all German locales
 * **Email Template Translation**: Fixed email template to use translate_string() method for all Latest Results section strings
 * **Footer Address Forms**: Corrected email footer to use proper informal/formal address forms based on locale
+* **Cron Scheduling Logic**: Fixed cron scheduling to properly handle past times for weekly/monthly frequencies
+* **Timezone Display**: Fixed timezone conversion in admin display to show correct relative times
+* **Reschedule Tool**: Added reschedule button to fix existing cron jobs with new logic
+* **Admin Integration**: Made calculate_distributed_run_time() method public for admin use
+* **Timezone Handling**: Fixed convert_utc_to_user_timezone() to handle both timestamps and date strings
 
 = 0.16.0 - 2025-09-20 =
 * **BCC Implementation Fix**: Fixed BCC implementation to properly hide BCC recipients from main email recipient
