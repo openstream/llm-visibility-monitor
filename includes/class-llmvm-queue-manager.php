@@ -70,6 +70,10 @@ class LLMVM_Queue_Manager {
 		// Schedule queue processing if not already scheduled
 		if ( ! wp_next_scheduled( 'llmvm_process_queue' ) ) {
 			wp_schedule_event( time(), 'llmvm_queue_interval', 'llmvm_process_queue' );
+			LLMVM_Logger::log( 'Scheduled llmvm_process_queue event', array(
+				'next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) ),
+				'disable_wp_cron' => ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) ? 1 : 0
+			) );
 		}
 		
 		// Schedule cleanup if not already scheduled
@@ -79,6 +83,13 @@ class LLMVM_Queue_Manager {
 		
 		// Add custom cron interval for queue processing
 		add_filter( 'cron_schedules', array( $this, 'add_queue_cron_interval' ) );
+
+		// Log current scheduling state on init
+		LLMVM_Logger::log( 'Queue scheduler state', array(
+			'next_run_gmt' => ( $t = wp_next_scheduled( 'llmvm_process_queue' ) ) ? gmdate( 'Y-m-d H:i:s', (int) $t ) : 'not_scheduled',
+			'doing_cron' => ( defined( 'DOING_CRON' ) && DOING_CRON ) ? 1 : 0,
+			'disable_wp_cron' => ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) ? 1 : 0
+		) );
 	}
 
 	/**
@@ -301,6 +312,25 @@ class LLMVM_Queue_Manager {
 
 		// Trigger immediate queue processing for better responsiveness
 		wp_schedule_single_event( time(), 'llmvm_process_queue' );
+		LLMVM_Logger::log( 'Scheduled single queue processing event', array(
+			'next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
+		) );
+
+		// Best-effort spawn of wp-cron to ensure processing even on low-traffic sites
+		$cron_url = site_url( '/wp-cron.php' );
+		$spawn_args = array( 'timeout' => 0.01, 'blocking' => false, 'sslverify' => apply_filters( 'https_local_ssl_verify', false ) );
+		$spawn_resp = wp_remote_post( $cron_url, $spawn_args );
+		if ( is_wp_error( $spawn_resp ) ) {
+			LLMVM_Logger::log( 'Failed to spawn wp-cron', array(
+				'error' => $spawn_resp->get_error_message(),
+				'cron_url' => $cron_url
+			) );
+		} else {
+			LLMVM_Logger::log( 'Spawned wp-cron (non-blocking)', array(
+				'cron_url' => $cron_url,
+				'http_code' => wp_remote_retrieve_response_code( $spawn_resp )
+			) );
+		}
 
 		return $job_id;
 	}
@@ -324,6 +354,14 @@ class LLMVM_Queue_Manager {
 	 */
 	public function process_queue(): void {
 		global $wpdb;
+
+		// Log environment details to diagnose cron behavior
+		LLMVM_Logger::log( 'llmvm_process_queue invoked', array(
+			'invoked_at_gmt' => gmdate( 'Y-m-d H:i:s' ),
+			'doing_cron' => ( defined( 'DOING_CRON' ) && DOING_CRON ) ? 1 : 0,
+			'disable_wp_cron' => ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) ? 1 : 0,
+			'next_run_gmt' => ( $t = wp_next_scheduled( 'llmvm_process_queue' ) ) ? gmdate( 'Y-m-d H:i:s', (int) $t ) : 'not_scheduled'
+		) );
 
 		$table_name = $wpdb->prefix . self::QUEUE_TABLE;
 
