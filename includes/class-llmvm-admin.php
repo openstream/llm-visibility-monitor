@@ -116,6 +116,9 @@ class LLMVM_Admin {
         
         // Add reschedule action for existing crons
         add_action( 'wp_ajax_llmvm_reschedule_crons', [ $this, 'handle_reschedule_crons' ] );
+        
+        // Add cleanup action for old results
+        add_action( 'wp_ajax_llmvm_cleanup_old_results', [ $this, 'handle_cleanup_old_results' ] );
 
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
@@ -760,12 +763,16 @@ class LLMVM_Admin {
         echo '</table>';
         echo '<p><small>' . esc_html__( 'All times are displayed in the respective user\'s timezone.', 'llm-visibility-monitor' ) . '</small></p>';
         
-        // Add reschedule button
+        // Add reschedule and cleanup buttons
         echo '<p style="margin-top: 10px;">';
         echo '<button type="button" id="reschedule-crons-btn" class="button button-secondary">';
         echo esc_html__( 'Reschedule All Crons with New Logic', 'llm-visibility-monitor' );
         echo '</button>';
+        echo ' <button type="button" id="cleanup-old-results-btn" class="button button-secondary">';
+        echo esc_html__( 'Clean Up Old Results', 'llm-visibility-monitor' );
+        echo '</button>';
         echo ' <span id="reschedule-status" style="margin-left: 10px;"></span>';
+        echo ' <span id="cleanup-status" style="margin-left: 10px;"></span>';
         echo '</p>';
         
         echo '</div>';
@@ -2617,6 +2624,39 @@ class LLMVM_Admin {
                             }
                         });
                     });
+                    
+                    $("#cleanup-old-results-btn").on("click", function() {
+                        var $btn = $(this);
+                        var $status = $("#cleanup-status");
+                        
+                        $btn.prop("disabled", true).text("Cleaning up...");
+                        $status.text("");
+                        
+                        $.ajax({
+                            url: ajaxurl,
+                            type: "POST",
+                            data: {
+                                action: "llmvm_cleanup_old_results",
+                                nonce: "' . wp_create_nonce( 'llmvm_cleanup_old_results' ) . '"
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    $status.html("<span style=\"color: green;\">✓ " + response.data.message + "</span>");
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 2000);
+                                } else {
+                                    $status.html("<span style=\"color: red;\">✗ " + response.data + "</span>");
+                                }
+                            },
+                            error: function() {
+                                $status.html("<span style=\"color: red;\">✗ Error cleaning up old results</span>");
+                            },
+                            complete: function() {
+                                $btn.prop("disabled", false).text("Clean Up Old Results");
+                            }
+                        });
+                    });
                 });
             ' );
         }
@@ -2911,6 +2951,35 @@ class LLMVM_Admin {
         wp_send_json_success( [
             'message' => sprintf( 'Rescheduled %d cron jobs with new logic', $rescheduled ),
             'count' => $rescheduled
+        ] );
+    }
+
+    /**
+     * Handle cleanup old results AJAX request
+     */
+    public function handle_cleanup_old_results(): void {
+        // Check permissions
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Insufficient permissions' );
+        }
+        
+        // Verify nonce
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'llmvm_cleanup_old_results' ) ) {
+            wp_send_json_error( 'Invalid nonce' );
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'llmvm_current_run_results';
+        
+        // Delete results older than 5 minutes
+        $deleted = $wpdb->query( $wpdb->prepare(
+            "DELETE FROM $table_name WHERE created_at < %s",
+            date( 'Y-m-d H:i:s', time() - 300 ) // 5 minutes ago
+        ) );
+        
+        wp_send_json_success( [
+            'message' => sprintf( 'Cleaned up %d old results from database', $deleted ),
+            'count' => $deleted
         ] );
     }
 }

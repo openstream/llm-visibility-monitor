@@ -320,7 +320,12 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
                             <?php
                             $answer = (string) ( $row['answer'] ?? '' );
                             if ( '' === trim( $answer ) ) {
-                                echo '<em>' . esc_html__( 'No answer (see logs for details)', 'llm-visibility-monitor' ) . '</em>';
+                                $model = (string) ( $row['model'] ?? '' );
+                                if ( strpos( $model, ':online' ) !== false ) {
+                                    echo '<em>' . esc_html__( 'No answer - Online model may have timed out (check logs)', 'llm-visibility-monitor' ) . '</em>';
+                                } else {
+                                    echo '<em>' . esc_html__( 'No answer received (check logs for details)', 'llm-visibility-monitor' ) . '</em>';
+                                }
                             } else {
                                 
                                 echo esc_html( wp_trim_words( $answer, 36 ) ?: '' );

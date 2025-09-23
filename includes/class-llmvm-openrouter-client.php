@@ -66,6 +66,21 @@ class LLMVM_OpenRouter_Client {
             'messages' => [ [ 'role' => 'user', 'content' => $prompt ] ],
         ];
 
+        // Enhanced logging for :online models
+        $is_online_model = strpos( $model, ':online' ) !== false;
+        if ( $is_online_model ) {
+            LLMVM_Logger::log( 'Online model request details', [
+                'model' => $model,
+                'prompt_length' => strlen( $prompt ),
+                'prompt_preview' => substr( $prompt, 0, 100 ),
+                'request_body' => $body,
+                'is_online_model' => true
+            ] );
+        }
+
+        // Use longer timeout for :online models since they can take 2+ minutes
+        $timeout = $is_online_model ? 240 : 60;
+        
         $args = [
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,
@@ -74,7 +89,7 @@ class LLMVM_OpenRouter_Client {
                 'X-Title'       => 'LLM Visibility Monitor',
             ],
             'body'    => wp_json_encode( $body ) ?: '',
-            'timeout' => 60,
+            'timeout' => $timeout,
         ];
 
         // Only log the model being used, not the full request
@@ -84,13 +99,38 @@ class LLMVM_OpenRouter_Client {
         $api_response_time = $api_end_time - $api_start_time;
         
         if ( is_wp_error( $resp ) ) {
-            LLMVM_Logger::log( 'OpenRouter error', [ 
-                'error' => $resp->get_error_message(),
+            $error_message = $resp->get_error_message();
+            $error_code = $resp->get_error_code();
+            
+            // Provide more specific error messages
+            if ( $error_code === 'http_request_failed' && strpos( $error_message, 'cURL error 28' ) !== false ) {
+                if ( $is_online_model ) {
+                    $error_message = 'Timeout: Online model took longer than 4 minutes to respond. The model may still be processing your request.';
+                } else {
+                    $error_message = 'Timeout: Model took longer than 1 minute to respond.';
+                }
+            } elseif ( $error_code === 'http_request_failed' ) {
+                $error_message = 'Network error: ' . $error_message;
+            }
+            
+            $error_data = [ 
+                'error' => $error_message,
+                'original_error' => $resp->get_error_message(),
+                'error_code' => $error_code,
                 'response_time_ms' => round( $api_response_time * 1000, 2 ),
                 'model' => $model,
                 'prompt_length' => strlen( $prompt )
-            ] );
-            return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $resp->get_error_message(), 'response_time' => $api_response_time ];
+            ];
+            
+            // Enhanced logging for :online models
+            if ( $is_online_model ) {
+                $error_data['is_online_model'] = true;
+                $error_data['timeout_seconds'] = $timeout;
+                $error_data['error_data'] = $resp->get_error_data();
+            }
+            
+            LLMVM_Logger::log( 'OpenRouter error', $error_data );
+            return [ 'model' => $model, 'answer' => '', 'status' => 0, 'error' => $error_message, 'response_time' => $api_response_time ];
         }
         $code = wp_remote_retrieve_response_code( $resp );
         $body = wp_remote_retrieve_body( $resp ) ?: '';
@@ -155,18 +195,50 @@ class LLMVM_OpenRouter_Client {
                 }
             } elseif ( $code === 402 ) {
                 $msg = 'OpenRouter credits insufficient - add credits to your account';
+            } elseif ( $code === 429 ) {
+                $msg = 'Rate limit exceeded - too many requests to OpenRouter';
             } elseif ( $code >= 500 ) {
                 $msg = 'OpenRouter server error - try again later (status ' . $code . ')';
+            } else {
+                $msg = 'API error (status ' . $code . '): ' . $msg;
             }
-            LLMVM_Logger::log( 'OpenRouter API error', [ 
+            
+            $error_data = [ 
                 'status' => $code,
                 'error_message' => $msg,
                 'response_time_ms' => round( $api_response_time * 1000, 2 ),
                 'model' => $model
-            ] );
+            ];
+            
+            // Enhanced logging for :online models
+            if ( $is_online_model ) {
+                $error_data['is_online_model'] = true;
+                $error_data['raw_error'] = $json['error'] ?? 'not_set';
+                $error_data['response_body_preview'] = substr( $body, 0, 200 );
+            }
+            
+            LLMVM_Logger::log( 'OpenRouter API error', $error_data );
             return [ 'model' => $model, 'answer' => '', 'status' => (int) $code, 'error' => $msg, 'response_time' => $api_response_time ];
         }
         $answer = $json['choices'][0]['message']['content'] ?? '';
+        
+        // Enhanced logging for :online models
+        $is_online_model = strpos( $model, ':online' ) !== false;
+        if ( $is_online_model ) {
+            LLMVM_Logger::log( 'Online model response analysis', [
+                'model' => $model,
+                'answer_length' => strlen( $answer ),
+                'answer_empty' => empty( trim( $answer ) ),
+                'answer_exists' => isset( $json['choices'][0]['message']['content'] ),
+                'choices_count' => isset( $json['choices'] ) ? count( $json['choices'] ) : 0,
+                'first_choice_structure' => isset( $json['choices'][0] ) ? $json['choices'][0] : null,
+                'finish_reason' => $json['choices'][0]['finish_reason'] ?? 'not_set',
+                'usage' => $json['usage'] ?? 'not_set',
+                'provider' => $json['provider'] ?? 'not_set',
+                'model_returned' => $json['model'] ?? 'not_set',
+                'full_response_keys' => array_keys( $json )
+            ] );
+        }
         
         // Debug: Log the full answer length and structure
         LLMVM_Logger::log( 'Answer extraction debug', [ 

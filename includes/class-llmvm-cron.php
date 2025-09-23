@@ -504,7 +504,20 @@ class LLMVM_Cron {
 			'user_id' => $user_id 
 		] );
 		
+		LLMVM_Logger::log( 'About to call OpenRouter client', [ 
+			'model' => $model_to_use, 
+			'api_key_length' => strlen( $api_key ),
+			'prompt_length' => strlen( $prompt_text )
+		] );
+		
 		$response = $client->query( $api_key, $prompt_text, $model_to_use );
+		
+		LLMVM_Logger::log( 'OpenRouter client response received', [ 
+			'model' => $model_to_use, 
+			'response_keys' => array_keys( $response ),
+			'answer_length' => strlen( $response['answer'] ?? '' ),
+			'status' => $response['status'] ?? 'unknown'
+		] );
 		$resp_model = isset( $response['model'] ) ? (string) $response['model'] : 'unknown';
 		$answer = isset( $response['answer'] ) ? (string) $response['answer'] : '';
 		$status = isset( $response['status'] ) ? (int) $response['status'] : 0;
@@ -995,6 +1008,11 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
+		// Generate prompt summaries for all prompts in this batch
+		foreach ( $prompt_models as $prompt_id => $models ) {
+			$this->generate_prompt_summary_for_cron( $prompt_id, $current_user_id );
+		}
+
 		// Trigger email immediately when batch run completes
 		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
 		do_action( 'llmvm_run_completed', $current_user_id, $recent_results );
@@ -1140,6 +1158,9 @@ class LLMVM_Cron {
 			LLMVM_Database::increment_usage( $current_user_id, 0, $runs_count );
 		}
 
+		// Generate prompt summary if expected answer exists
+		$this->generate_prompt_summary_for_cron( $prompt_id, $current_user_id );
+
 		// Trigger email immediately when run completes
 		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
 		LLMVM_Logger::log( 'About to trigger immediate email', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
@@ -1248,6 +1269,74 @@ class LLMVM_Cron {
 		// Fallback: store as plaintext for older WordPress versions
 		// This is not ideal for security, but ensures compatibility
 		return $plaintext;
+	}
+
+	/**
+	 * Generate prompt summary for cron execution.
+	 *
+	 * @param string $prompt_id The prompt ID.
+	 * @param int $user_id The user ID.
+	 */
+	private function generate_prompt_summary_for_cron( string $prompt_id, int $user_id ): void {
+		// Get the prompt data
+		$prompts = get_option( 'llmvm_prompts', array() );
+		$target_prompt = null;
+
+		foreach ( $prompts as $prompt ) {
+			if ( isset( $prompt['id'] ) && $prompt['id'] === $prompt_id ) {
+				$target_prompt = $prompt;
+				break;
+			}
+		}
+
+		if ( ! $target_prompt ) {
+			LLMVM_Logger::log( 'Target prompt not found for summary generation', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		$expected_answer = $target_prompt['expected_answer'] ?? '';
+		if ( empty( $expected_answer ) ) {
+			LLMVM_Logger::log( 'No expected answer for prompt, skipping summary generation', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		// Get recent results for this prompt
+		$recent_results = LLMVM_Database::get_recent_results( $user_id, 10 );
+		$prompt_results = array_filter( $recent_results, function( $result ) use ( $prompt_id ) {
+			return isset( $result['prompt_id'] ) && $result['prompt_id'] === $prompt_id;
+		} );
+
+		if ( empty( $prompt_results ) ) {
+			LLMVM_Logger::log( 'No results found for prompt summary generation', array( 'prompt_id' => $prompt_id ) );
+			return;
+		}
+
+		// Generate prompt summary
+		$summary_data = LLMVM_Comparison::generate_prompt_summary(
+			$prompt_id,
+			$target_prompt['text'] ?? '',
+			$expected_answer,
+			$prompt_results
+		);
+
+		if ( $summary_data ) {
+			// Store the summary in the database
+			$summary_id = LLMVM_Database::insert_prompt_summary(
+				$prompt_id,
+				$target_prompt['text'] ?? '',
+				$expected_answer,
+				$user_id,
+				$summary_data
+			);
+
+			LLMVM_Logger::log( 'Prompt summary generated and stored for cron', array(
+				'prompt_id' => $prompt_id,
+				'summary_id' => $summary_id,
+				'user_id' => $user_id
+			) );
+		} else {
+			LLMVM_Logger::log( 'Failed to generate prompt summary for cron', array( 'prompt_id' => $prompt_id ) );
+		}
 	}
 }
 

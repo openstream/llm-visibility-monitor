@@ -64,9 +64,6 @@ class LLMVM_Queue_Manager {
 		// Process queue via WordPress cron (every minute)
 		add_action( 'llmvm_process_queue', array( $this, 'process_queue' ) );
 		
-		// Process queue on admin_init (for immediate processing when admin visits)
-		add_action( 'admin_init', array( $this, 'process_queue' ) );
-		
 		// Clean up old completed jobs
 		add_action( 'llmvm_cleanup_queue', array( $this, 'cleanup_old_jobs' ) );
 		
@@ -571,11 +568,11 @@ class LLMVM_Queue_Manager {
 
 		// If no pending jobs, fire the email action
 		if ( $pending_jobs == 0 ) {
-			// Clean up old runs (older than 1 hour) to prevent processing old runs repeatedly
+			// Clean up old runs (older than 5 minutes) to prevent processing old runs repeatedly
 			$cleanup_start = microtime( true );
 			$old_runs_deleted = $wpdb->query( $wpdb->prepare(
 				"DELETE FROM {$wpdb->prefix}llmvm_current_run_results WHERE created_at < %s",
-				date( 'Y-m-d H:i:s', time() - 3600 ) // 1 hour ago
+				date( 'Y-m-d H:i:s', time() - 300 ) // 5 minutes ago
 			) );
 			$cleanup_time = microtime( true ) - $cleanup_start;
 			

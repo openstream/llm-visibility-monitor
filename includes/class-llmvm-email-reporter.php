@@ -991,7 +991,7 @@ class LLMVM_Email_Reporter {
         // Add prompt summaries section
         $prompt_summaries = $this->get_relevant_prompt_summaries( $results, $user );
         if ( ! empty( $prompt_summaries ) ) {
-            $html .= $this->generate_prompt_summaries_section( $prompt_summaries );
+            $html .= $this->generate_prompt_summaries_section( $prompt_summaries, $user_id );
         }
         
         $html .= '</div>';
@@ -1030,7 +1030,7 @@ class LLMVM_Email_Reporter {
                 $result_user_id = isset( $result['user_id'] ) ? (int) $result['user_id'] : 0;
 
                 // Format the answer with enhanced formatting
-                $formatted_answer = $this->format_answer_for_email( $answer );
+                $formatted_answer = $this->format_answer_for_email( $answer, $model );
                 $is_error = ( '' === trim( $answer ) || strpos( $answer, 'No answer' ) !== false );
 
                 $html .= '
@@ -1357,9 +1357,13 @@ class LLMVM_Email_Reporter {
     /**
      * Format answer text for email display using WordPress core functions.
      */
-    private function format_answer_for_email( string $answer ): string {
+    private function format_answer_for_email( string $answer, string $model = '' ): string {
         if ( empty( $answer ) ) {
-            return '<em>No answer received</em>';
+            if ( strpos( $model, ':online' ) !== false ) {
+                return '<em>No answer - Online model may have timed out (takes 2+ minutes)</em>';
+            } else {
+                return '<em>No answer received</em>';
+            }
         }
 
         // Convert markdown-style formatting to HTML
@@ -1637,24 +1641,13 @@ class LLMVM_Email_Reporter {
             return array();
         }
 
-		// Extract unique prompt texts from results and check if all answers are valid
+		// Extract unique prompt texts from results
 		$prompt_texts = array();
-		$prompt_validity = array(); // Track if all answers for each prompt are valid
 		
 		foreach ( $results as $result ) {
 			$prompt_text = isset( $result['prompt'] ) ? (string) $result['prompt'] : '';
 			if ( ! empty( $prompt_text ) ) {
 				$prompt_texts[] = $prompt_text;
-				
-				// Check if this result has a valid answer
-				$answer = trim( $result['answer'] ?? '' );
-				$is_valid = ! empty( $answer ) && $answer !== 'No answer received';
-				
-				// Track validity per prompt
-				if ( ! isset( $prompt_validity[ $prompt_text ] ) ) {
-					$prompt_validity[ $prompt_text ] = array();
-				}
-				$prompt_validity[ $prompt_text ][] = $is_valid;
 			}
 		}
 
@@ -1662,23 +1655,8 @@ class LLMVM_Email_Reporter {
 			return array();
 		}
 
-		// Remove duplicates and filter to only prompts where at least some answers are valid
+		// Remove duplicates
 		$prompt_texts = array_unique( $prompt_texts );
-		$valid_prompt_texts = array();
-		
-		foreach ( $prompt_texts as $prompt_text ) {
-			$has_any_valid = in_array( true, $prompt_validity[ $prompt_text ], true );
-			if ( $has_any_valid ) {
-				$valid_prompt_texts[] = $prompt_text;
-			}
-		}
-		
-		// If no prompts have any valid answers, don't show any summaries
-		if ( empty( $valid_prompt_texts ) ) {
-			return array();
-		}
-		
-		$prompt_texts = $valid_prompt_texts;
 
 		// Get summaries for these prompt texts
 		global $wpdb;
@@ -1706,7 +1684,7 @@ class LLMVM_Email_Reporter {
      * @param array $summaries Array of prompt summaries.
      * @return string HTML content for the summaries section.
      */
-    private function generate_prompt_summaries_section( array $summaries ): string {
+    private function generate_prompt_summaries_section( array $summaries, int $user_id ): string {
         if ( empty( $summaries ) ) {
             return '';
         }
@@ -1746,10 +1724,21 @@ class LLMVM_Email_Reporter {
 
             // Score statistics
             if ( $average_score !== null ) {
-                $score_color = $average_score >= 8 ? '#28a745' : ( $average_score >= 6 ? '#ffc107' : '#dc3545' );
+                // Green: 8-10, Orange: 2-7, Red: 0-1
+                if ( $average_score >= 8 ) {
+                    $score_color = '#28a745'; // Green
+                    $text_color = '#fff';
+                } elseif ( $average_score >= 2 ) {
+                    $score_color = '#fd7e14'; // Orange
+                    $text_color = '#fff';
+                } else {
+                    $score_color = '#dc3545'; // Red
+                    $text_color = '#fff';
+                }
+                
                 $html .= '
                 <div style="margin-bottom: 10px; font-size: 14px;">
-                    <span style="background: ' . $score_color . '; color: ' . ( $average_score >= 6 && $average_score < 8 ? '#000' : '#fff' ) . '; padding: 2px 6px; border-radius: 3px; font-weight: bold;">
+                    <span style="background: ' . $score_color . '; color: ' . $text_color . '; padding: 2px 6px; border-radius: 3px; font-weight: bold;">
                         ' . esc_html( (string) $average_score ) . '/10 avg
                     </span>';
 
@@ -1776,13 +1765,13 @@ class LLMVM_Email_Reporter {
 		// Add scoring legend
 		$html .= '
 		<div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px;">
-			<h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 Scoring Legend</h4>
+			<h4 style="margin: 0 0 8px 0; font-size: 13px; color: #495057;">📊 ' . esc_html( $this->translate_string( 'Scoring Legend', $user_id ) ) . '</h4>
 			<div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
-				<strong>0:</strong> Expected answer not mentioned at all<br>
-				<strong>1-3:</strong> Expected answer mentioned briefly or incorrectly<br>
-				<strong>4-7:</strong> Expected answer mentioned correctly but not prominently<br>
-				<strong>8-10:</strong> Expected answer mentioned correctly and prominently<br>
-				<em style="color: #868e96; font-size: 10px; margin-top: 4px; display: block;">Note: This scoring system is being fine-tuned based on user feedback.</em>
+				<strong>0:</strong> ' . esc_html( $this->translate_string( 'Expected answer not mentioned at all', $user_id ) ) . '<br>
+				<strong>1-3:</strong> ' . esc_html( $this->translate_string( 'Expected answer mentioned briefly or incorrectly', $user_id ) ) . '<br>
+				<strong>4-7:</strong> ' . esc_html( $this->translate_string( 'Expected answer mentioned correctly but not prominently', $user_id ) ) . '<br>
+				<strong>8-10:</strong> ' . esc_html( $this->translate_string( 'Expected answer mentioned correctly and prominently', $user_id ) ) . '<br>
+				<em style="color: #868e96; font-size: 10px; margin-top: 4px; display: block;">' . esc_html( $this->translate_string( 'Note: This scoring system is being fine-tuned based on user feedback.', $user_id ) ) . '</em>
 			</div>
 		</div>';
 
@@ -1857,7 +1846,13 @@ class LLMVM_Email_Reporter {
                 'Manage Prompts' => 'Prompts verwalten',
                 'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
                 'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehst du zu',
-                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor',
+                'Scoring Legend' => 'Bewertungslegende',
+                'Expected answer not mentioned at all' => 'Erwartete Antwort überhaupt nicht erwähnt',
+                'Expected answer mentioned briefly or incorrectly' => 'Erwartete Antwort kurz oder falsch erwähnt',
+                'Expected answer mentioned correctly but not prominently' => 'Erwartete Antwort korrekt aber nicht prominent erwähnt',
+                'Expected answer mentioned correctly and prominently' => 'Erwartete Antwort korrekt und prominent erwähnt',
+                'Note: This scoring system is being fine-tuned based on user feedback.' => 'Hinweis: Dieses Bewertungssystem wird basierend auf Benutzerfeedback verfeinert.'
             ],
             'de_CH' => [
                 'Run Results' => 'Ausführungsresultate',
@@ -1879,7 +1874,13 @@ class LLMVM_Email_Reporter {
                 'Manage Prompts' => 'Prompts verwalten',
                 'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
                 'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehen Sie zu',
-                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor',
+                'Scoring Legend' => 'Bewertungslegende',
+                'Expected answer not mentioned at all' => 'Erwartete Antwort überhaupt nicht erwähnt',
+                'Expected answer mentioned briefly or incorrectly' => 'Erwartete Antwort kurz oder falsch erwähnt',
+                'Expected answer mentioned correctly but not prominently' => 'Erwartete Antwort korrekt aber nicht prominent erwähnt',
+                'Expected answer mentioned correctly and prominently' => 'Erwartete Antwort korrekt und prominent erwähnt',
+                'Note: This scoring system is being fine-tuned based on user feedback.' => 'Hinweis: Dieses Bewertungssystem wird basierend auf Benutzerfeedback verfeinert.'
             ],
             'de_CH_informal' => [
                 'Run Results' => 'Ausführungsresultate',
@@ -1901,7 +1902,13 @@ class LLMVM_Email_Reporter {
                 'Manage Prompts' => 'Prompts verwalten',
                 'This report was automatically generated by the LLM Visibility Monitor plugin.' => 'Dieser Bericht wurde automatisch vom LLM Visibility Monitor generiert.',
                 'To disable email reports, go to' => 'Um E-Mail-Berichte zu deaktivieren, gehst du zu',
-                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor'
+                'Settings → LLM Visibility Monitor' => 'Einstellungen → LLM Visibility Monitor',
+                'Scoring Legend' => 'Bewertungslegende',
+                'Expected answer not mentioned at all' => 'Erwartete Antwort überhaupt nicht erwähnt',
+                'Expected answer mentioned briefly or incorrectly' => 'Erwartete Antwort kurz oder falsch erwähnt',
+                'Expected answer mentioned correctly but not prominently' => 'Erwartete Antwort korrekt aber nicht prominent erwähnt',
+                'Expected answer mentioned correctly and prominently' => 'Erwartete Antwort korrekt und prominent erwähnt',
+                'Note: This scoring system is being fine-tuned based on user feedback.' => 'Hinweis: Dieses Bewertungssystem wird basierend auf Benutzerfeedback verfeinert.'
             ]
         ];
         
