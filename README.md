@@ -152,11 +152,17 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
-### 0.17.0 - 2025-09-21
+### 0.16.0 - 2025-09-23
+
+#### :Online Model Timeout Fixes
+- **Extended Timeout**: Increased timeout for :online models to 240 seconds (4 minutes) to accommodate web search and reasoning
+- **Enhanced Error Messages**: Added specific timeout messages for :online models that take longer to respond
+- **Detailed Logging**: Added comprehensive logging for :online model requests and responses for better debugging
+- **Dashboard Improvements**: Updated dashboard to show specific timeout messages for :online models
 
 #### Email System Improvements
 - **Immediate Email Triggering**: Fixed email system to send emails immediately when runs complete instead of waiting for queue processing
-- **Old Run Cleanup**: Added automatic cleanup of old runs (older than 1 hour) to prevent processing stale runs repeatedly
+- **Old Run Cleanup**: Added automatic cleanup of old runs (older than 5 minutes) to prevent processing stale runs repeatedly
 - **Duplicate Email Fix**: Resolved issue where users were receiving 3 emails instead of 1 due to old run processing
 
 #### German Translation Fixes
