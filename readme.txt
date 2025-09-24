@@ -143,6 +143,8 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 * **Reschedule Tool**: Added reschedule button to fix existing cron jobs with new logic
 * **Admin Integration**: Made calculate_distributed_run_time() method public for admin use
 * **Timezone Handling**: Fixed convert_utc_to_user_timezone() to handle both timestamps and date strings
+* **UTC Consistency**: Replaced server-time `date()` with `gmdate()` for database timestamp comparisons and cleanup operations
+* **Logging Improvements**: Fixed logging labels to correctly show UTC vs server time for better debugging
 
 = 0.16.0 - 2025-09-20 =
 * **BCC Implementation Fix**: Fixed BCC implementation to properly hide BCC recipients from main email recipient
