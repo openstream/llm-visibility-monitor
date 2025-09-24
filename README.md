@@ -180,6 +180,16 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 - **UTC Consistency**: Replaced server-time `date()` with `gmdate()` for database timestamp comparisons and cleanup operations
 - **Logging Improvements**: Fixed logging labels to correctly show UTC vs server time for better debugging
 
+#### Queue Processing System Fixes
+- **Automatic Queue Processing**: Fixed queue processing to work automatically for both manual and scheduled runs
+- **Recurring Schedule Management**: Replaced single-event scheduling with proper recurring schedule management
+- **Smart Schedule Recovery**: Added automatic rescheduling if next run is more than 2 minutes away
+- **Robust Processing**: Ensures jobs are processed within 1-2 minutes without getting stuck
+- **Manual Run Support**: Manual prompt runs now trigger queue processing immediately
+- **Scheduled Run Support**: Scheduled cron jobs work seamlessly with the queue system
+- **Zero Stuck Jobs**: Prevents jobs from getting stuck in pending or processing status
+- **Automatic Recovery**: System automatically recovers from delayed or stuck schedules
+
 ### 0.16.0 - 2025-09-20
 
 #### BCC Implementation Fix
