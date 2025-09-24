@@ -508,7 +508,7 @@ class LLMVM_Queue_Manager {
 		$start_time = microtime( true );
 		
 		// Use UTC time to match database storage
-		$cutoff_time = date( 'Y-m-d H:i:s', time() - ( $minutes_back * 60 ) );
+		$cutoff_time = gmdate( 'Y-m-d H:i:s', time() - ( $minutes_back * 60 ) );
 		
 		$results = $wpdb->get_results( $wpdb->prepare(
 			"SELECT * FROM {$wpdb->prefix}llm_visibility_results 
@@ -543,8 +543,8 @@ class LLMVM_Queue_Manager {
 			'user_id' => $user_id,
 			'minutes_back' => $minutes_back,
 			'cutoff_time_utc' => $cutoff_time,
-			'current_time_utc' => date( 'Y-m-d H:i:s' ),
-			'current_time_wp' => gmdate( 'Y-m-d H:i:s' ),
+			'current_time_utc' => gmdate( 'Y-m-d H:i:s' ),
+			'current_time_server' => date( 'Y-m-d H:i:s' ),
 			'results_count' => count( $results ),
 			'all_user_results' => $all_user_results,
 			'total_results_in_table' => $total_results,
@@ -610,7 +610,7 @@ class LLMVM_Queue_Manager {
 			$cleanup_start = microtime( true );
 			$old_runs_deleted = $wpdb->query( $wpdb->prepare(
 				"DELETE FROM {$wpdb->prefix}llmvm_current_run_results WHERE created_at < %s",
-				date( 'Y-m-d H:i:s', time() - 300 ) // 5 minutes ago
+				gmdate( 'Y-m-d H:i:s', time() - 300 ) // 5 minutes ago in UTC
 			) );
 			$cleanup_time = microtime( true ) - $cleanup_start;
 			
