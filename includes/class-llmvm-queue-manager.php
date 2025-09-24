@@ -312,6 +312,9 @@ class LLMVM_Queue_Manager {
 
 		// Ensure recurring queue processing is scheduled
 		$this->ensure_queue_processing_scheduled();
+		
+		// Trigger immediate processing for better responsiveness
+		wp_schedule_single_event( time(), 'llmvm_process_queue' );
 
 		// Best-effort spawn of wp-cron to ensure processing even on low-traffic sites
 		$cron_url = site_url( '/wp-cron.php' );
