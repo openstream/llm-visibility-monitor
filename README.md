@@ -13,6 +13,67 @@ Monitor LLM responses on a schedule and store/export results.
 2. Activate "LLM Visibility Monitor" in wp-admin → Plugins.
 3. Go to Settings → LLM Visibility Monitor to configure.
 
+## Deployment
+
+### Git-Based Deployment
+
+The plugin supports direct deployment via Git for easy updates:
+
+#### Initial Setup
+```bash
+# Navigate to WordPress plugins directory
+cd /path/to/wp-content/plugins/
+
+# Clone the repository
+git clone https://github.com/openstream/llm-visibility-monitor.git
+
+# Navigate to plugin directory
+cd llm-visibility-monitor
+```
+
+#### Updating the Plugin
+```bash
+# Navigate to plugin directory
+cd /path/to/wp-content/plugins/llm-visibility-monitor
+
+# Pull latest changes
+git pull origin main
+
+# Check current version
+git tag --list | tail -5
+```
+
+#### Updating to Specific Version
+```bash
+# Navigate to plugin directory
+cd /path/to/wp-content/plugins/llm-visibility-monitor
+
+# Pull latest changes
+git pull origin main
+
+# Checkout specific version (optional)
+git checkout v0.16.0
+```
+
+#### One-Line Remote Update
+```bash
+# Update from local machine (replace with your server details)
+ssh user@server "cd /path/to/wp-content/plugins/llm-visibility-monitor && git pull origin main"
+```
+
+### Deployment Benefits
+- **Easy Updates**: Simple `git pull` to get latest changes
+- **Version Control**: Track all changes and versions
+- **Rollback Capability**: Can revert to previous versions if needed
+- **No SSH Keys Required**: Uses HTTPS for cloning and updates
+- **Automated Workflow**: Integrates with existing development workflow
+
+### Production Considerations
+- **Backup First**: Always backup before updating
+- **Test Updates**: Test updates in staging environment first
+- **Plugin Activation**: May need to reactivate plugin after updates
+- **Database Updates**: Plugin handles database schema updates automatically
+
 ## Features
 
 ### Admin Interface
