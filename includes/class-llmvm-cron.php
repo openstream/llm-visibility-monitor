@@ -1013,10 +1013,8 @@ class LLMVM_Cron {
 			$this->generate_prompt_summary_for_cron( $prompt_id, $current_user_id );
 		}
 
-		// Trigger email immediately when batch run completes
-		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
-		do_action( 'llmvm_run_completed', $current_user_id, $recent_results );
-		LLMVM_Logger::log( 'Email triggered immediately after batch run completion', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
+		// Note: Email will be triggered by queue manager when all jobs for this user are complete
+		LLMVM_Logger::log( 'Batch run completed, email will be triggered by queue manager when all jobs are done', array( 'user_id' => $current_user_id ) );
 	}
 	
 	/**
@@ -1161,11 +1159,8 @@ class LLMVM_Cron {
 		// Generate prompt summary if expected answer exists
 		$this->generate_prompt_summary_for_cron( $prompt_id, $current_user_id );
 
-		// Trigger email immediately when run completes
-		$recent_results = LLMVM_Database::get_recent_results( $current_user_id, 10 );
-		LLMVM_Logger::log( 'About to trigger immediate email', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
-		do_action( 'llmvm_run_completed', $current_user_id, $recent_results );
-		LLMVM_Logger::log( 'Email triggered immediately after run completion', array( 'user_id' => $current_user_id, 'results_count' => count( $recent_results ) ) );
+		// Note: Email will be triggered by queue manager when all jobs for this user are complete
+		LLMVM_Logger::log( 'Single prompt run completed, email will be triggered by queue manager when all jobs are done', array( 'user_id' => $current_user_id ) );
 	}
 
 	/**
