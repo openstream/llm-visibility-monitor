@@ -310,11 +310,8 @@ class LLMVM_Queue_Manager {
 			'insert_id' => $job_id
 		) );
 
-		// Trigger immediate queue processing for better responsiveness
-		wp_schedule_single_event( time(), 'llmvm_process_queue' );
-		LLMVM_Logger::log( 'Scheduled single queue processing event', array(
-			'next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
-		) );
+		// Ensure recurring queue processing is scheduled
+		$this->ensure_queue_processing_scheduled();
 
 		// Best-effort spawn of wp-cron to ensure processing even on low-traffic sites
 		$cron_url = site_url( '/wp-cron.php' );
@@ -333,6 +330,34 @@ class LLMVM_Queue_Manager {
 		}
 
 		return $job_id;
+	}
+
+	/**
+	 * Ensure queue processing is scheduled.
+	 */
+	private function ensure_queue_processing_scheduled(): void {
+		// Check if recurring schedule exists
+		$next_run = wp_next_scheduled( 'llmvm_process_queue' );
+		
+		if ( ! $next_run ) {
+			// No schedule exists, create recurring schedule
+			wp_schedule_event( time(), 'llmvm_queue_interval', 'llmvm_process_queue' );
+			LLMVM_Logger::log( 'Scheduled recurring queue processing event', array(
+				'next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
+			) );
+		} else {
+			// Check if the next run is too far in the future (more than 2 minutes)
+			$time_until_next = $next_run - time();
+			if ( $time_until_next > 120 ) {
+				// Clear the existing schedule and reschedule
+				wp_clear_scheduled_hook( 'llmvm_process_queue' );
+				wp_schedule_event( time(), 'llmvm_queue_interval', 'llmvm_process_queue' );
+				LLMVM_Logger::log( 'Rescheduled queue processing (was too far in future)', array(
+					'old_next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) $next_run ),
+					'new_next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
+				) );
+			}
+		}
 	}
 
 	/**
