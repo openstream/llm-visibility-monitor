@@ -349,15 +349,16 @@ class LLMVM_Queue_Manager {
 				'next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
 			) );
 		} else {
-			// Check if the next run is too far in the future (more than 2 minutes)
+			// Check if the next run is too far in the future (more than 2 minutes) or in the past
 			$time_until_next = $next_run - time();
-			if ( $time_until_next > 120 ) {
+			if ( $time_until_next > 120 || $time_until_next < 0 ) {
 				// Clear the existing schedule and reschedule
 				wp_clear_scheduled_hook( 'llmvm_process_queue' );
 				wp_schedule_event( time(), 'llmvm_queue_interval', 'llmvm_process_queue' );
-				LLMVM_Logger::log( 'Rescheduled queue processing (was too far in future)', array(
+				LLMVM_Logger::log( 'Rescheduled queue processing (was too far in future or in past)', array(
 					'old_next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) $next_run ),
-					'new_next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) )
+					'new_next_run_gmt' => gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( 'llmvm_process_queue' ) ),
+					'time_until_next' => $time_until_next
 				) );
 			}
 		}
