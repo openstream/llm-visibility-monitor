@@ -221,6 +221,17 @@ class LLMVM_Admin {
         // Remove other unnecessary admin bar items for LLM Managers
         $wp_admin_bar->remove_node( 'updates' ); // Updates notification
         $wp_admin_bar->remove_node( 'search' ); // Search box
+        
+        // Remove admin-only edit links (Edit Product, Edit Post, etc.)
+        $wp_admin_bar->remove_node( 'edit' );
+        
+        // Remove other admin-only items that might appear
+        $wp_admin_bar->remove_node( 'customize' ); // Customizer link
+        $wp_admin_bar->remove_node( 'themes' ); // Themes link
+        $wp_admin_bar->remove_node( 'widgets' ); // Widgets link
+        $wp_admin_bar->remove_node( 'menus' ); // Menus link
+        $wp_admin_bar->remove_node( 'background' ); // Background link
+        $wp_admin_bar->remove_node( 'header' ); // Header link
     }
 
     /**
