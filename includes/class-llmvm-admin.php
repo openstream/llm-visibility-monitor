@@ -475,6 +475,10 @@ class LLMVM_Admin {
         $email_from_address = isset( $input['email_from_address'] ) ? sanitize_email( (string) $input['email_from_address'] ) : '';
         $new['email_from_address'] = $email_from_address;
         
+        // Queue concurrency setting
+        $queue_concurrency = isset( $input['queue_concurrency'] ) ? max( 1, min( 5, (int) $input['queue_concurrency'] ) ) : 1;
+        $new['queue_concurrency'] = $queue_concurrency;
+        
         // Queue system is now always enabled
 
         // Usage limits
