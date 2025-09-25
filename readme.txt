@@ -126,6 +126,33 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 == Changelog ==
 
+= 0.17.0 - 2025-09-25 =
+* **Production Cron System Fixes**
+  * Enhanced queue processing to handle scheduled prompts when DISABLE_WP_CRON=1
+  * System cron integration for production environments with proper WordPress cron handling
+  * Automatic scheduled prompt processing via queue manager when WordPress cron is disabled
+  * Production parity between local and production environments
+* **Diagnostic Tools (New)**
+  * Comprehensive diagnostics class for troubleshooting automatic processing issues
+  * Real-time monitoring of queue processing, scheduled prompts, and email settings
+  * Production environment detection with automatic DISABLE_WP_CRON=1 detection
+  * Admin interface integration with diagnostics displayed in Settings page
+* **Manual Cron Endpoint (New)**
+  * Production fallback manual cron class for when system cron fails
+  * Secure endpoint with secret key authentication for manual cron triggering
+  * Scheduled prompt processing via manual cron endpoint
+  * Admin integration with manual cron URL display for production setup
+* **Email Timing Verification**
+  * Confirmed email reports are sent only after ALL models complete
+  * Batch processing with proper email timing for multiple model runs
+  * User-specific reports containing results from all models in current run
+  * Production testing verification of complete automatic workflow
+* **Technical Improvements**
+  * Enhanced logging for scheduled prompt processing and queue management
+  * Improved error handling for production environments with disabled WordPress cron
+  * Performance monitoring with response time tracking and queue processing metrics
+  * Debug tools for testing automatic processing and queue status
+
 = 0.16.0 - 2025-09-23 =
 * **:Online Model Timeout Fixes**: Increased timeout for :online models to 240 seconds (4 minutes) to accommodate web search and reasoning
 * **Enhanced Error Messages**: Added specific timeout messages for :online models that take longer to respond

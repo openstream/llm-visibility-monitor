@@ -213,6 +213,38 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 ## Changelog
 
+### 0.17.0 - 2025-09-25
+
+#### Production Cron System Fixes
+- **Enhanced Queue Processing**: Fixed automatic processing when `DISABLE_WP_CRON=1` by adding scheduled prompt processing to queue manager
+- **System Cron Integration**: Added comprehensive support for production environments with system cron jobs
+- **Automatic Scheduled Prompts**: Queue processing now automatically triggers scheduled prompts when WordPress cron is disabled
+- **Production Parity**: Local and production environments now behave identically with proper cron handling
+
+#### Diagnostic Tools (New)
+- **Comprehensive Diagnostics**: Added `LLMVM_Diagnostics` class for troubleshooting automatic processing issues
+- **Queue Status Analysis**: Real-time monitoring of queue processing, scheduled prompts, and email settings
+- **Production Environment Detection**: Automatic detection of `DISABLE_WP_CRON=1` and system cron status
+- **Admin Interface Integration**: Diagnostics displayed in Settings page for easy troubleshooting
+
+#### Manual Cron Endpoint (New)
+- **Production Fallback**: Added `LLMVM_Manual_Cron` class for manual cron triggering when system cron fails
+- **Secure Endpoint**: Protected manual cron URL with secret key authentication
+- **Scheduled Prompt Processing**: Manual cron endpoint processes both queue jobs and scheduled prompts
+- **Admin Integration**: Manual cron URL displayed in admin interface for production setup
+
+#### Email Timing Verification
+- **Perfect Email Timing**: Confirmed email reports are sent only after ALL models complete
+- **Batch Processing**: Email system correctly handles multiple model runs with proper timing
+- **User-Specific Reports**: Email reports contain results from all models in the current run
+- **Production Testing**: Verified complete workflow works automatically in production-like environment
+
+#### Technical Improvements
+- **Enhanced Logging**: Added detailed logging for scheduled prompt processing and queue management
+- **Error Handling**: Improved error handling for production environments with disabled WordPress cron
+- **Performance Monitoring**: Added response time tracking and queue processing metrics
+- **Debug Tools**: Added debug scripts for testing automatic processing and queue status
+
 ### 0.16.0 - 2025-09-23
 
 #### :Online Model Timeout Fixes

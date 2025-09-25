@@ -2982,6 +2982,25 @@ class LLMVM_Admin {
             'count' => $deleted
         ] );
     }
+
+    /**
+     * Show manual cron information for production environments.
+     */
+    public function show_manual_cron_info(): void {
+        if ( ! class_exists( 'LLMVM_Manual_Cron' ) ) {
+            return;
+        }
+
+        $cron_url = LLMVM_Manual_Cron::get_cron_url();
+        
+        echo '<div class="notice notice-info">';
+        echo '<h3>🔧 Manual Cron for Production</h3>';
+        echo '<p><strong>WordPress cron is disabled.</strong> Use this URL to trigger processing manually:</p>';
+        echo '<p><code>' . esc_url( $cron_url ) . '</code></p>';
+        echo '<p><strong>For automatic processing:</strong> Set up a system cron job to call this URL every minute:</p>';
+        echo '<p><code>* * * * * curl -s "' . esc_url( $cron_url ) . '" > /dev/null 2>&1</code></p>';
+        echo '</div>';
+    }
 }
 
 

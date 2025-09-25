@@ -40,6 +40,20 @@ if ( ! defined( 'ABSPATH' ) ) {
     ?>
 
     <?php
+    // Show diagnostics for automatic processing issues
+    if ( class_exists( 'LLMVM_Diagnostics' ) ) {
+        echo LLMVM_Diagnostics::get_diagnostic_summary();
+    }
+    ?>
+
+    <?php
+    // Show manual cron information for production environments
+    if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON && class_exists( 'LLMVM_Manual_Cron' ) ) {
+        $admin->show_manual_cron_info();
+    }
+    ?>
+
+    <?php
     // Show planned cron executions
     $admin->show_planned_cron_executions();
     ?>

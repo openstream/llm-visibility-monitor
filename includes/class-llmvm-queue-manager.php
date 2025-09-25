@@ -392,6 +392,11 @@ class LLMVM_Queue_Manager {
 			'next_run_gmt' => ( $t = wp_next_scheduled( 'llmvm_process_queue' ) ) ? gmdate( 'Y-m-d H:i:s', (int) $t ) : 'not_scheduled'
 		) );
 
+		// Process scheduled prompts when DISABLE_WP_CRON is set
+		if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) {
+			$this->process_scheduled_prompts();
+		}
+
 		$table_name = $wpdb->prefix . self::QUEUE_TABLE;
 
 		// Get concurrency limit from settings
@@ -1398,5 +1403,29 @@ class LLMVM_Queue_Manager {
 		);
 		
 		return $deleted > 0;
+	}
+
+	/**
+	 * Process scheduled prompts when DISABLE_WP_CRON is set.
+	 */
+	private function process_scheduled_prompts(): void {
+		$prompts = get_option( 'llmvm_prompts', array() );
+		
+		foreach ( $prompts as $prompt ) {
+			$hook = 'llmvm_run_prompt_' . $prompt['id'];
+			$next_run = wp_next_scheduled( $hook );
+			
+			// If the next run is due or overdue, trigger it
+			if ( $next_run && $next_run <= time() ) {
+				LLMVM_Logger::log( 'Triggering scheduled prompt via queue processing', array(
+					'prompt_id' => $prompt['id'],
+					'next_run' => gmdate( 'Y-m-d H:i:s', $next_run ),
+					'current_time' => gmdate( 'Y-m-d H:i:s' )
+				) );
+				
+				// Trigger the scheduled prompt
+				do_action( $hook );
+			}
+		}
 	}
 }

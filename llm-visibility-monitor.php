@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LLM Visibility Monitor
  * Description: Monitor LLM responses on a schedule and store/export results.
- * Version: 0.16.0
+ * Version: 0.17.0
  * Requires at least: 6.4
  * Tested up to: 6.8
  * Requires PHP: 8.0
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'LLMVM_VERSION', '0.14.0' );
+define( 'LLMVM_VERSION', '0.17.0' );
 define( 'LLMVM_PLUGIN_FILE', __FILE__ );
 
 // Load text domain immediately for this plugin
@@ -86,6 +86,8 @@ function llmvm_load_includes() {
 			'class-llmvm-openrouter-client.php',
 			'class-llmvm-queue-manager.php',
 			'class-llmvm-cron.php',
+			'class-llmvm-manual-cron.php',
+			'class-llmvm-diagnostics.php',
 			'class-llmvm-admin.php',
 			'class-llmvm-exporter.php',
 			'class-llmvm-email-reporter.php',
@@ -190,6 +192,11 @@ function llmvm_init() {
 
 	if ( class_exists( 'LLMVM_Queue_Manager' ) ) {
 		new LLMVM_Queue_Manager();
+	}
+
+	// Initialize manual cron for production environments
+	if ( class_exists( 'LLMVM_Manual_Cron' ) ) {
+		( new LLMVM_Manual_Cron() )->hooks();
 	}
 
 	// Ensure LLM Manager users can access admin pages
