@@ -205,6 +205,39 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 
 **Note**: When using `ddev php` from the host system, use the full container paths (`/var/www/html/...`). If you're inside the DDEV container, you can use relative paths.
 
+### Translation Development
+
+The plugin supports multiple German locales with proper .po/.mo file management:
+
+#### Supported Locales
+- `de_DE` - Standard German (Germany)
+- `de_DE_formal` - Formal German (Germany) 
+- `de_CH` - Swiss German (formal)
+- `de_CH_informal` - Swiss German (informal)
+
+#### Building Translations
+
+When updating translations, use the provided build script:
+
+```bash
+# Generate .mo files from .po files
+./build-translations.sh
+
+# Commit the generated .mo files
+git add languages/
+git commit -m "Update German translations"
+git push origin main
+```
+
+#### Translation Workflow
+1. Edit the `.po` files in the `languages/` directory
+2. Run `./build-translations.sh` to generate `.mo` files
+3. Test translations locally
+4. Commit both `.po` and `.mo` files
+5. Deploy to production
+
+**Important**: Always generate `.mo` files locally using `msgfmt` before deploying. WordPress requires properly compiled `.mo` files for translations to work.
+
 ### Container Paths
 
 - **Plugin Directory**: `/var/www/html/wp-content/plugins/llm-visibility-monitor/`
@@ -250,6 +283,16 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
 - **Error Handling**: Improved error handling for production environments with disabled WordPress cron
 - **Performance Monitoring**: Added response time tracking and queue processing metrics
 - **Debug Tools**: Added debug scripts for testing automatic processing and queue status
+
+#### Security & User Experience Improvements
+- **Admin Bar Security**: Fixed security issue where non-admin users could see "Edit Product" and other admin-only links in WordPress admin bar
+- **Role-Based Subscription Menu**: Implemented conditional subscription menu linking based on user roles (Pro users → customer dashboard, Free users → upgrade page)
+- **Enhanced User Experience**: Different messaging and button text for Pro vs Free users in subscription interface
+
+#### Translation & Localization
+- **German Translation Fixes**: Added missing German translation for "Optional: Enter expected answer for comparison scoring..." placeholder text
+- **Translation Build Process**: Created proper build script (`./build-translations.sh`) for generating .mo files from .po files using msgfmt
+- **Multi-Locale Support**: Updated all German variants (de_DE, de_DE_formal, de_CH, de_CH_informal) with complete translations
 
 ### 0.16.0 - 2025-09-23
 

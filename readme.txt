@@ -4,7 +4,7 @@ Tags: llm, ai, monitoring, openrouter, dashboard
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 0.16.0
+Stable tag: 0.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,6 +152,14 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * Batch processing with proper email timing for multiple model runs
   * User-specific reports containing results from all models in current run
   * Production testing verification of complete automatic workflow
+* **Security & User Experience Improvements**
+  * Fixed admin bar security issue where non-admin users could see "Edit Product" and other admin-only links
+  * Implemented role-based subscription menu linking (Pro users → customer dashboard, Free users → upgrade page)
+  * Enhanced user experience with different messaging for Pro vs Free users in subscription interface
+* **Translation & Localization**
+  * Added missing German translation for "Optional: Enter expected answer for comparison scoring..." placeholder text
+  * Created proper build script (./build-translations.sh) for generating .mo files from .po files using msgfmt
+  * Updated all German variants (de_DE, de_DE_formal, de_CH, de_CH_informal) with complete translations
 * **Technical Improvements**
   * Enhanced logging for scheduled prompt processing and queue management
   * Improved error handling for production environments with disabled WordPress cron
