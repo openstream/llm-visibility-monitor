@@ -1081,11 +1081,13 @@ class LLMVM_Admin {
             return;
         }
 
+        // Get user filter for queue data
+        $user_filter = $is_admin ? null : $current_user_id;
+        
         // Get queue status (filtered by user if not admin)
         $queue_status = $queue_manager->get_queue_status( $user_filter );
         
         // Get queue jobs (filtered by user if not admin)
-        $user_filter = $is_admin ? null : $current_user_id;
         $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 100 );
 
         if ( ! defined( 'LLMVM_PLUGIN_DIR' ) || empty( LLMVM_PLUGIN_DIR ) ) {
