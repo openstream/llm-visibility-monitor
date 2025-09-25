@@ -1065,15 +1065,27 @@ class LLMVM_Queue_Manager {
 	 *
 	 * @return array Queue status data.
 	 */
-	public function get_queue_status(): array {
+	public function get_queue_status( ?int $user_id = null ): array {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . self::QUEUE_TABLE;
 
-		$status_counts = $wpdb->get_results(
-			"SELECT status, COUNT(*) as count 
+		// Build query with optional user filtering
+		$where_clause = '';
+		$where_values = array();
+		
+		if ( $user_id !== null ) {
+			$where_clause = "WHERE JSON_EXTRACT(job_data, '$.user_id') = %d";
+			$where_values[] = $user_id;
+		}
+
+		$query = "SELECT status, COUNT(*) as count 
 			FROM $table_name 
-			GROUP BY status",
+			$where_clause
+			GROUP BY status";
+
+		$status_counts = $wpdb->get_results(
+			$wpdb->prepare( $query, $where_values ),
 			ARRAY_A
 		);
 

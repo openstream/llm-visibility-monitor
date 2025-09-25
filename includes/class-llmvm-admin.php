@@ -1081,8 +1081,8 @@ class LLMVM_Admin {
             return;
         }
 
-        // Get queue status
-        $queue_status = $queue_manager->get_queue_status();
+        // Get queue status (filtered by user if not admin)
+        $queue_status = $queue_manager->get_queue_status( $user_filter );
         
         // Get queue jobs (filtered by user if not admin)
         $user_filter = $is_admin ? null : $current_user_id;
@@ -1199,7 +1199,7 @@ class LLMVM_Admin {
         }
 
         $queue_manager = new LLMVM_Queue_Manager();
-        $queue_status = $queue_manager->get_queue_status();
+        $queue_status = $queue_manager->get_queue_status( $user_filter );
         
         // Get current user info for filtering
         $current_user_id = get_current_user_id();
