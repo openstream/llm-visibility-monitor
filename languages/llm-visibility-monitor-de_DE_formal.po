@@ -879,6 +879,10 @@ msgstr "Ihre Prompts verwalten"
 msgid "Upgrade your plan"
 msgstr "Ihren Plan upgraden"
 
+#: includes/views/prompts-page.php
+msgid "Optional: Enter expected answer for comparison scoring..."
+msgstr "Optional: Erwartete Antwort für Vergleichsbewertung eingeben..."
+
 
 
 
