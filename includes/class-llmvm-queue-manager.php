@@ -446,7 +446,29 @@ class LLMVM_Queue_Manager {
 			) );
 		}
 
+		// Enhanced logging for debugging Plesk cron issues
+		$total_pending = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name WHERE status = 'pending'" );
+		$total_processing = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name WHERE status = 'processing'" );
+		$total_completed = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name WHERE status = 'completed'" );
+		$total_failed = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name WHERE status = 'failed'" );
+		
+		LLMVM_Logger::log( 'Queue status summary', array(
+			'total_pending' => $total_pending,
+			'total_processing' => $total_processing,
+			'total_completed' => $total_completed,
+			'total_failed' => $total_failed,
+			'jobs_found' => count( $jobs ),
+			'current_processing' => $current_processing,
+			'max_concurrent' => $max_concurrent,
+			'jobs_to_process' => $jobs_to_process
+		) );
+
 		if ( empty( $jobs ) ) {
+			LLMVM_Logger::log( 'No jobs to process', array(
+				'total_pending' => $total_pending,
+				'current_processing' => $current_processing,
+				'max_concurrent' => $max_concurrent
+			) );
 			return;
 		}
 
@@ -1411,9 +1433,25 @@ class LLMVM_Queue_Manager {
 	private function process_scheduled_prompts(): void {
 		$prompts = get_option( 'llmvm_prompts', array() );
 		
+		LLMVM_Logger::log( 'Processing scheduled prompts', array(
+			'prompts_count' => count( $prompts ),
+			'current_time' => gmdate( 'Y-m-d H:i:s' ),
+			'current_timestamp' => time()
+		) );
+		
 		foreach ( $prompts as $prompt ) {
 			$hook = 'llmvm_run_prompt_' . $prompt['id'];
 			$next_run = wp_next_scheduled( $hook );
+			
+			LLMVM_Logger::log( 'Checking scheduled prompt', array(
+				'prompt_id' => $prompt['id'],
+				'hook' => $hook,
+				'next_run' => $next_run ? gmdate( 'Y-m-d H:i:s', $next_run ) : 'not_scheduled',
+				'next_run_timestamp' => $next_run,
+				'current_time' => gmdate( 'Y-m-d H:i:s' ),
+				'current_timestamp' => time(),
+				'is_due' => $next_run && $next_run <= time() ? 1 : 0
+			) );
 			
 			// If the next run is due or overdue, trigger it
 			if ( $next_run && $next_run <= time() ) {
