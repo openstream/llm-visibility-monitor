@@ -119,6 +119,9 @@ class LLMVM_Admin {
         
         // Add cleanup action for old results
         add_action( 'wp_ajax_llmvm_cleanup_old_results', [ $this, 'handle_cleanup_old_results' ] );
+        
+        // Add action to delete user prompt summaries
+        add_action( 'wp_ajax_llmvm_delete_user_summaries', [ $this, 'handle_delete_user_summaries' ] );
 
         // Ensure LLM Manager users can access admin pages
         add_action( 'init', [ $this, 'ensure_admin_access' ], 5 );
@@ -3011,6 +3014,54 @@ class LLMVM_Admin {
             'message' => sprintf( 'Cleaned up %d old results from database', $deleted ),
             'count' => $deleted
         ] );
+    }
+
+    /**
+     * Handle deletion of user prompt summaries.
+     */
+    public function handle_delete_user_summaries(): void {
+        // Check permissions
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Insufficient permissions' );
+        }
+
+        // Verify nonce
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'llmvm_delete_user_summaries' ) ) {
+            wp_send_json_error( 'Invalid nonce' );
+        }
+
+        $user_id = (int) ( $_POST['user_id'] ?? 0 );
+        
+        if ( $user_id <= 0 ) {
+            wp_send_json_error( 'Invalid user ID' );
+        }
+
+        // Check if user exists
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            wp_send_json_error( 'User not found' );
+        }
+
+        // Get count before deletion
+        $summaries_before = LLMVM_Database::get_latest_prompt_summaries( $user_id, 999999 );
+        $count_before = count( $summaries_before );
+
+        if ( $count_before === 0 ) {
+            wp_send_json_success( array(
+                'message' => 'No prompt summaries found for this user',
+                'deleted_count' => 0
+            ) );
+        }
+
+        // Delete the summaries
+        $deleted_count = LLMVM_Database::delete_prompt_summaries_for_user( $user_id );
+
+        wp_send_json_success( array(
+            'message' => sprintf( 'Deleted %d prompt summaries for user ID %d (%s)', $deleted_count, $user_id, $user->user_login ),
+            'deleted_count' => $deleted_count,
+            'user_id' => $user_id,
+            'username' => $user->user_login
+        ) );
     }
 
     /**
