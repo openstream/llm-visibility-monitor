@@ -5,7 +5,7 @@
  */
 
 // Load WordPress
-require_once dirname(__FILE__) . '/../../../../wp-load.php';
+require_once dirname(__FILE__) . '/../../../wp-load.php';
 
 // Check if we're running from command line or web
 $is_cli = php_sapi_name() === 'cli';
