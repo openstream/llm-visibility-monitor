@@ -248,12 +248,23 @@ class LLMVM_Admin {
      * Subscription page content with JavaScript redirect.
      */
     public function subscription_page_content(): void {
-        $redirect_url = home_url( '/customer-dashboard/' );
+        // Determine redirect URL and message based on user role
+        if ( current_user_can( 'llmvm_pro_plan' ) ) {
+            // LLM Manager Pro users go to subscription dashboard
+            $redirect_url = home_url( '/customer-dashboard/' );
+            $redirect_message = __( 'Redirecting to your subscription dashboard...', 'llm-visibility-monitor' );
+            $button_text = __( 'Go to Subscription Dashboard', 'llm-visibility-monitor' );
+        } else {
+            // LLM Manager Free users go to purchase page
+            $redirect_url = home_url( '/buy/llm-visibility-monitor-pro' );
+            $redirect_message = __( 'Redirecting to upgrade options...', 'llm-visibility-monitor' );
+            $button_text = __( 'View Upgrade Options', 'llm-visibility-monitor' );
+        }
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Subscription', 'llm-visibility-monitor' ); ?></h1>
-            <p><?php esc_html_e( 'Redirecting to your subscription dashboard...', 'llm-visibility-monitor' ); ?></p>
-            <p><a href="<?php echo esc_url( $redirect_url ); ?>" class="button button-primary"><?php esc_html_e( 'Go to Subscription Dashboard', 'llm-visibility-monitor' ); ?></a></p>
+            <p><?php echo esc_html( $redirect_message ); ?></p>
+            <p><a href="<?php echo esc_url( $redirect_url ); ?>" class="button button-primary"><?php echo esc_html( $button_text ); ?></a></p>
         </div>
         
         <script type="text/javascript">
