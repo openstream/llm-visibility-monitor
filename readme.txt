@@ -132,6 +132,11 @@ ddev php -l /var/www/html/wp-content/plugins/llm-visibility-monitor/includes/cla
   * System cron integration for production environments with proper WordPress cron handling
   * Automatic scheduled prompt processing via queue manager when WordPress cron is disabled
   * Production parity between local and production environments
+* **Settings Form Bug Fixes**
+  * Fixed critical bug where Queue Concurrency Limit setting was not being saved in admin form
+  * Added missing queue_concurrency field to settings sanitization method
+  * Resolved data format issues where settings were stored as JSON strings instead of PHP arrays
+  * Ensures all admin form settings are properly saved and persisted
 * **Diagnostic Tools (New)**
   * Comprehensive diagnostics class for troubleshooting automatic processing issues
   * Real-time monitoring of queue processing, scheduled prompts, and email settings
