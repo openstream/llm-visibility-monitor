@@ -47,8 +47,8 @@ table.llmvm-queue-table tbody tr td .llmvm-status-badge.failed { background-colo
 $current_user_id = get_current_user_id();
 $is_admin = current_user_can( 'llmvm_manage_settings' );
 $queue_manager = class_exists( 'LLMVM_Queue_Manager' ) ? new LLMVM_Queue_Manager() : null;
-$queue_status = $queue_manager ? $queue_manager->get_queue_status() : array();
 $user_filter = $is_admin ? null : $current_user_id;
+$queue_status = $queue_manager ? $queue_manager->get_queue_status( $user_filter ) : array();
 $queue_jobs = $queue_manager ? $queue_manager->get_queue_jobs( $user_filter, null, 100 ) : array();
 
 // Calculate time ago for each job (using server time for accurate calculation)
