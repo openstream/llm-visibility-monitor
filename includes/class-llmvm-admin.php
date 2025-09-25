@@ -1200,15 +1200,17 @@ class LLMVM_Admin {
             wp_send_json_error( array( 'message' => __( 'Queue system not available', 'llm-visibility-monitor' ) ) );
         }
 
-        $queue_manager = new LLMVM_Queue_Manager();
-        $queue_status = $queue_manager->get_queue_status( $user_filter );
-        
         // Get current user info for filtering
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can( 'llmvm_manage_settings' );
         
-        // Get queue jobs (filtered by user if not admin) - limit to 20 for better performance
+        // Get user filter for queue data
         $user_filter = $is_admin ? null : $current_user_id;
+        
+        $queue_manager = new LLMVM_Queue_Manager();
+        $queue_status = $queue_manager->get_queue_status( $user_filter );
+        
+        // Get queue jobs (filtered by user if not admin) - limit to 20 for better performance
         $queue_jobs = $queue_manager->get_queue_jobs( $user_filter, null, 20 );
 
         // Calculate time ago for each job (using server time for accurate calculation)
