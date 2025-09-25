@@ -404,7 +404,10 @@ function llmvm_get_sort_indicator( $column, $current_orderby, $current_order ) {
 
 <?php
 // Display prompt summaries section
-$prompt_summaries = LLMVM_Database::get_latest_prompt_summaries( 0, 5 );
+$current_user_id = get_current_user_id();
+$is_admin = current_user_can( 'llmvm_manage_settings' );
+$user_filter = $is_admin ? 0 : $current_user_id; // 0 = all users for admin, current user ID for non-admin
+$prompt_summaries = LLMVM_Database::get_latest_prompt_summaries( $user_filter, 5 );
 if ( ! empty( $prompt_summaries ) ) :
 ?>
 <div class="wrap" style="margin-top: 30px;">
