@@ -1049,4 +1049,29 @@ class LLMVM_Database {
 
 		return $results ? $results : array();
 	}
+
+	/**
+	 * Delete all prompt summaries for a specific user.
+	 *
+	 * @param int $user_id The user ID to delete summaries for.
+	 * @return int Number of deleted summaries.
+	 */
+	public static function delete_prompt_summaries_for_user( int $user_id ): int {
+		global $wpdb;
+
+		$table_name = self::prompt_summaries_table_name();
+		
+		$deleted = $wpdb->delete(
+			$table_name,
+			array( 'user_id' => $user_id ),
+			array( '%d' )
+		);
+
+		LLMVM_Logger::log( 'Deleted prompt summaries for user', array(
+			'user_id' => $user_id,
+			'deleted_count' => $deleted
+		) );
+
+		return $deleted;
+	}
 }
