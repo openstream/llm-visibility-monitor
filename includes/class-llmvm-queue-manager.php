@@ -504,14 +504,24 @@ class LLMVM_Queue_Manager {
 
 		$table_name = $wpdb->prefix . self::QUEUE_TABLE;
 
-		// Get all users who have jobs in the queue
-		$users_with_jobs = $wpdb->get_col(
-			"SELECT DISTINCT JSON_EXTRACT(job_data, '$.user_id') as user_id 
-			FROM $table_name 
-			WHERE status IN ('pending', 'processing', 'completed')"
-		);
+		// Get all users who have recently completed jobs (within the last minute)
+		// This prevents checking users whose jobs completed in previous processing cycles
+		$recent_cutoff = gmdate( 'Y-m-d H:i:s', time() - 60 ); // 1 minute ago
 
-		foreach ( $users_with_jobs as $user_id ) {
+		$users_with_recent_completions = $wpdb->get_col( $wpdb->prepare(
+			"SELECT DISTINCT JSON_EXTRACT(job_data, '$.user_id') as user_id
+			FROM $table_name
+			WHERE status = 'completed'
+			AND completed_at >= %s",
+			$recent_cutoff
+		) );
+
+		LLMVM_Logger::log( 'Checking users with recent completions for email', array(
+			'users_count' => count( $users_with_recent_completions ),
+			'recent_cutoff' => $recent_cutoff
+		) );
+
+		foreach ( $users_with_recent_completions as $user_id ) {
 			$user_id = (int) $user_id;
 			if ( $user_id <= 0 ) {
 				continue;
@@ -519,8 +529,8 @@ class LLMVM_Queue_Manager {
 
 			// Check if this user has any pending or processing jobs
 			$pending_jobs = $wpdb->get_var( $wpdb->prepare(
-				"SELECT COUNT(*) FROM $table_name 
-				WHERE JSON_EXTRACT(job_data, '$.user_id') = %d 
+				"SELECT COUNT(*) FROM $table_name
+				WHERE JSON_EXTRACT(job_data, '$.user_id') = %d
 				AND status IN ('pending', 'processing')",
 				$user_id
 			) );
@@ -528,8 +538,8 @@ class LLMVM_Queue_Manager {
 			// If no pending jobs, check if they have completed jobs and fire email
 			if ( $pending_jobs == 0 ) {
 				$completed_jobs = $wpdb->get_var( $wpdb->prepare(
-					"SELECT COUNT(*) FROM $table_name 
-					WHERE JSON_EXTRACT(job_data, '$.user_id') = %d 
+					"SELECT COUNT(*) FROM $table_name
+					WHERE JSON_EXTRACT(job_data, '$.user_id') = %d
 					AND status = 'completed'",
 					$user_id
 				) );
@@ -618,9 +628,9 @@ class LLMVM_Queue_Manager {
 	 */
 	private function check_and_fire_email_action( int $user_id ): void {
 		global $wpdb;
-		
+
 		$start_time = microtime( true );
-		
+
 		// Get the most recent completed job for this user to get the run_id
 		$recent_job = $wpdb->get_row( $wpdb->prepare(
 			"SELECT job_data FROM {$wpdb->prefix}llmvm_queue
@@ -637,13 +647,28 @@ class LLMVM_Queue_Manager {
 			$job_data = json_decode( $recent_job['job_data'], true );
 			$prompt_id = $job_data['prompt_id'] ?? '';
 			$batch_run_id = $job_data['batch_run_id'] ?? '';
-			
+
 			// Clean up batch_run_id if it has extra quotes from JSON encoding
 			if ( is_string( $batch_run_id ) && strlen( $batch_run_id ) > 2 && $batch_run_id[0] === '"' && $batch_run_id[-1] === '"' ) {
 				$batch_run_id = trim( $batch_run_id, '"' );
 			}
 		}
-		
+
+		// For batch runs, use batch_run_id; for single runs, use prompt_id
+		$run_id = $batch_run_id ?: ( $user_id . '_' . $prompt_id );
+
+		// Check if we've already sent an email for this run
+		$email_sent_key = 'llmvm_email_sent_' . md5( $run_id );
+		$email_already_sent = get_transient( $email_sent_key );
+
+		if ( $email_already_sent ) {
+			LLMVM_Logger::log( 'Email already sent for this run, skipping', array(
+				'user_id' => $user_id,
+				'run_id' => $run_id
+			) );
+			return;
+		}
+
 		// Check if all pending jobs for this user are complete
 		$pending_check_start = microtime( true );
 		$pending_jobs = $wpdb->get_var( $wpdb->prepare(
@@ -651,17 +676,20 @@ class LLMVM_Queue_Manager {
 			$user_id
 		) );
 		$pending_check_time = microtime( true ) - $pending_check_start;
-		
+
 		// Ensure pending_jobs is an integer
 		$pending_jobs = (int) $pending_jobs;
 
 		LLMVM_Logger::log( 'Checking pending jobs for email trigger', array(
 			'user_id' => $user_id,
+			'run_id' => $run_id,
 			'pending_jobs' => $pending_jobs
 		) );
 
 		// If no pending jobs, fire the email action
 		if ( $pending_jobs == 0 ) {
+			// Mark that we're sending an email for this run
+			set_transient( $email_sent_key, 1, 600 ); // 10 minutes
 			// Clean up old runs (older than 5 minutes) to prevent processing old runs repeatedly
 			$cleanup_start = microtime( true );
 			$old_runs_deleted = $wpdb->query( $wpdb->prepare(
