@@ -742,18 +742,29 @@ class LLMVM_Cron {
 		}
 
 		// Check if current user can run this prompt (owner or admin)
+		// When running via scheduled cron, current_user_id will be 0, which is allowed
 		$current_user_id = get_current_user_id();
 		$prompt_user_id = isset( $target_prompt['user_id'] ) ? (int) $target_prompt['user_id'] : 1;
 		$is_admin = current_user_can( 'llmvm_manage_settings' );
+		$is_cron = $current_user_id === 0 && ( defined( 'DOING_CRON' ) && DOING_CRON );
 
-		if ( ! $is_admin && $prompt_user_id !== $current_user_id ) {
+		if ( ! $is_cron && ! $is_admin && $prompt_user_id !== $current_user_id ) {
 			LLMVM_Logger::log( 'Single prompt run failed: user not authorized', [
 				'prompt_id' => $prompt_id,
 				'current_user_id' => $current_user_id,
-				'prompt_user_id' => $prompt_user_id
+				'prompt_user_id' => $prompt_user_id,
+				'is_cron' => $is_cron
 			] );
 			return;
 		}
+
+		LLMVM_Logger::log( 'Authorization check passed', [
+			'prompt_id' => $prompt_id,
+			'current_user_id' => $current_user_id,
+			'prompt_user_id' => $prompt_user_id,
+			'is_admin' => $is_admin,
+			'is_cron' => $is_cron
+		] );
 
 		// Get models for this prompt (handle both old 'model' and new 'models' format)
 		$prompt_models = array();
