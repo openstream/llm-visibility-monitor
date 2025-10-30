@@ -817,8 +817,9 @@ class LLMVM_Cron {
 			return;
 		}
 
-		// Use the current user ID who is running the job
-		$user_id = $current_user_id;
+		// Use the prompt owner's user ID for queuing jobs
+		// For cron jobs, current_user_id=0, so we use prompt_user_id instead
+		$user_id = $is_cron ? $prompt_user_id : $current_user_id;
 
 		// Track results from this run
 		$current_run_results = [];
