@@ -34,11 +34,40 @@ class LLMVM_Cron {
 
 		// Admin-triggered single prompt run endpoint.
 		add_action( 'admin_post_llmvm_run_single_prompt', array( $this, 'handle_run_single_prompt' ) );
-		
+
 		// Schedule individual prompt cron jobs when prompts are added/edited
 		add_action( 'llmvm_prompt_added', array( $this, 'schedule_prompt_cron' ), 10, 2 );
 		add_action( 'llmvm_prompt_updated', array( $this, 'schedule_prompt_cron' ), 10, 2 );
 		add_action( 'llmvm_prompt_deleted', array( $this, 'unschedule_prompt_cron' ), 10, 1 );
+
+		// Register action hooks for all existing prompts
+		// This ensures the callbacks are available when queue manager triggers scheduled prompts
+		$this->register_prompt_hooks();
+	}
+
+	/**
+	 * Register action hooks for all existing prompts.
+	 * This ensures callbacks are available on every request for scheduled prompt execution.
+	 */
+	private function register_prompt_hooks(): void {
+		$prompts = get_option( 'llmvm_prompts', [] );
+		if ( ! is_array( $prompts ) ) {
+			return;
+		}
+
+		foreach ( $prompts as $prompt ) {
+			if ( ! isset( $prompt['id'] ) ) {
+				continue;
+			}
+
+			$prompt_id = $prompt['id'];
+			$hook = 'llmvm_run_prompt_' . $prompt_id;
+
+			// Register the action hook for this prompt
+			add_action( $hook, function() use ( $prompt_id ) {
+				$this->run_single_prompt( $prompt_id );
+			} );
+		}
 	}
 
 	/**
@@ -274,10 +303,8 @@ class LLMVM_Cron {
 		$hook = 'llmvm_run_prompt_' . $prompt_id;
 		wp_schedule_event( $next_run, $frequency, $hook );
 
-		// Add action hook for this specific prompt
-		add_action( $hook, function() use ( $prompt_id ) {
-			$this->run_single_prompt( $prompt_id );
-		});
+		// Note: Action hook is registered in register_prompt_hooks() which runs on every request
+		// This ensures the callback is available when queue manager triggers the scheduled prompt
 
 		LLMVM_Logger::log( 'Scheduled prompt cron job', [
 			'prompt_id' => $prompt_id,
