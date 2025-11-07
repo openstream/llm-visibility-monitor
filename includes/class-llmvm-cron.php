@@ -104,10 +104,10 @@ class LLMVM_Cron {
 	/**
 	 * Reschedule the event to a new frequency.
 	 *
-	 * @param string $frequency 'daily' or 'weekly'.
+	 * @param string $frequency 'weekly' or 'monthly'.
 	 */
 	public function reschedule( string $frequency ): void {
-		$frequency = in_array( $frequency, array( 'daily', 'weekly' ), true ) ? $frequency : 'daily';
+		$frequency = in_array( $frequency, array( 'weekly', 'monthly' ), true ) ? $frequency : 'monthly';
 
 		// Check if cron is already scheduled with the same frequency.
 		$next_scheduled = wp_next_scheduled( self::HOOK );
@@ -287,14 +287,14 @@ class LLMVM_Cron {
 	 * Schedule cron job for a specific prompt.
 	 *
 	 * @param string $prompt_id The prompt ID.
-	 * @param string $frequency The cron frequency.
+	 * @param string $frequency The cron frequency ('weekly' or 'monthly').
 	 */
 	public function schedule_prompt_cron( string $prompt_id, string $frequency ): void {
 		// Unschedule any existing cron for this prompt
 		$this->unschedule_prompt_cron( $prompt_id );
 
-		// Validate frequency
-		$frequency = in_array( $frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $frequency : 'daily';
+		// Validate frequency - weekly and monthly are supported
+		$frequency = in_array( $frequency, [ 'weekly', 'monthly' ], true ) ? $frequency : 'monthly';
 
 		// Calculate next run time with distributed scheduling
 		$next_run = $this->calculate_distributed_run_time( $frequency, $prompt_id );

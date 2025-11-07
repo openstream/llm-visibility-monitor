@@ -237,6 +237,7 @@ class LLMVM_Database {
 
 	/**
 	 * Migrate prompts to support cron frequency (v1.5.0).
+	 * Updated: Convert daily prompts to monthly (daily is no longer supported).
 	 */
 	private static function migrate_prompts_to_cron_frequency(): void {
 		$prompts = get_option( 'llmvm_prompts', array() );
@@ -245,17 +246,41 @@ class LLMVM_Database {
 		}
 
 		$migrated = false;
+		$cron = new LLMVM_Cron();
+
 		foreach ( $prompts as &$prompt ) {
-			// If prompt doesn't have cron_frequency field, add it as 'daily'
+			// If prompt doesn't have cron_frequency field, add it as monthly
 			if ( ! isset( $prompt['cron_frequency'] ) ) {
-				$prompt['cron_frequency'] = 'daily';
+				$prompt['cron_frequency'] = 'monthly';
 				$migrated = true;
+
+				// Schedule cron job for this new prompt
+				if ( isset( $prompt['id'] ) ) {
+					$cron->schedule_prompt_cron( $prompt['id'], 'monthly' );
+				}
 			}
+			// Convert daily prompts to monthly (daily is no longer supported)
+			elseif ( 'daily' === $prompt['cron_frequency'] ) {
+				$prompt['cron_frequency'] = 'monthly';
+				$migrated = true;
+
+				// Reschedule cron job for this prompt with new monthly frequency
+				if ( isset( $prompt['id'] ) ) {
+					$cron->schedule_prompt_cron( $prompt['id'], 'monthly' );
+					LLMVM_Logger::log( 'Migrated daily prompt to monthly', [
+						'prompt_id' => $prompt['id'],
+						'old_frequency' => 'daily',
+						'new_frequency' => 'monthly'
+					] );
+				}
+			}
+			// Weekly and monthly prompts stay as they are
 		}
 		unset( $prompt );
 
 		if ( $migrated ) {
 			update_option( 'llmvm_prompts', $prompts, false );
+			LLMVM_Logger::log( 'Completed cron frequency migration - daily converted to monthly' );
 		}
 	}
 

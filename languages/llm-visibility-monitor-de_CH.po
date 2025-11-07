@@ -16,6 +16,10 @@ msgstr ""
 msgid "Once Weekly"
 msgstr "Einmal wöchentlich"
 
+#: includes/class-llmvm-cron.php
+msgid "Once Monthly"
+msgstr "Einmal monatlich"
+
 #: includes/class-llmvm-admin.php
 msgid "LLM Visibility Monitor"
 msgstr "LLM Visibility Monitor"
@@ -80,6 +84,10 @@ msgstr "Täglich"
 #: includes/class-llmvm-admin.php
 msgid "Weekly"
 msgstr "Wöchentlich"
+
+#: includes/class-llmvm-admin.php includes/views/prompts-page.php
+msgid "Monthly"
+msgstr "Monatlich"
 
 #: includes/class-llmvm-admin.php
 msgid "Unauthorized"

@@ -442,7 +442,7 @@ if ( $is_admin ) {
     <?php endif; ?>
 
     <h2><?php echo esc_html__( 'Add New Prompt', 'llm-visibility-monitor' ); ?></h2>
-    
+
     <?php
     // Display admin notices
     $notice = get_transient( 'llmvm_notice' );
@@ -451,8 +451,12 @@ if ( $is_admin ) {
         echo '<div class="notice ' . esc_attr( $notice_class ) . ' is-dismissible"><p>' . esc_html( $notice['msg'] ) . '</p></div>';
         delete_transient( 'llmvm_notice' );
     }
+
+    // Get user plan for frequency options
+    $user_limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+    $user_plan = $user_limits['plan_name'];
     ?>
-    
+
     <div class="llmvm-add-prompt-container">
         <!-- Collapsed state - only show textarea -->
         <div class="llmvm-prompt-collapsed">
@@ -514,11 +518,20 @@ if ( $is_admin ) {
                         </th>
                         <td>
                             <select id="llmvm-new-prompt-cron-frequency" name="cron_frequency" class="llmvm-cron-select">
-                                <option value="daily"><?php echo esc_html__( 'Daily', 'llm-visibility-monitor' ); ?></option>
-                                <option value="weekly"><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
+                                <?php if ( 'Pro' === $user_plan || 'Unlimited' === $user_plan ) : ?>
+                                    <option value="weekly"><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
+                                <?php endif; ?>
                                 <option value="monthly"><?php echo esc_html__( 'Monthly', 'llm-visibility-monitor' ); ?></option>
                             </select>
-                            <p class="description"><?php echo esc_html__( 'How often this prompt should be executed automatically.', 'llm-visibility-monitor' ); ?></p>
+                            <p class="description">
+                                <?php
+                                if ( 'Free' === $user_plan ) {
+                                    echo esc_html__( 'How often this prompt should be executed automatically. Upgrade to Pro for weekly scheduling.', 'llm-visibility-monitor' );
+                                } else {
+                                    echo esc_html__( 'How often this prompt should be executed automatically.', 'llm-visibility-monitor' );
+                                }
+                                ?>
+                            </p>
                         </td>
                     </tr>
                 </table>
@@ -689,14 +702,15 @@ if ( $is_admin ) {
                                 <div style="margin-bottom: 8px;">
                                     <strong><?php echo esc_html__( 'Cron Frequency:', 'llm-visibility-monitor' ); ?></strong>
                                     <select id="llmvm-cron-frequency-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" style="margin-left: 8px; font-size: 12px;">
-                                        <option value="daily" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'daily' ); ?>><?php echo esc_html__( 'Daily', 'llm-visibility-monitor' ); ?></option>
-                                        <option value="weekly" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'weekly' ); ?>><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
-                                        <option value="monthly" <?php selected( $prompt['cron_frequency'] ?? 'daily', 'monthly' ); ?>><?php echo esc_html__( 'Monthly', 'llm-visibility-monitor' ); ?></option>
+                                        <?php if ( 'Pro' === $user_plan || 'Unlimited' === $user_plan ) : ?>
+                                            <option value="weekly" <?php selected( $prompt['cron_frequency'] ?? 'monthly', 'weekly' ); ?>><?php echo esc_html__( 'Weekly', 'llm-visibility-monitor' ); ?></option>
+                                        <?php endif; ?>
+                                        <option value="monthly" <?php selected( $prompt['cron_frequency'] ?? 'monthly', 'monthly' ); ?>><?php echo esc_html__( 'Monthly', 'llm-visibility-monitor' ); ?></option>
                                     </select>
                                 </div>
                                 <div>
                                     <strong><?php echo esc_html__( 'Next cron execution:', 'llm-visibility-monitor' ); ?></strong>
-                                    <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time( $prompt['cron_frequency'] ?? 'daily', $prompt['id'] ?? '' ) ); ?></span>
+                                    <span style="color: #666;"><?php echo esc_html( LLMVM_Admin::get_next_cron_execution_time( $prompt['cron_frequency'] ?? 'monthly', $prompt['id'] ?? '' ) ); ?></span>
                                 </div>
                             </div>
                             <br><br>
@@ -708,7 +722,7 @@ if ( $is_admin ) {
                                     <input type="hidden" name="prompt_text" value="<?php echo esc_attr( (string) ( $prompt['text'] ?? '' ) ); ?>" />
                                     <input type="hidden" name="prompt_models[]" value="" />
                                     <input type="hidden" id="llmvm-web-search-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="web_search[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo ! empty( $prompt['web_search'] ) ? '1' : '0'; ?>" />
-                                    <input type="hidden" id="llmvm-cron-frequency-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="cron_frequency[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo esc_attr( $prompt['cron_frequency'] ?? 'daily' ); ?>" />
+                                    <input type="hidden" id="llmvm-cron-frequency-hidden-<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>" name="cron_frequency[<?php echo esc_attr( (string) ( $prompt['id'] ?? '' ) ); ?>]" value="<?php echo esc_attr( $prompt['cron_frequency'] ?? 'monthly' ); ?>" />
                                     <?php submit_button( __( 'Save', 'llm-visibility-monitor' ), 'primary', '', false ); ?>
                                 </form>
                                 <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="display: inline;" class="delete-prompt-form">

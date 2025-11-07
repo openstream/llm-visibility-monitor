@@ -412,7 +412,7 @@ class LLMVM_Admin {
         register_setting( 'llmvm_settings', 'llmvm_options', [
             'type'              => 'array',
             'sanitize_callback' => [ $this, 'sanitize_options' ],
-            'default'           => [ 'api_key' => '', 'cron_frequency' => 'daily', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false, 'login_custom_text' => '', 'comparison_model' => 'openai/gpt-4o-mini' ],
+            'default'           => [ 'api_key' => '', 'cron_frequency' => 'monthly', 'model' => 'openrouter/stub-model-v1', 'debug_logging' => false, 'login_custom_text' => '', 'comparison_model' => 'openai/gpt-4o-mini' ],
             'show_in_rest'      => false,
         ] );
 
@@ -1965,14 +1965,26 @@ class LLMVM_Admin {
         
         // Handle web search option
         $web_search = isset( $_POST['web_search'] ) && '1' === $_POST['web_search']; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-        
+
         // Handle cron frequency option
-        $cron_frequency = isset( $_POST['cron_frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ) ) : 'daily'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-        $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
-        
+        $cron_frequency = isset( $_POST['cron_frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ) ) : 'monthly'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
+
+        // Get user plan to validate frequency
+        $current_user_id = get_current_user_id();
+        $user_limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+        $user_plan = $user_limits['plan_name'];
+
+        // Free users can only use monthly, Pro/Unlimited can use weekly or monthly
+        if ( 'Free' === $user_plan && 'weekly' === $cron_frequency ) {
+            $cron_frequency = 'monthly'; // Downgrade to monthly for free users
+        }
+
+        // Validate frequency (no daily allowed)
+        $cron_frequency = in_array( $cron_frequency, [ 'weekly', 'monthly' ], true ) ? $cron_frequency : 'monthly';
+
         // Handle expected answer option
         $expected_answer = isset( $_POST['expected_answer'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expected_answer'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-        
+
         if ( '' !== trim( $text ) ) {
             $prompts   = get_option( 'llmvm_prompts', [] );
             $prompts   = is_array( $prompts ) ? $prompts : [];
@@ -1983,7 +1995,7 @@ class LLMVM_Admin {
             
             // Get current user ID
             $current_user_id = get_current_user_id();
-            
+
             // Check usage limits
             if ( ! LLMVM_Usage_Manager::can_add_prompt( $current_user_id ) ) {
                 $limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
@@ -2110,14 +2122,28 @@ class LLMVM_Admin {
         
         // Handle web search option
         $web_search = isset( $_POST['web_search'] ) && is_array( $_POST['web_search'] ) && isset( $_POST['web_search'][ $id ] ) && '1' === $_POST['web_search'][ $id ]; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
-        
+
+        // Get current user ID early so we can use it for frequency validation
+        $current_user_id = get_current_user_id();
+
         // Handle cron frequency option
-        $cron_frequency = 'daily'; // Default value
+        $cron_frequency = 'monthly'; // Default value
         if ( isset( $_POST['cron_frequency'] ) && is_array( $_POST['cron_frequency'] ) && isset( $_POST['cron_frequency'][ $id ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
             $cron_frequency = sanitize_text_field( wp_unslash( $_POST['cron_frequency'][ $id ] ) );
-            $cron_frequency = in_array( $cron_frequency, [ 'daily', 'weekly', 'monthly' ], true ) ? $cron_frequency : 'daily';
         }
-        
+
+        // Get user plan to validate frequency
+        $user_limits = LLMVM_Usage_Manager::get_user_limits( $current_user_id );
+        $user_plan = $user_limits['plan_name'];
+
+        // Free users can only use monthly, Pro/Unlimited can use weekly or monthly
+        if ( 'Free' === $user_plan && 'weekly' === $cron_frequency ) {
+            $cron_frequency = 'monthly'; // Downgrade to monthly for free users
+        }
+
+        // Validate frequency (no daily allowed)
+        $cron_frequency = in_array( $cron_frequency, [ 'weekly', 'monthly' ], true ) ? $cron_frequency : 'monthly';
+
         // Handle expected answer option
         $expected_answer = '';
         if ( isset( $_POST['expected_answer'] ) && is_array( $_POST['expected_answer'] ) && isset( $_POST['expected_answer'][ $id ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled in verify_permissions_and_nonce()
@@ -2132,10 +2158,9 @@ class LLMVM_Admin {
         if ( false === $prompts ) {
             $prompts = [];
         }
-        
-        $current_user_id = get_current_user_id();
+
         $is_admin = current_user_can( 'llmvm_manage_settings' );
-        
+
         $prompt_updated = false;
         foreach ( $prompts as &$prompt ) {
             if ( isset( $prompt['id'] ) && $prompt['id'] === $id ) {
