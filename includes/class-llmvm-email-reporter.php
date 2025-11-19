@@ -112,6 +112,23 @@ class LLMVM_Email_Reporter {
             return;
         }
 
+        // Check if we recently sent a limit notification to this user (throttle to once per week)
+        $last_notification_sent = get_user_meta( $user_id, 'llmvm_last_limit_notification_sent', true );
+        $throttle_period = 7 * DAY_IN_SECONDS; // 7 days (weekly)
+
+        if ( ! empty( $last_notification_sent ) && is_numeric( $last_notification_sent ) ) {
+            $time_since_last = time() - (int) $last_notification_sent;
+            if ( $time_since_last < $throttle_period ) {
+                $next_notification_in = $throttle_period - $time_since_last;
+                LLMVM_Logger::log( 'Limit notification: throttled (too soon since last notification)', [
+                    'user_id' => $user_id,
+                    'time_since_last_hours' => round( $time_since_last / 3600, 1 ),
+                    'next_notification_hours' => round( $next_notification_in / 3600, 1 )
+                ] );
+                return;
+            }
+        }
+
         $user = get_user_by( 'id', $user_id );
         if ( ! $user ) {
             LLMVM_Logger::log( 'Limit notification: user not found', [ 'user_id' => $user_id ] );
@@ -166,6 +183,8 @@ class LLMVM_Email_Reporter {
         $this->restore_locale( $original_locale );
         
         if ( $sent ) {
+            // Update the last notification sent time
+            update_user_meta( $user_id, 'llmvm_last_limit_notification_sent', time() );
             LLMVM_Logger::log( 'Limit notification: sent successfully', [ 'to' => $recipient_email, 'user_id' => $user_id ] );
         } else {
             LLMVM_Logger::log( 'Limit notification: failed to send', [ 'to' => $recipient_email, 'user_id' => $user_id ] );
