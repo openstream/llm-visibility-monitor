@@ -175,15 +175,9 @@ function llmvm_init() {
 		// Set up cron hooks
 		$cron->hooks();
 
-		// Schedule cron if not already scheduled (only check once per minute to prevent log spam)
-		static $last_cron_check_time = 0;
-		$current_time = time();
-		if ( $current_time - $last_cron_check_time > 60 ) {
-			$options   = get_option( 'llmvm_options', array() );
-			$frequency = isset( $options['cron_frequency'] ) ? (string) $options['cron_frequency'] : 'daily';
-			$cron->reschedule( $frequency );
-			$last_cron_check_time = $current_time;
-		}
+		// NOTE: Global cron scheduling (llmvm_run_checks) has been disabled.
+		// Each prompt now has its own individual cron job scheduled based on its frequency.
+		// This prevents all prompts from running daily regardless of their configured schedule.
 	}
 
 	if ( class_exists( 'LLMVM_Email_Reporter' ) ) {
