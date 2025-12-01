@@ -68,6 +68,17 @@ class LLMVM_OpenRouter_Client {
 
         // Enhanced logging for :online models
         $is_online_model = strpos( $model, ':online' ) !== false;
+
+        // Add web search optimization parameters for :online models to reduce token usage
+        if ( $is_online_model ) {
+            $body['transforms'] = [ 'web_search' ];
+            // Limit to 1-2 search results instead of default 5 to reduce tokens dramatically
+            $body['max_results'] = 2;
+            // Use low context size to minimize search result token usage
+            $body['web_search_options'] = [
+                'search_context_size' => 'low'
+            ];
+        }
         if ( $is_online_model ) {
             LLMVM_Logger::log( 'Online model request details', [
                 'model' => $model,
