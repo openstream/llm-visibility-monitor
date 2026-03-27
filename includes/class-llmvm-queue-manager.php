@@ -406,6 +406,26 @@ class LLMVM_Queue_Manager {
 		// Ensure it's within reasonable bounds
 		$max_concurrent = max( 1, min( 5, $max_concurrent ) );
 
+		// Reset jobs stuck in 'processing' longer than JOB_TIMEOUT.
+		$reset_count = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $table_name
+				SET status = 'failed',
+					completed_at = %s,
+					job_data = JSON_SET(COALESCE(job_data, '{}'), '$.error', 'Job timed out after processing for too long')
+				WHERE status = 'processing'
+					AND started_at < DATE_SUB(NOW(), INTERVAL %d SECOND)",
+				current_time( 'mysql' ),
+				self::JOB_TIMEOUT
+			)
+		);
+		if ( $reset_count > 0 ) {
+			LLMVM_Logger::log( 'Reset timed-out processing jobs', array(
+				'reset_count' => $reset_count,
+				'timeout_seconds' => self::JOB_TIMEOUT,
+			) );
+		}
+
 		// Check how many jobs are currently being processed
 		$current_processing = $wpdb->get_var(
 			"SELECT COUNT(*) FROM $table_name WHERE status = 'processing'"
